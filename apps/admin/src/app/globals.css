@@ -1,0 +1,72 @@
+@import "tailwindcss";
+@import "@vybx/ui/styles";
+
+/* ── Admin design tokens ─────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --background:              240 10% 3.9%;
+    --foreground:              0 0% 98%;
+    --card:                    240 10% 3.9%;
+    --card-foreground:         0 0% 98%;
+    --popover:                 240 10% 3.9%;
+    --popover-foreground:      0 0% 98%;
+    --primary:                 262.1 83.3% 57.8%;
+    --primary-foreground:      210 20% 98%;
+    --secondary:               240 3.7% 15.9%;
+    --secondary-foreground:    0 0% 98%;
+    --muted:                   240 3.7% 15.9%;
+    --muted-foreground:        240 5% 64.9%;
+    --accent:                  262.1 83.3% 57.8%;
+    --accent-foreground:       0 0% 98%;
+    --destructive:             0 62.8% 30.6%;
+    --destructive-foreground:  0 0% 98%;
+    --border:                  240 3.7% 15.9%;
+    --input:                   240 3.7% 15.9%;
+    --ring:                    262.1 83.3% 57.8%;
+    --radius:                  0.75rem;
+
+    /* Glass & surface */
+    --glass-bg:      rgba(20, 20, 25, 0.4);
+    --glass-border:  rgba(255, 255, 255, 0.06);
+    --glass-shadow:  0 8px 32px 0 rgba(0, 0, 0, 0.4);
+    --surface-1:     rgba(255, 255, 255, 0.02);
+    --surface-2:     rgba(255, 255, 255, 0.04);
+    --surface-3:     rgba(255, 255, 255, 0.08);
+    --focus-ring:    rgba(139, 92, 246, 0.35);
+
+    /* Brand accents */
+    --accent-primary:   #7c3aed;
+    --accent-secondary: #a855f7;
+    --accent-tertiary:  #06b6d4;
+    --accent-glow:      rgba(124, 58, 237, 0.45);
+    --bg-dark:          #030014;
+
+    /* Chart palette */
+    --chart-1: 262.1 83.3% 57.8%;
+    --chart-2: 279 83% 65%;
+    --chart-3: 310 80% 60%;
+    --chart-4: 240 80% 65%;
+    --chart-5: 220 80% 60%;
+  }
+
+  body {
+    background-color: #030014;
+    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.07), transparent);
+    background-attachment: fixed;
+    color: #e2e8f0;
+    font-family: var(--font-sans), system-ui, sans-serif;
+    min-height: 100dvh;
+    margin: 0;
+  }
+}
+
+/* ── Admin utility classes ───────────────────────────────────────────────── */
+.bo-surface {
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.bo-focus-ring {
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}

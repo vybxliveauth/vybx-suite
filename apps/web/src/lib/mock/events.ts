@@ -1,0 +1,227 @@
+import { Event } from "@/types";
+
+export const MOCK_EVENTS: Event[] = [
+  {
+    id: "550e8400-e29b-41d4-a716-446655440001",
+    title: "Neon Horizons Festival",
+    slug: "neon-horizons-festival",
+    description:
+      "El festival de música electrónica más grande de Latinoamérica regresa con 4 escenarios, más de 30 artistas internacionales y una producción de clase mundial.\n\nEsta edición contará con nombres como Charlotte de Witte, Fisher, Skrillex y muchos más. Las puertas abren a las 6:00 PM y la experiencia no termina hasta el amanecer.\n\nEl recinto cuenta con zonas gastronómicas, áreas de descanso con hamacas, instalaciones de arte interactivo y la mejor tecnología de sonido e iluminación del mercado.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80",
+    startDate: "2025-04-12T20:00:00-05:00",
+    endDate: "2025-04-13T06:00:00-05:00",
+    doorsOpen: "2025-04-12T18:00:00-05:00",
+    venue: {
+      id: "v-001",
+      name: "Parque Simón Bolívar",
+      address: "Cra. 53 #63-49",
+      city: "Bogotá",
+      country: "Colombia",
+      capacity: 40000,
+    },
+    status: "live",
+    tiers: [
+      {
+        id: "t-001",
+        name: "General",
+        description: "Acceso general al festival, todos los escenarios",
+        price: 8500,   // $85.00
+        currency: "USD",
+        stock: 1240,
+        maxPerOrder: 6,
+        benefits: ["Acceso a todos los escenarios", "Zona gastronómica"],
+      },
+      {
+        id: "t-002",
+        name: "VIP",
+        description: "Experiencia premium con zona exclusiva y open bar",
+        price: 19500,  // $195.00
+        currency: "USD",
+        stock: 85,
+        maxPerOrder: 4,
+        benefits: [
+          "Zona VIP exclusiva",
+          "Open bar premium",
+          "Acceso backstage",
+          "Lounges privados",
+          "Meet & greet artistas",
+        ],
+      },
+      {
+        id: "t-003",
+        name: "Premium",
+        description: "Zona preferencial con mejor vista al escenario principal",
+        price: 13500,  // $135.00
+        currency: "USD",
+        stock: 340,
+        maxPerOrder: 4,
+        benefits: [
+          "Zona preferencial",
+          "Mejor vista al escenario",
+          "Barra de bebidas incluida",
+          "Entrada prioritaria",
+        ],
+      },
+      {
+        id: "t-004",
+        name: "Student",
+        description: "Precio especial con carné estudiantil vigente",
+        price: 5500,   // $55.00
+        currency: "USD",
+        stock: 500,
+        maxPerOrder: 2,
+        benefits: ["Acceso general", "Requiere carné estudiantil"],
+      },
+    ],
+    tags: ["Electronic", "Festival", "Multi-stage", "International"],
+    organizerId: "org-001",
+    createdAt: "2025-01-15T10:00:00Z",
+    updatedAt: "2025-03-01T10:00:00Z",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440002",
+    title: "Jazz & Soul Night",
+    slug: "jazz-soul-night",
+    description:
+      "Una noche íntima de jazz y soul en el emblemático Teatro Metropolitano de Medellín. Los mejores músicos locales e internacionales se unen para crear una experiencia única.\n\nEl programa incluye sets de jazz clásico, neo-soul contemporáneo y fusión latina. Aforo limitado para garantizar una experiencia íntima y de alta calidad.",
+    imageUrl:
+      "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=1600&q=80",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=600&q=80",
+    startDate: "2025-04-18T19:30:00-05:00",
+    endDate: "2025-04-18T23:00:00-05:00",
+    doorsOpen: "2025-04-18T18:30:00-05:00",
+    venue: {
+      id: "v-002",
+      name: "Teatro Metropolitano",
+      address: "Calle 41 #57-30",
+      city: "Medellín",
+      country: "Colombia",
+      capacity: 1800,
+    },
+    status: "live",
+    tiers: [
+      {
+        id: "t-005",
+        name: "General",
+        description: "Platea general",
+        price: 4500,
+        currency: "USD",
+        stock: 600,
+        maxPerOrder: 6,
+        benefits: ["Acceso platea general"],
+      },
+      {
+        id: "t-006",
+        name: "VIP",
+        description: "Palco VIP con servicio en mesa",
+        price: 9500,
+        currency: "USD",
+        stock: 40,
+        maxPerOrder: 2,
+        benefits: ["Palco VIP", "Servicio en mesa", "Bebida de bienvenida"],
+      },
+    ],
+    tags: ["Jazz", "Soul", "Live Music", "Intimate"],
+    organizerId: "org-002",
+    createdAt: "2025-02-01T10:00:00Z",
+    updatedAt: "2025-03-05T10:00:00Z",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440003",
+    title: "Cumbia Roots Open Air",
+    slug: "cumbia-roots-open-air",
+    description:
+      "Un festival al aire libre que celebra las raíces de la cumbia colombiana. Artistas de todo el país se reúnen en el histórico barrio de La Aduana para una jornada de música, gastronomía y cultura popular.\n\nDesde la cumbia tradicional hasta las fusiones más contemporáneas, este evento es una experiencia para los sentidos.",
+    imageUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1600&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600&q=80",
+    startDate: "2025-05-04T16:00:00-05:00",
+    endDate: "2025-05-04T23:59:00-05:00",
+    doorsOpen: "2025-05-04T15:00:00-05:00",
+    venue: { id: "v-003", name: "La Aduana", address: "Calle 35 #43-22", city: "Barranquilla", country: "Colombia", capacity: 8000 },
+    status: "upcoming",
+    tiers: [
+      { id: "t-010", name: "General", description: "Acceso general", price: 3000, currency: "USD", stock: 3000, maxPerOrder: 6, benefits: ["Acceso general al recinto"] },
+      { id: "t-011", name: "VIP", description: "Zona preferencial con sombra y servicio", price: 7500, currency: "USD", stock: 200, maxPerOrder: 4, benefits: ["Zona VIP con sombra", "Open bar", "Palco preferencial"] },
+    ],
+    tags: ["Folk", "Cumbia", "Open Air", "Traditional"],
+    organizerId: "org-003",
+    createdAt: "2025-02-10T10:00:00Z",
+    updatedAt: "2025-03-10T10:00:00Z",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440004",
+    title: "Salsa del Pacífico",
+    slug: "salsa-del-pacifico",
+    description:
+      "La Plaza de Cayzedo se convierte en la pista de baile más grande del mundo. Una noche de salsa caleña con las mejores orquestas del país y coreografías espectaculares.\n\nEvento familiar, con zonas para todas las edades. Los mejores salseros de Cali mostrarán sus pasos en un show único.",
+    imageUrl: "https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=1600&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1504609813442-a8924e83f76e?w=600&q=80",
+    startDate: "2025-05-16T18:00:00-05:00",
+    endDate: "2025-05-17T00:00:00-05:00",
+    doorsOpen: "2025-05-16T17:00:00-05:00",
+    venue: { id: "v-004", name: "Plaza de Cayzedo", address: "Cra. 4 #11-35", city: "Cali", country: "Colombia", capacity: 15000 },
+    status: "upcoming",
+    tiers: [
+      { id: "t-012", name: "General", description: "Acceso general a la plaza", price: 2000, currency: "USD", stock: 10000, maxPerOrder: 8, benefits: ["Acceso general"] },
+      { id: "t-013", name: "Premium", description: "Zona preferencial con palco", price: 5500, currency: "USD", stock: 500, maxPerOrder: 4, benefits: ["Palco preferencial", "Servicio en mesa"] },
+    ],
+    tags: ["Salsa", "Dance", "Live Music", "Cultural"],
+    organizerId: "org-004",
+    createdAt: "2025-02-15T10:00:00Z",
+    updatedAt: "2025-03-12T10:00:00Z",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440005",
+    title: "Indie Fest Cartagena",
+    slug: "indie-fest-cartagena",
+    description:
+      "El Castillo San Felipe de Barajas se convierte en el escenario más épico de Colombia para una noche de rock indie y alternativo.\n\nBandas emergentes y consagradas de la escena indie latinoamericana actuarán bajo las estrellas con el imponente castillo colonial como telón de fondo.",
+    imageUrl: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1600&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=600&q=80",
+    startDate: "2025-05-24T19:00:00-05:00",
+    endDate: "2025-05-25T01:00:00-05:00",
+    doorsOpen: "2025-05-24T18:00:00-05:00",
+    venue: { id: "v-005", name: "Castillo San Felipe", address: "Cra. 17 #36-49", city: "Cartagena", country: "Colombia", capacity: 5000 },
+    status: "upcoming",
+    tiers: [
+      { id: "t-014", name: "General", description: "Acceso general", price: 5500, currency: "USD", stock: 3500, maxPerOrder: 6, benefits: ["Acceso general"] },
+      { id: "t-015", name: "VIP", description: "Vista privilegiada y zona exclusiva", price: 12000, currency: "USD", stock: 150, maxPerOrder: 2, benefits: ["Zona VIP", "Open bar", "Meet & greet"] },
+    ],
+    tags: ["Indie", "Rock", "Alternative", "Live Music"],
+    organizerId: "org-005",
+    createdAt: "2025-02-20T10:00:00Z",
+    updatedAt: "2025-03-15T10:00:00Z",
+  },
+  {
+    id: "550e8400-e29b-41d4-a716-446655440006",
+    title: "Reggaeton En Vivo",
+    slug: "reggaeton-en-vivo",
+    description:
+      "El mayor concierto de reggaeton y urbano del año llega al Estadio El Campín. Los artistas más grandes del género urban latino se suben al escenario para una noche que no olvidarás.\n\nProducción de talla mundial, pantallas gigantes, fuegos artificiales y más de 45,000 asistentes vibrando al mismo ritmo.",
+    imageUrl: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=1600&q=80",
+    thumbnailUrl: "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600&q=80",
+    startDate: "2025-05-30T20:00:00-05:00",
+    endDate: "2025-05-31T02:00:00-05:00",
+    doorsOpen: "2025-05-30T18:00:00-05:00",
+    venue: { id: "v-006", name: "Estadio El Campín", address: "Cra. 30 #57-60", city: "Bogotá", country: "Colombia", capacity: 46000 },
+    status: "live",
+    tiers: [
+      { id: "t-016", name: "General", description: "Tribuna general", price: 7500, currency: "USD", stock: 30000, maxPerOrder: 6, benefits: ["Tribuna general"] },
+      { id: "t-017", name: "Premium", description: "Platea preferencial", price: 15000, currency: "USD", stock: 5000, maxPerOrder: 4, benefits: ["Platea preferencial", "Mejor posición"] },
+      { id: "t-018", name: "VIP", description: "Palco VIP con acceso exclusivo", price: 28000, currency: "USD", stock: 300, maxPerOrder: 2, benefits: ["Palco VIP", "Open bar premium", "Acceso backstage", "Parking incluido"] },
+      { id: "t-019", name: "Student", description: "Precio especial estudiantes", price: 5000, currency: "USD", stock: 2000, maxPerOrder: 2, benefits: ["Tribuna general", "Requiere carné estudiantil"] },
+    ],
+    tags: ["Urban", "Reggaeton", "Live Music", "Stadium"],
+    organizerId: "org-006",
+    createdAt: "2025-01-20T10:00:00Z",
+    updatedAt: "2025-03-18T10:00:00Z",
+  },
+];
+
+export function getEventBySlug(slug: string): Event | undefined {
+  return MOCK_EVENTS.find((e) => e.slug === slug);
+}

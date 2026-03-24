@@ -1,0 +1,253 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, useFieldArray } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Trash2, Loader2, Save } from "lucide-react";
+import {
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+} from "@vybx/ui";
+import { PromoterShell } from "@/components/layout/PromoterShell";
+import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
+import { api } from "@/lib/api";
+
+const tierSchema = z.object({
+  name: z.string().min(1, "Nombre requerido"),
+  price: z.coerce.number().min(0, "Precio inválido"),
+  quantity: z.coerce.number().min(1, "Mínimo 1"),
+});
+
+const schema = z.object({
+  title: z.string().min(3, "Mínimo 3 caracteres"),
+  description: z.string().optional(),
+  location: z.string().min(2, "Ubicación requerida"),
+  date: z.string().min(1, "Fecha requerida"),
+  time: z.string().min(1, "Hora requerida"),
+  isActive: z.boolean(),
+  tiers: z.array(tierSchema).min(1, "Agrega al menos un tipo de boleto"),
+});
+
+type FormValues = z.infer<typeof schema>;
+
+interface CreatedEvent {
+  id: string;
+}
+
+export default function NewEventPage() {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [step, setStep] = useState<"form" | "tiers">("form");
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      isActive: false,
+      tiers: [{ name: "General", price: 350, quantity: 200 }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({ control, name: "tiers" });
+
+  async function onSubmit(values: FormValues) {
+    setServerError(null);
+    try {
+      const dateTime = new Date(`${values.date}T${values.time}`).toISOString();
+
+      // Step 1 — create the event
+      const event = await api.post<CreatedEvent>("/events", {
+        title: values.title,
+        description: values.description || undefined,
+        location: values.location,
+        date: dateTime,
+        isActive: values.isActive,
+      });
+
+      // Step 2 — create ticket types sequentially
+      for (const tier of values.tiers) {
+        await api.post("/events/ticket-types", {
+          eventId: event.id,
+          name: tier.name,
+          price: tier.price,
+          quantity: tier.quantity,
+        });
+      }
+
+      router.push("/events");
+    } catch (err: unknown) {
+      setServerError(err instanceof Error ? err.message : "Error al crear el evento");
+    }
+  }
+
+  return (
+    <PromoterShell
+      breadcrumb={
+        <PageBreadcrumb
+          items={[
+            { label: "Eventos", href: "/events" },
+            { label: "Nuevo evento" },
+          ]}
+        />
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl">
+        <div>
+          <h1 className="text-xl font-semibold">Crear evento</h1>
+          <p className="text-sm text-muted-foreground">Completa los datos del nuevo evento</p>
+        </div>
+
+        {/* Basic info */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Información general</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="title">Nombre del evento *</Label>
+              <Input id="title" placeholder="Ej. Neon Rave 2027" {...register("title")} />
+              {errors.title && <p className="text-xs text-destructive">{errors.title.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe el evento..."
+                rows={3}
+                {...register("description")}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="location">Ubicación *</Label>
+              <Input id="location" placeholder="Venue, Ciudad" {...register("location")} />
+              {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="date">Fecha *</Label>
+                <Input id="date" type="date" {...register("date")} />
+                {errors.date && <p className="text-xs text-destructive">{errors.date.message}</p>}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="time">Hora *</Label>
+                <Input id="time" type="time" {...register("time")} />
+                {errors.time && <p className="text-xs text-destructive">{errors.time.message}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Visibilidad inicial</Label>
+              <Select
+                value={watch("isActive") ? "true" : "false"}
+                onValueChange={(v) => setValue("isActive", v === "true")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="false">Oculto (borrador)</SelectItem>
+                  <SelectItem value="true">Visible al público</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                El evento también requiere aprobación del equipo de VybeTickets.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ticket tiers */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-sm">Tipos de boleto</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ name: "", price: 0, quantity: 100 })}
+            >
+              <Plus className="size-4" />
+              Agregar tipo
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {fields.map((field, i) => (
+              <div key={field.id}>
+                {i > 0 && <Separator className="mb-4" />}
+                <div className="grid grid-cols-[1fr_100px_100px_auto] gap-3 items-end">
+                  <div className="space-y-1.5">
+                    <Label>Nombre</Label>
+                    <Input placeholder="General, VIP..." {...register(`tiers.${i}.name`)} />
+                    {errors.tiers?.[i]?.name && (
+                      <p className="text-xs text-destructive">{errors.tiers[i].name?.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Precio (MXN)</Label>
+                    <Input type="number" min="0" step="50" {...register(`tiers.${i}.price`)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Cantidad</Label>
+                    <Input type="number" min="1" {...register(`tiers.${i}.quantity`)} />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => remove(i)}
+                    disabled={fields.length === 1}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {errors.tiers && typeof errors.tiers.message === "string" && (
+              <p className="text-xs text-destructive">{errors.tiers.message}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {serverError && (
+          <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+            {serverError}
+          </p>
+        )}
+
+        <div className="flex gap-3">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            {isSubmitting ? "Creando..." : "Guardar evento"}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.back()}>
+            Cancelar
+          </Button>
+        </div>
+      </form>
+    </PromoterShell>
+  );
+}

@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+.next/
+out/
+dist/
+build/
+.turbo/
+coverage/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env files
+.env
+.env.local
+.env.*.local
+
+# editor/system
+.DS_Store
+*.swp
+
+# misc
+*.tsbuildinfo

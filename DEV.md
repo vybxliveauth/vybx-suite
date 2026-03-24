@@ -1,0 +1,183 @@
+# Guía de desarrollo local
+
+## Prerequisitos
+
+```bash
+# Redis (requerido por el backend para sesiones JWT)
+docker run -d -p 6379:6379 --name redis redis:alpine
+
+# Verificar que Redis corre
+docker ps | grep redis
+```
+
+PostgreSQL debe estar corriendo con la base de datos del proyecto configurada en el `.env` del backend.
+
+---
+
+## 1 — Backend
+
+```bash
+cd ~/Desktop/Proyectos/vybxlive-backend
+npm run start:dev
+```
+
+Corre en → `http://localhost:3004`
+Swagger docs → `http://localhost:3004/docs`
+
+---
+
+## 2 — Apps frontend
+
+Cada una en una terminal separada, o todas juntas con Turborepo.
+
+### Por separado
+
+```bash
+# Sitio público (VybeTickets)
+cd ~/Desktop/vybx-suite
+pnpm --filter "@vybx/web" dev
+# → http://localhost:3000
+
+# Panel de promotor
+pnpm --filter "@vybx/promoter" dev
+# → http://localhost:3001
+
+# Panel de administración
+pnpm --filter "@vybx/admin" dev
+# → http://localhost:3002
+```
+
+### Todas juntas (Turborepo)
+
+```bash
+cd ~/Desktop/vybx-suite
+pnpm dev
+# Web      → http://localhost:3000
+# Promotor → http://localhost:3001
+# Admin    → http://localhost:3002
+```
+
+---
+
+## 3 — Instalar dependencias
+
+```bash
+# Solo la primera vez, o cuando cambies package.json
+cd ~/Desktop/vybx-suite
+pnpm install
+```
+
+---
+
+## 4 — Crear usuario admin de prueba
+
+```bash
+cd ~/Desktop/Proyectos/vybxlive-backend
+npx ts-node --project tsconfig.json scripts/seed-admin.ts
+```
+
+Credenciales creadas:
+- **Email:** `admin@vybx.dev`
+- **Password:** `Admin1234!@#`
+- **Rol:** `SUPER_ADMIN`
+
+---
+
+## 5 — Promover un usuario existente a SUPER_ADMIN
+
+```bash
+cd ~/Desktop/Proyectos/vybxlive-backend
+npx prisma db execute --stdin <<< "UPDATE \"User\" SET role = 'SUPER_ADMIN' WHERE email = 'tu@email.com';"
+```
+
+---
+
+## 6 — Prisma Studio (explorar la base de datos)
+
+```bash
+cd ~/Desktop/Proyectos/vybxlive-backend
+npx prisma studio
+# → http://localhost:5555
+```
+
+---
+
+## Puertos en uso
+
+| Puerto | Servicio |
+|--------|----------|
+| 3000   | apps/web (sitio público) |
+| 3001   | apps/promoter (panel promotor) |
+| 3002   | apps/admin (panel admin) |
+| 3004   | vybxlive-backend (API) |
+| 5555   | Prisma Studio |
+| 5432   | PostgreSQL |
+| 6379   | Redis |
+
+---
+
+## Credenciales locales
+
+### PostgreSQL
+
+| Campo    | Valor |
+|----------|-------|
+| Host     | `127.0.0.1` |
+| Puerto   | `5432` |
+| Base de datos | `vybx` |
+| Usuario  | `vybxlive` |
+| Password | `change_me_in_env` |
+| URL completa | `postgresql://vybxlive:change_me_in_env@127.0.0.1:5432/vybx?schema=public` |
+
+### Redis
+
+| Campo    | Valor |
+|----------|-------|
+| Host     | `127.0.0.1` |
+| Puerto   | `6379` |
+| Password | `vybxlive` |
+
+### Usuario admin (seed)
+
+| Campo    | Valor |
+|----------|-------|
+| Email    | `admin@vybx.dev` |
+| Password | `Admin1234!@#` |
+| Rol      | `SUPER_ADMIN` |
+
+### Emails con acceso al panel admin
+
+Definidos en `ADMIN_ACCESS_ALLOWED_EMAILS`:
+- `vybxlive.auth@gmail.com`
+- `backoffice@vybxlive.com`
+
+### API del backend
+
+| Campo          | Valor |
+|----------------|-------|
+| URL local      | `http://localhost:3004` |
+| `NEXT_PUBLIC_API_URL` (promoter / web) | `http://localhost:3004` |
+
+---
+
+## Variables de entorno por app
+
+### `apps/promoter` y `apps/web` — `.env.local`
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:3004
+```
+
+### `apps/admin` — sin `.env.local` (usa `http://localhost:3004` por defecto en `src/lib/api.ts`)
+
+### `vybxlive-backend` — `.env`
+
+```env
+DATABASE_URL=postgresql://vybxlive:change_me_in_env@127.0.0.1:5432/vybx?schema=public
+JWT_SECRET=LniIXAA8q39oMXRcXqnAC0fZxgy37ChyWjbFtCOTyJ94ocslpaiuXTGrKsY5r5TJ
+PORT=3004
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_PASSWORD=vybxlive
+RESEND_API_KEY=REDACTED_RESEND_API_KEY
+```
