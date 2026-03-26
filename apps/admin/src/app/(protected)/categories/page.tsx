@@ -161,12 +161,12 @@ export default function CategoriesPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Categorías</h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               {activeCount} activas / {categories.length} total
             </p>
           </div>
@@ -174,7 +174,7 @@ export default function CategoriesPage() {
             variant="ghost"
             size="sm"
             onClick={() => setShowCreate((v) => !v)}
-            className="border border-white/10 text-slate-400 hover:text-white hover:border-white/20 h-9 px-4"
+            className="border border-white/10 text-slate-400 hover:text-white hover:border-white/20 h-9 px-4 self-start"
           >
             {showCreate ? (
               <>
@@ -192,8 +192,8 @@ export default function CategoriesPage() {
 
         {/* Create form */}
         {showCreate && (
-          <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
-            <CardHeader>
+          <Card className="bo-card">
+            <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold text-white tracking-tight">Nueva categoría</CardTitle>
             </CardHeader>
             <CardContent>
@@ -204,7 +204,7 @@ export default function CategoriesPage() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="Ej. Música"
-                    className="bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+                    className="bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -213,7 +213,7 @@ export default function CategoriesPage() {
                     value={newIcon}
                     onChange={(e) => setNewIcon(e.target.value)}
                     placeholder="Emoji o código"
-                    className="bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+                    className="bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -223,7 +223,7 @@ export default function CategoriesPage() {
                     min={1}
                     value={newOrder}
                     onChange={(e) => setNewOrder(e.target.value)}
-                    className="bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+                    className="bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -247,7 +247,7 @@ export default function CategoriesPage() {
                   size="sm"
                   disabled={creating || !newName.trim()}
                   onClick={handleCreate}
-                  className="bg-violet-600 hover:bg-violet-500 text-white border-0"
+                  className="bg-blue-600 hover:bg-blue-500 text-white border-0"
                 >
                   {creating ? "Creando…" : "Crear categoría"}
                 </Button>
@@ -257,7 +257,7 @@ export default function CategoriesPage() {
         )}
 
         {/* Table */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={load} />
@@ -266,10 +266,10 @@ export default function CategoriesPage() {
             ) : sorted.length === 0 ? (
               <EmptyState />
             ) : (
-              <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+              <div className="bo-table-wrap">
                 <Table>
-                  <TableHeader className="bg-white/5">
-                    <TableRow className="border-white/5 hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
+                  <TableHeader className="bg-[#121b27]">
+                    <TableRow className="border-[#1f2b3a] hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
                       <TableHead className="text-slate-400 font-medium h-10">Nombre</TableHead>
                       <TableHead className="text-slate-400 font-medium h-10">Icono</TableHead>
                       <TableHead className="text-slate-400 font-medium h-10">Orden</TableHead>
@@ -284,7 +284,7 @@ export default function CategoriesPage() {
                       return (
                         <TableRow
                           key={cat.id}
-                          className="border-white/5 hover:bg-white/[0.02] transition-colors"
+                          className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors"
                         >
                           <TableCell className="py-4">
                             {isEditing ? (
@@ -293,7 +293,7 @@ export default function CategoriesPage() {
                                 onChange={(e) =>
                                   setEditState((s) => ({ ...s, name: e.target.value }))
                                 }
-                                className="h-7 w-36 bg-white/5 border-white/10 text-slate-200 text-xs"
+                                className="h-7 w-36 bg-[#101722] border-[#243243] text-[#e8edf3] text-xs"
                               />
                             ) : (
                               <span className="text-slate-200 font-medium">{cat.name}</span>
@@ -306,7 +306,7 @@ export default function CategoriesPage() {
                                 onChange={(e) =>
                                   setEditState((s) => ({ ...s, icon: e.target.value }))
                                 }
-                                className="h-7 w-20 bg-white/5 border-white/10 text-slate-200 text-xs"
+                                className="h-7 w-20 bg-[#101722] border-[#243243] text-[#e8edf3] text-xs"
                               />
                             ) : (
                               <span className="text-lg">{cat.icon}</span>
@@ -321,7 +321,7 @@ export default function CategoriesPage() {
                                 onChange={(e) =>
                                   setEditState((s) => ({ ...s, order: e.target.value }))
                                 }
-                                className="h-7 w-16 bg-white/5 border-white/10 text-slate-200 text-xs"
+                                className="h-7 w-16 bg-[#101722] border-[#243243] text-[#e8edf3] text-xs"
                               />
                             ) : (
                               <span className="text-slate-400 tabular-nums">{cat.order}</span>
@@ -402,7 +402,7 @@ export default function CategoriesPage() {
 
       {/* Delete confirm dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
-        <DialogContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+        <DialogContent className="bg-[#0c121a] border-[#243243] shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-white">Eliminar categoría</DialogTitle>
             <DialogDescription className="text-slate-400">

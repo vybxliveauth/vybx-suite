@@ -50,11 +50,13 @@ function InputField({
   label,
   error,
   icon: Icon,
+  rightAdornment,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
   label: string;
   error?: string;
   icon?: React.ElementType;
+  rightAdornment?: React.ReactNode;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
@@ -73,7 +75,14 @@ function InputField({
           {...props}
           style={{
             width: "100%",
-            padding: Icon ? "0.7rem 0.9rem 0.7rem 2.4rem" : "0.7rem 0.9rem",
+            padding:
+              Icon && rightAdornment
+                ? "0.7rem 2.8rem 0.7rem 2.4rem"
+                : Icon
+                  ? "0.7rem 0.9rem 0.7rem 2.4rem"
+                  : rightAdornment
+                    ? "0.7rem 2.8rem 0.7rem 0.9rem"
+                    : "0.7rem 0.9rem",
             background: "rgba(255,255,255,0.04)",
             border: `1px solid ${error ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
             borderRadius: "var(--radius-lg)",
@@ -93,6 +102,20 @@ function InputField({
             e.target.style.boxShadow = "none";
           }}
         />
+        {rightAdornment && (
+          <div
+            style={{
+              position: "absolute",
+              right: "0.7rem",
+              top: "50%",
+              transform: "translateY(-50%)",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            {rightAdornment}
+          </div>
+        )}
       </div>
       {error && (
         <span style={{ fontSize: "0.75rem", color: "#f43f5e", display: "flex", alignItems: "center", gap: "0.3rem" }}>
@@ -263,23 +286,33 @@ function LoginForm({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
         handleSubmit(() => action(data))();
       }} style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
         <InputField label="Email" icon={Mail} type="email" {...register("email")} error={errors.email?.message} placeholder="tu@email.com" />
-        <div>
-          <InputField
-            label="Contraseña"
-            icon={Lock}
-            type={showPass ? "text" : "password"}
-            {...register("password")}
-            error={errors.password?.message}
-            placeholder="••••••••"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPass(!showPass)}
-            style={{ position: "absolute", right: "0.9rem", top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
-          >
-            {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-          </button>
-        </div>
+        <InputField
+          label="Contraseña"
+          icon={Lock}
+          type={showPass ? "text" : "password"}
+          {...register("password")}
+          error={errors.password?.message}
+          placeholder="••••••••"
+          rightAdornment={(
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+              style={{
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--text-muted)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 2,
+              }}
+            >
+              {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          )}
+        />
 
         {state.error && (
           <div style={{ padding: "0.65rem 0.9rem", borderRadius: "var(--radius-md)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.82rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -391,7 +424,10 @@ function BuyerForm({ user, onSubmit, pending }: {
       </button>
 
       <p style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "-0.5rem" }}>
-        Al confirmar aceptas los <a href="#" style={{ color: "var(--accent-secondary)" }}>términos y condiciones</a>.
+        Al confirmar aceptas los{" "}
+        <Link href="/terminos" style={{ color: "var(--accent-secondary)" }}>
+          términos y condiciones
+        </Link>.
       </p>
     </form>
   );
@@ -414,7 +450,9 @@ export default function CheckoutPage() {
   }, []);
 
   const [submitState, submitAction, submitPending] = useActionState(
-    async (_prev: { error: string | null }, _data: BuyerFields) => {
+    async (prev: { error: string | null }, data: BuyerFields) => {
+      void prev;
+      void data;
       try {
         const items = session?.items ?? [];
         if (items.length === 0) throw new Error("Carrito vacío");

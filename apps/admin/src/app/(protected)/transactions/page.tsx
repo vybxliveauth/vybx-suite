@@ -53,9 +53,9 @@ export default function TransactionsPage() {
     const qs = new URLSearchParams({ page: String(p), limit: "20" });
     if (statusFilter   !== "ALL") qs.set("status",   statusFilter);
     if (providerFilter !== "ALL") qs.set("provider", providerFilter);
-    if (search.trim())            qs.set("search",   search.trim());
-    if (dateFrom)                 qs.set("dateFrom", dateFrom);
-    if (dateTo)                   qs.set("dateTo",   dateTo);
+    if (search.trim())            qs.set("q", search.trim());
+    if (dateFrom)                 qs.set("from", dateFrom);
+    if (dateTo)                   qs.set("to", dateTo);
     api
       .get<Paginated<TransactionRecord>>(`/admin/transactions?${qs}`)
       .then(setResult)
@@ -90,7 +90,7 @@ export default function TransactionsPage() {
     const q             = search.toLowerCase();
     const matchSearch   =
       !q ||
-      tx.orderId.toLowerCase().includes(q) ||
+      ((tx.orderNumber ?? tx.orderId ?? "").toLowerCase().includes(q)) ||
       (tx.user?.email ?? "").toLowerCase().includes(q) ||
       (tx.event?.title ?? "").toLowerCase().includes(q);
     const matchFrom = !dateFrom || tx.createdAt >= dateFrom;
@@ -106,23 +106,23 @@ export default function TransactionsPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Transacciones</h1>
-          <p className="text-sm text-slate-500">Historial completo de pagos procesados en la plataforma</p>
+          <p className="text-sm text-slate-400">Historial completo de pagos procesados en la plataforma</p>
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Total transacciones", value: String(totalCount),         icon: Hash,        color: "text-violet-400" },
+            { label: "Total transacciones", value: String(totalCount),         icon: Hash,        color: "text-blue-400" },
             { label: "Monto total",          value: fmtCurrency(totalAmount),   icon: DollarSign,  color: "text-cyan-400" },
             { label: "Exitosas",             value: String(successCount),        icon: CheckCircle2,color: "text-emerald-400" },
             { label: "Monto exitoso",        value: fmtCurrency(successAmount), icon: ReceiptText, color: "text-emerald-400" },
           ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label} className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-1 flex flex-row items-center justify-between">
+            <Card key={label} className="bo-card">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium text-slate-400">
                   {label}
                 </CardTitle>
@@ -136,15 +136,15 @@ export default function TransactionsPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-[#030014]/40 border border-white/5 backdrop-blur-xl rounded-xl p-4 flex flex-wrap gap-3 items-center">
+        <div className="bo-filters">
           <Select
             value={statusFilter}
             onValueChange={(v) => setStatusFilter(v as TxStatus | "ALL")}
           >
-            <SelectTrigger className="w-40 bg-white/5 border-white/10 text-slate-200">
+            <SelectTrigger className="w-40 bg-[#101722] border-[#243243] text-[#e8edf3]">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
-            <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+            <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
               <SelectItem value="ALL">Todos los estados</SelectItem>
               <SelectItem value="PENDING">Pendiente</SelectItem>
               <SelectItem value="SUCCESS">Exitosa</SelectItem>
@@ -157,10 +157,10 @@ export default function TransactionsPage() {
             value={providerFilter}
             onValueChange={(v) => setProviderFilter(v)}
           >
-            <SelectTrigger className="w-40 bg-white/5 border-white/10 text-slate-200">
+            <SelectTrigger className="w-40 bg-[#101722] border-[#243243] text-[#e8edf3]">
               <SelectValue placeholder="Proveedor" />
             </SelectTrigger>
-            <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+            <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
               <SelectItem value="ALL">Todos los proveedores</SelectItem>
               <SelectItem value="RD_REDIRECT">RD Redirect</SelectItem>
               <SelectItem value="AZUL">Azul</SelectItem>
@@ -173,7 +173,7 @@ export default function TransactionsPage() {
               placeholder="Orden, usuario, evento…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+              className="pl-8 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             />
           </div>
 
@@ -181,14 +181,14 @@ export default function TransactionsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-38 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+            className="w-38 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             placeholder="Desde"
           />
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-38 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+            className="w-38 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             placeholder="Hasta"
           />
 
@@ -206,7 +206,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Table */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={() => load(page)} />
@@ -216,10 +216,10 @@ export default function TransactionsPage() {
               <EmptyState />
             ) : (
               <>
-                <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+                <div className="bo-table-wrap">
                   <Table>
-                    <TableHeader className="bg-white/5">
-                      <TableRow className="border-white/5 hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
+                    <TableHeader className="bg-[#121b27]">
+                      <TableRow className="border-[#1f2b3a] hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
                         <TableHead className="text-slate-400 font-medium h-10">Fecha</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10">Orden</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10 hidden md:table-cell">Evento</TableHead>
@@ -233,13 +233,13 @@ export default function TransactionsPage() {
                       {visible.map((tx) => (
                         <TableRow
                           key={tx.id}
-                          className="border-white/5 hover:bg-white/[0.02] transition-colors"
+                          className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors"
                         >
                           <TableCell className="py-4 text-slate-500 text-xs whitespace-nowrap">
                             {fmtDate(tx.createdAt)}
                           </TableCell>
                           <TableCell className="py-4 font-mono text-xs text-slate-400">
-                            {tx.orderId}
+                            {tx.orderNumber ?? tx.orderId}
                           </TableCell>
                           <TableCell className="py-4 text-slate-400 text-xs hidden md:table-cell truncate max-w-[160px]">
                             {tx.event?.title ?? "—"}

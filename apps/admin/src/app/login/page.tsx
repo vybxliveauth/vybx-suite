@@ -54,7 +54,7 @@ function LoginForm() {
         className="pointer-events-none fixed inset-0 -z-10"
         style={{
           background:
-            "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(124,58,237,0.08), transparent)",
+            "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(30,60,100,0.12), transparent)",
         }}
       />
 
@@ -72,8 +72,8 @@ function LoginForm() {
           <div
             className="flex size-14 items-center justify-center rounded-2xl text-white font-bold text-lg"
             style={{
-              background: "linear-gradient(135deg, #7c3aed, #a855f7)",
-              boxShadow: "0 0 24px rgba(124,58,237,0.55)",
+              background: "linear-gradient(135deg, #1b3659, #2f5588)",
+              boxShadow: "0 0 24px rgba(30,80,160,0.4)",
             }}
           >
             VT
@@ -122,7 +122,7 @@ function LoginForm() {
             type="submit"
             className="w-full"
             disabled={isSubmitting}
-            style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
+            style={{ background: "linear-gradient(135deg, #1b3659, #2f5588)" }}
           >
             {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
             {isSubmitting ? "Verificando…" : "Entrar al Backoffice"}

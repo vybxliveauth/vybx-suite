@@ -45,9 +45,9 @@ export default function PromotersPage() {
     setLoading(true);
     setError(null);
     const qs = new URLSearchParams({ page: String(p), limit: "20", role: "PROMOTER" });
-    if (q.trim()) qs.set("search", q.trim());
+    if (q.trim()) qs.set("q", q.trim());
     api
-      .get<Paginated<UserRecord>>(`/admin/users?${qs}`)
+      .get<Paginated<UserRecord>>(`/users?${qs}`)
       .then(setResult)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -79,11 +79,11 @@ export default function PromotersPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Promotores</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-400">
             Cuentas con rol de promotor registradas en la plataforma
           </p>
         </div>
@@ -91,12 +91,12 @@ export default function PromotersPage() {
         {/* Stat cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Total promotores",      value: totalCount,   icon: UserCog, color: "text-violet-400" },
+            { label: "Total promotores",      value: totalCount,   icon: UserCog, color: "text-blue-400" },
             { label: "En esta página",         value: onPageCount,  icon: Users,   color: "text-cyan-400" },
             { label: "Solicitudes pendientes", value: pendingCount, icon: Clock,   color: "text-amber-400" },
           ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label} className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-1 flex flex-row items-center justify-between">
+            <Card key={label} className="bo-card">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium text-slate-400">{label}</CardTitle>
                 <Icon className={`size-4 ${color}`} />
               </CardHeader>
@@ -108,20 +108,20 @@ export default function PromotersPage() {
         </div>
 
         {/* Search */}
-        <div className="bg-[#030014]/40 border border-white/5 backdrop-blur-xl rounded-xl p-4 flex flex-wrap gap-3 items-center">
+        <div className="bo-filters">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-600" />
             <Input
               placeholder="Buscar por nombre, email o razón social…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+              className="pl-8 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             />
           </div>
         </div>
 
         {/* Table */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={() => load(page)} />
@@ -131,10 +131,10 @@ export default function PromotersPage() {
               <EmptyState />
             ) : (
               <>
-                <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+                <div className="bo-table-wrap">
                   <Table>
-                    <TableHeader className="bg-white/5">
-                      <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHeader className="bg-[#121b27]">
+                      <TableRow className="border-[#1f2b3a] hover:bg-transparent">
                         <TableHead className="text-slate-400 font-medium h-10">Nombre</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10">Email</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10">Estado solicitud</TableHead>
@@ -143,7 +143,7 @@ export default function PromotersPage() {
                     </TableHeader>
                     <TableBody>
                       {visible.map((user) => (
-                        <TableRow key={user.id} className="border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <TableRow key={user.id} className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors">
                           <TableCell className="py-4">
                             <p className="text-slate-200 font-medium">
                               {user.firstName} {user.lastName}

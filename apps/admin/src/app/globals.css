@@ -1,66 +1,163 @@
 @import "tailwindcss";
 @import "@vybx/ui/styles";
 
-/* ── Admin design tokens ─────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --background:              240 10% 3.9%;
-    --foreground:              0 0% 98%;
-    --card:                    240 10% 3.9%;
-    --card-foreground:         0 0% 98%;
-    --popover:                 240 10% 3.9%;
-    --popover-foreground:      0 0% 98%;
-    --primary:                 262.1 83.3% 57.8%;
-    --primary-foreground:      210 20% 98%;
-    --secondary:               240 3.7% 15.9%;
-    --secondary-foreground:    0 0% 98%;
-    --muted:                   240 3.7% 15.9%;
-    --muted-foreground:        240 5% 64.9%;
-    --accent:                  262.1 83.3% 57.8%;
-    --accent-foreground:       0 0% 98%;
-    --destructive:             0 62.8% 30.6%;
-    --destructive-foreground:  0 0% 98%;
-    --border:                  240 3.7% 15.9%;
-    --input:                   240 3.7% 15.9%;
-    --ring:                    262.1 83.3% 57.8%;
-    --radius:                  0.75rem;
+    --background: 220 28% 8%;
+    --foreground: 210 40% 96%;
+    --card: 220 28% 8%;
+    --card-foreground: 210 40% 96%;
+    --popover: 220 28% 8%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 212 90% 56%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217 26% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 22% 20%;
+    --muted-foreground: 215 18% 70%;
+    --accent: 212 90% 56%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 216 21% 23%;
+    --input: 216 21% 23%;
+    --ring: 212 90% 56%;
+    --radius: 0.75rem;
 
-    /* Glass & surface */
-    --glass-bg:      rgba(20, 20, 25, 0.4);
-    --glass-border:  rgba(255, 255, 255, 0.06);
-    --glass-shadow:  0 8px 32px 0 rgba(0, 0, 0, 0.4);
-    --surface-1:     rgba(255, 255, 255, 0.02);
-    --surface-2:     rgba(255, 255, 255, 0.04);
-    --surface-3:     rgba(255, 255, 255, 0.08);
-    --focus-ring:    rgba(139, 92, 246, 0.35);
+    --glass-bg: rgba(12, 18, 26, 0.66);
+    --glass-border: rgba(120, 149, 182, 0.24);
+    --glass-shadow: 0 10px 34px rgba(2, 8, 23, 0.42);
+    --text-light: #e8edf3;
+    --text-muted: #9aa6b5;
+    --surface-1: rgba(12, 18, 26, 0.72);
+    --surface-2: rgba(17, 25, 37, 0.78);
+    --surface-3: rgba(36, 50, 67, 0.74);
+    --focus-ring: rgba(96, 165, 250, 0.32);
 
-    /* Brand accents */
-    --accent-primary:   #7c3aed;
-    --accent-secondary: #a855f7;
-    --accent-tertiary:  #06b6d4;
-    --accent-glow:      rgba(124, 58, 237, 0.45);
-    --bg-dark:          #030014;
+    --accent-primary: #3b82f6;
+    --accent-secondary: #60a5fa;
+    --accent-tertiary: #93c5fd;
+    --accent-glow: rgba(59, 130, 246, 0.35);
+    --bg-dark: #0b0f14;
 
-    /* Chart palette */
-    --chart-1: 262.1 83.3% 57.8%;
-    --chart-2: 279 83% 65%;
-    --chart-3: 310 80% 60%;
-    --chart-4: 240 80% 65%;
-    --chart-5: 220 80% 60%;
+    --chart-1: 212 90% 56%;
+    --chart-2: 199 89% 58%;
+    --chart-3: 221 83% 63%;
+    --chart-4: 206 91% 64%;
+    --chart-5: 214 95% 68%;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
   }
 
   body {
-    background-color: #030014;
-    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.07), transparent);
-    background-attachment: fixed;
-    color: #e2e8f0;
-    font-family: var(--font-sans), system-ui, sans-serif;
-    min-height: 100dvh;
     margin: 0;
+    min-height: 100dvh;
+    color: #e8edf3;
+    font-family: var(--font-sans), "Segoe UI", system-ui, sans-serif;
+    background-color: #0b0f14;
+    background-image: radial-gradient(ellipse 82% 52% at 50% -22%, rgba(59, 130, 246, 0.1), transparent);
+    background-attachment: fixed;
   }
 }
 
-/* ── Admin utility classes ───────────────────────────────────────────────── */
+.bo-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid rgba(120, 149, 182, 0.26);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 34px rgba(2, 8, 23, 0.36);
+}
+
+.bo-card::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(to bottom, rgba(148, 184, 228, 0.12), transparent 26%);
+}
+
+/* Extra breathing room for table cards that use <CardContent className="p-0"> */
+.bo-card > .p-0 {
+  padding: 0.82rem !important;
+}
+
+.bo-card > .p-0 > .bo-table-wrap {
+  border-radius: 11px;
+}
+
+.bo-filters {
+  background: var(--surface-2);
+  border: 1px solid rgba(120, 149, 182, 0.22);
+  border-radius: 12px;
+  padding: 1.05rem 1.15rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: center;
+  backdrop-filter: blur(10px);
+}
+
+.bo-filters > * {
+  min-height: 2.35rem;
+}
+
+.bo-table-wrap {
+  border: 1px solid rgba(120, 149, 182, 0.22);
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: rgba(14, 22, 34, 0.74);
+}
+
+.bo-table-wrap table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.bo-table-wrap th {
+  padding: 0.98rem 1.15rem;
+  font-size: 0.76rem;
+  white-space: nowrap;
+  line-height: 1.35;
+  vertical-align: middle;
+  height: auto !important;
+  min-height: 2.9rem;
+  text-align: left;
+}
+
+.bo-table-wrap td {
+  padding: 1.02rem 1.15rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  vertical-align: middle;
+}
+
+.bo-table-wrap th:first-child,
+.bo-table-wrap td:first-child {
+  padding-left: 1.45rem;
+}
+
+.bo-table-wrap th:last-child,
+.bo-table-wrap td:last-child {
+  padding-right: 1.45rem;
+}
+
+.bo-table-wrap tr {
+  height: 54px;
+}
+
+.bo-table-wrap th.text-right,
+.bo-table-wrap td.text-right {
+  padding-right: 1.65rem;
+}
+
 .bo-surface {
   background: var(--surface-1);
   border: 1px solid var(--glass-border);
@@ -69,4 +166,41 @@
 
 .bo-focus-ring {
   box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96, 165, 250, 0.35) transparent;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(96, 165, 250, 0.35); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(96, 165, 250, 0.56); }
+
+@media (max-width: 768px) {
+  .bo-card {
+    border-radius: 14px;
+  }
+
+  .bo-card > .p-0 {
+    padding: 0.68rem !important;
+  }
+
+  .bo-filters {
+    padding: 0.9rem;
+    gap: 0.7rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bo-filters > * {
+    width: 100%;
+  }
+
+  .bo-table-wrap th,
+  .bo-table-wrap td {
+    padding-left: 0.98rem;
+    padding-right: 0.98rem;
+  }
 }

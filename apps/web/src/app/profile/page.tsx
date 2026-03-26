@@ -7,14 +7,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/store/useAuthStore";
-import { fetchProfile } from "@/lib/api";
+import { fetchProfile, api } from "@/lib/api";
 import {
   Zap, ChevronLeft, User, Mail, Phone, Lock,
   Eye, EyeOff, CheckCircle2, AlertCircle, Loader2,
   Save, ShieldCheck, Ticket,
 } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -44,10 +42,6 @@ type ProfileFields  = z.infer<typeof profileSchema>;
 type PasswordFields = z.infer<typeof passwordSchema>;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function getCsrf() {
-  return document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] ?? "";
-}
 
 function Field({
   label, error, icon: Icon, suffix, ...props
@@ -135,17 +129,13 @@ function ProfileSection() {
   const [state, action, pending] = useActionState(
     async (_prev: { error: string | null; success: boolean }, data: ProfileFields) => {
       try {
-        const res = await fetch(`${API}/users/me`, {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", "x-csrf-token": getCsrf() },
-          body: JSON.stringify({ firstName: data.firstName, lastName: data.lastName, email: data.email, country: data.country || undefined, city: data.city || undefined }),
+        await api.patch("/users/me", {
+          firstName: data.firstName,
+          lastName:  data.lastName,
+          email:     data.email,
+          country:   data.country || undefined,
+          city:      data.city    || undefined,
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al guardar");
-        }
-        // Refresh user in store
         const updated = await fetchProfile();
         setUser(updated);
         return { error: null, success: true };
@@ -194,16 +184,10 @@ function PasswordSection() {
   const [state, action, pending] = useActionState(
     async (_prev: { error: string | null; success: boolean }, data: PasswordFields) => {
       try {
-        const res = await fetch(`${API}/users/me/password`, {
-          method: "PATCH",
-          credentials: "include",
-          headers: { "Content-Type": "application/json", "x-csrf-token": getCsrf() },
-          body: JSON.stringify({ currentPassword: data.currentPassword, newPassword: data.newPassword }),
+        await api.patch("/users/me/password", {
+          currentPassword: data.currentPassword,
+          newPassword:     data.newPassword,
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al cambiar contraseña");
-        }
         reset();
         return { error: null, success: true };
       } catch (e) {

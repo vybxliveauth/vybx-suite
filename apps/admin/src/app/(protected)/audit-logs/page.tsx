@@ -84,9 +84,9 @@ export default function AuditLogsPage() {
     const qs = new URLSearchParams({ page: String(p), limit: "20" });
     if (actionFilter !== "ALL") qs.set("action",     actionFilter);
     if (entityFilter !== "ALL") qs.set("entityType", entityFilter);
-    if (search.trim())          qs.set("search",     search.trim());
-    if (dateFrom)               qs.set("dateFrom",   dateFrom);
-    if (dateTo)                 qs.set("dateTo",     dateTo);
+    if (search.trim())          qs.set("q", search.trim());
+    if (dateFrom)               qs.set("from", dateFrom);
+    if (dateTo)                 qs.set("to", dateTo);
     api
       .get<Paginated<AuditLogRecord>>(`/admin/audit-logs?${qs}`)
       .then(setResult)
@@ -131,15 +131,15 @@ export default function AuditLogsPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              <ShieldCheck className="size-5 text-violet-400" />
+              <ShieldCheck className="size-5 text-blue-400" />
               Bitácora de auditoría
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               Registro de todas las acciones administrativas realizadas en la plataforma
             </p>
           </div>
@@ -147,7 +147,7 @@ export default function AuditLogsPage() {
             variant="ghost"
             size="sm"
             onClick={() => exportCSV(visible)}
-            className="border border-white/10 text-slate-400 hover:text-white h-9 px-4"
+            className="border border-white/10 text-slate-400 hover:text-white h-9 px-4 self-start"
           >
             <Download className="size-3.5 mr-1.5" />
             Exportar CSV
@@ -155,15 +155,15 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-[#030014]/40 border border-white/5 backdrop-blur-xl rounded-xl p-4 flex flex-wrap gap-3 items-center">
+        <div className="bo-filters">
           <Select
             value={actionFilter}
             onValueChange={(v) => setActionFilter(v as AuditAction | "ALL")}
           >
-            <SelectTrigger className="w-52 bg-white/5 border-white/10 text-slate-200">
+            <SelectTrigger className="w-52 bg-[#101722] border-[#243243] text-[#e8edf3]">
               <SelectValue placeholder="Acción" />
             </SelectTrigger>
-            <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+            <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
               <SelectItem value="ALL">Todas las acciones</SelectItem>
               <SelectItem value="USER_ROLE_UPDATED">Rol actualizado</SelectItem>
               <SelectItem value="EVENT_APPROVAL_STATUS_UPDATED">Evento aprobado/rechazado</SelectItem>
@@ -176,10 +176,10 @@ export default function AuditLogsPage() {
             value={entityFilter}
             onValueChange={(v) => setEntityFilter(v as AuditEntityType | "ALL")}
           >
-            <SelectTrigger className="w-36 bg-white/5 border-white/10 text-slate-200">
+            <SelectTrigger className="w-36 bg-[#101722] border-[#243243] text-[#e8edf3]">
               <SelectValue placeholder="Entidad" />
             </SelectTrigger>
-            <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+            <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
               <SelectItem value="ALL">Todas</SelectItem>
               <SelectItem value="USER">Usuario</SelectItem>
               <SelectItem value="EVENT">Evento</SelectItem>
@@ -192,7 +192,7 @@ export default function AuditLogsPage() {
               placeholder="Buscar resumen, actor, ID…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+              className="pl-8 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             />
           </div>
 
@@ -200,14 +200,14 @@ export default function AuditLogsPage() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="w-38 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+            className="w-38 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             placeholder="Desde"
           />
           <Input
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="w-38 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+            className="w-38 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             placeholder="Hasta"
           />
 
@@ -225,7 +225,7 @@ export default function AuditLogsPage() {
         </div>
 
         {/* Table */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={() => load(page)} />
@@ -235,10 +235,10 @@ export default function AuditLogsPage() {
               <EmptyState />
             ) : (
               <>
-                <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+                <div className="bo-table-wrap">
                   <Table>
-                    <TableHeader className="bg-white/5">
-                      <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHeader className="bg-[#121b27]">
+                      <TableRow className="border-[#1f2b3a] hover:bg-transparent">
                         <TableHead className="text-slate-400 font-medium h-10">Fecha</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10">Acción</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10 hidden sm:table-cell">Entidad</TableHead>
@@ -252,7 +252,7 @@ export default function AuditLogsPage() {
                         <TableRow
                           key={log.id}
                           onClick={() => setSelected(log)}
-                          className="border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                          className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors cursor-pointer"
                         >
                           <TableCell className="py-4 text-slate-500 text-xs whitespace-nowrap">
                             {fmtDate(log.createdAt)}
@@ -302,11 +302,11 @@ export default function AuditLogsPage() {
       <Sheet open={!!selected} onOpenChange={(o) => { if (!o) setSelected(null); }}>
         <SheetContent
           side="right"
-          className="w-full sm:w-[480px] bg-[#030014]/95 backdrop-blur-xl border-white/10 overflow-y-auto"
+          className="w-full sm:w-[480px] border-[#243243] overflow-y-auto" style={{ background: "#0c121a" }}
         >
           <SheetHeader className="pb-4">
             <SheetTitle className="text-white flex items-center gap-2">
-              <ShieldCheck className="size-4 text-violet-400" />
+              <ShieldCheck className="size-4 text-blue-400" />
               Detalle de entrada
             </SheetTitle>
           </SheetHeader>
@@ -323,10 +323,10 @@ export default function AuditLogsPage() {
                 </span>
               </div>
 
-              <Separator className="bg-white/5" />
+              <Separator className="bg-[#243243]" />
 
               {/* Entity */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <p className="text-[11px] text-slate-500 uppercase tracking-wide">Tipo entidad</p>
                   <p className="text-slate-200 font-medium">{selected.entityType}</p>
@@ -337,7 +337,7 @@ export default function AuditLogsPage() {
                 </div>
               </div>
 
-              <Separator className="bg-white/5" />
+              <Separator className="bg-[#243243]" />
 
               {/* Actor */}
               <div className="space-y-2">
@@ -345,7 +345,7 @@ export default function AuditLogsPage() {
                   <User className="size-3" /> Actor
                 </p>
                 {selected.actor ? (
-                  <div className="bg-white/5 rounded-lg px-3 py-2.5 space-y-0.5">
+                  <div className="rounded-lg px-3 py-2.5 space-y-0.5">
                     <p className="text-slate-200 text-sm">{selected.actor.email}</p>
                     <p className="text-slate-400 text-xs">Rol: {selected.actor.role}</p>
                     <p className="text-slate-500 text-xs font-mono">ID: {selected.actor.id}</p>
@@ -355,7 +355,7 @@ export default function AuditLogsPage() {
                 )}
               </div>
 
-              <Separator className="bg-white/5" />
+              <Separator className="bg-[#243243]" />
 
               {/* Resumen */}
               <div className="space-y-1.5">
@@ -363,7 +363,7 @@ export default function AuditLogsPage() {
                 <p className="text-slate-300 leading-relaxed">{selected.summary}</p>
               </div>
 
-              <Separator className="bg-white/5" />
+              <Separator className="bg-[#243243]" />
 
               {/* Network */}
               <div className="space-y-2">
@@ -386,7 +386,7 @@ export default function AuditLogsPage() {
                 </div>
               </div>
 
-              <Separator className="bg-white/5" />
+              <Separator className="bg-[#243243]" />
 
               {/* Date */}
               <div className="space-y-1.5">
@@ -396,12 +396,12 @@ export default function AuditLogsPage() {
                 <p className="text-slate-300 text-xs">{fmtDate(selected.createdAt)}</p>
               </div>
 
-              <Separator className="bg-white/5" />
+              <Separator className="bg-[#243243]" />
 
               {/* Metadata */}
               <div className="space-y-1.5">
                 <p className="text-[11px] text-slate-500 uppercase tracking-wide">Metadata</p>
-                <pre className="bg-white/5 rounded-lg p-3 text-[11px] text-slate-400 overflow-x-auto leading-relaxed">
+                <pre className="rounded-lg p-3 text-[11px] text-slate-400 overflow-x-auto leading-relaxed">
                   {JSON.stringify(selected.metadata, null, 2)}
                 </pre>
 

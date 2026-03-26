@@ -23,7 +23,7 @@ import type { UserRecord, UserRole, Paginated } from "@/lib/types";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function roleBadgeClass(role: UserRole) {
   if (role === "SUPER_ADMIN") return "bg-red-500/10 text-red-400 border-red-500/20";
-  if (role === "ADMIN")       return "bg-violet-500/10 text-violet-400 border-violet-500/20";
+  if (role === "ADMIN")       return "bg-blue-500/10 text-blue-400 border-blue-500/20";
   if (role === "PROMOTER")    return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
   return "bg-slate-500/10 text-slate-300 border-slate-500/20";
 }
@@ -57,9 +57,9 @@ export default function UsersPage() {
     setLoading(true);
     setError(null);
     const qs = new URLSearchParams({ page: String(p), limit: "20" });
-    if (q.trim()) qs.set("search", q.trim());
+    if (q.trim()) qs.set("q", q.trim());
     api
-      .get<Paginated<UserRecord>>(`/admin/users?${qs}`)
+      .get<Paginated<UserRecord>>(`/users?${qs}`)
       .then(setResult)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -103,7 +103,7 @@ export default function UsersPage() {
     if (!newRole) return;
     setSavingRole(userId);
     try {
-      await api.patch(`/admin/users/${userId}/role`, { role: newRole });
+      await api.patch(`/users/${userId}/role`, { role: newRole });
       setResult((prev) => ({
         ...prev,
         data: prev.data.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
@@ -124,7 +124,7 @@ export default function UsersPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await api.delete(`/admin/users/${deleteTarget.id}`);
+      await api.delete(`/users/${deleteTarget.id}`);
       setResult((prev) => ({
         ...prev,
         data: prev.data.filter((u) => u.id !== deleteTarget.id),
@@ -140,23 +140,23 @@ export default function UsersPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Usuarios</h1>
-          <p className="text-sm text-slate-500">Gestión de cuentas y roles en la plataforma</p>
+          <p className="text-sm text-slate-400">Gestión de cuentas y roles en la plataforma</p>
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
             { label: "Total usuarios",  value: totalCount,    icon: Users,      color: "text-violet-400" },
             { label: "Compradores",     value: buyerCount,    icon: UserCheck,  color: "text-cyan-400" },
             { label: "Promotores",      value: promoterCount, icon: Crown,      color: "text-amber-400" },
             { label: "Staff admin",     value: adminCount,    icon: ShieldCheck,color: "text-emerald-400" },
           ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label} className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
-              <CardHeader className="pb-1 flex flex-row items-center justify-between">
+            <Card key={label} className="bo-card">
+              <CardHeader className="pb-2 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-medium text-slate-400">
                   {label}
                 </CardTitle>
@@ -170,20 +170,20 @@ export default function UsersPage() {
         </div>
 
         {/* Search */}
-        <div className="bg-[#030014]/40 border border-white/5 backdrop-blur-xl rounded-xl p-4 flex flex-wrap gap-3 items-center">
+        <div className="bo-filters">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-white/30" />
             <Input
               placeholder="Buscar por email o nombre…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600"
+              className="pl-8 bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600"
             />
           </div>
         </div>
 
         {/* Table */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={() => load(page)} />
@@ -193,10 +193,10 @@ export default function UsersPage() {
               <EmptyState />
             ) : (
               <>
-                <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+                <div className="bo-table-wrap">
                   <Table>
-                    <TableHeader className="bg-white/5">
-                      <TableRow className="border-white/5 hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
+                    <TableHeader className="bg-[#121b27]">
+                      <TableRow className="border-[#1f2b3a] hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
                         <TableHead className="text-slate-400 font-medium h-10">Email</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10">Rol</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10 hidden sm:table-cell">Verificado</TableHead>
@@ -211,7 +211,7 @@ export default function UsersPage() {
                         return (
                           <TableRow
                             key={user.id}
-                            className="border-white/5 hover:bg-white/[0.02] transition-colors"
+                            className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors"
                           >
                             <TableCell className="py-4">
                               <p className="text-slate-200 text-sm">
@@ -234,7 +234,7 @@ export default function UsersPage() {
                                   <SelectTrigger className="h-7 w-36 bg-white/5 border-white/10 text-xs text-slate-200">
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+                                  <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
                                     <SelectItem value="USER">Usuario</SelectItem>
                                     <SelectItem value="PROMOTER">Promotor</SelectItem>
                                     <SelectItem value="ADMIN">Admin</SelectItem>
@@ -305,7 +305,7 @@ export default function UsersPage() {
 
       {/* Delete confirm dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(o) => { if (!o) setDeleteTarget(null); }}>
-        <DialogContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+        <DialogContent className="bg-[#0c121a] border-[#243243] shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-white">Eliminar usuario</DialogTitle>
             <DialogDescription className="text-slate-400">

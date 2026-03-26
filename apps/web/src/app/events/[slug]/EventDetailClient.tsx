@@ -38,7 +38,7 @@ function formatTime(iso: string) {
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
-function Navbar({ onCartOpen }: { onCartOpen: () => void }) {
+function Navbar({ onCartOpen, eventTitle }: { onCartOpen: () => void; eventTitle?: string }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -58,13 +58,23 @@ function Navbar({ onCartOpen }: { onCartOpen: () => void }) {
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <CartButton onClick={onCartOpen} />
-        <Link href="/" className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1.1rem", fontSize: "0.88rem", textDecoration: "none" }}>
+        <Link href="/" className="btn-secondary event-detail-nav-btn" style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.5rem 1.1rem", fontSize: "0.88rem", textDecoration: "none" }}>
           <ChevronLeft size={15} />
-          Volver
+          <span className="event-detail-nav-label">Volver</span>
         </Link>
-        <button className="btn-secondary" style={{ padding: "0.5rem 1.1rem", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+        <button
+          className="btn-secondary event-detail-nav-btn"
+          style={{ padding: "0.5rem 1.1rem", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "0.4rem" }}
+          onClick={() => {
+            if (navigator.share) {
+              void navigator.share({ title: eventTitle, url: window.location.href });
+            } else {
+              void navigator.clipboard.writeText(window.location.href);
+            }
+          }}
+        >
           <Share2 size={15} />
-          Compartir
+          <span className="event-detail-nav-label">Compartir</span>
         </button>
       </div>
     </nav>
@@ -136,7 +146,7 @@ function EventHero({ event }: { event: Event }) {
       </div>
 
       {/* Wishlist */}
-      <button style={{
+      <button className="event-hero-wishlist" style={{
         position: "absolute",
         top: "8rem",
         right: "2rem",
@@ -239,10 +249,24 @@ export function EventDetailClient({ event }: { event: Event }) {
           .facts-grid {
             grid-template-columns: 1fr !important;
           }
+          .event-detail-nav-btn {
+            min-width: 38px;
+            justify-content: center;
+            padding: 0.5rem !important;
+          }
+          .event-detail-nav-label {
+            display: none;
+          }
+          .event-hero-wishlist {
+            top: 5.25rem !important;
+            right: 1rem !important;
+            width: 38px !important;
+            height: 38px !important;
+          }
         }
       `}</style>
 
-      <Navbar onCartOpen={() => setCartOpen(true)} />
+      <Navbar onCartOpen={() => setCartOpen(true)} eventTitle={event.title} />
 
       <EventHero event={event} />
 

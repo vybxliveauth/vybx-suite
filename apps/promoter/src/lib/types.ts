@@ -97,11 +97,11 @@ export interface DashboardSummary {
 }
 
 export interface DashboardTopEvent {
-  id: string;
+  eventId: string;
   title: string;
   revenue: number;
-  payments: number;
-  ticketsSold: number;
+  successfulPayments: number;
+  soldTickets: number;
 }
 
 export interface DashboardResponse {
@@ -148,6 +148,27 @@ export interface RefundRequest {
       event: { id: string; title: string };
     };
   };
+}
+
+// ── Staff ─────────────────────────────────────────────────────────────────────
+
+export type StaffRole = "SCANNER" | "SUPERVISOR";
+
+export interface StaffAssignment {
+  id: string;
+  userId: string;
+  role: StaffRole;
+  isActive: boolean;
+  createdAt: string;
+  user: { id: string; email: string; firstName?: string; lastName?: string } | null;
+  createdBy: { id: string; email: string; firstName?: string; lastName?: string } | null;
+}
+
+export interface StaffListResponse {
+  items: StaffAssignment[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 // ── Pagination ────────────────────────────────────────────────────────────────

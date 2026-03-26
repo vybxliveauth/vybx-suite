@@ -27,3 +27,8 @@ pnpm-debug.log*
 
 # misc
 *.tsbuildinfo
+
+# lockfiles (pnpm-only)
+package-lock.json
+yarn.lock
+.vercel

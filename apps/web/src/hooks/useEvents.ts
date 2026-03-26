@@ -3,10 +3,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchEvents, fetchEventById } from "@/lib/api";
 
-export function useEvents(page = 1, limit = 20) {
+export function useEvents(page = 1, limit = 20, search?: string) {
   return useQuery({
-    queryKey: ["events", page, limit],
-    queryFn: () => fetchEvents({ page, limit }),
+    queryKey: ["events", page, limit, search],
+    queryFn: () => fetchEvents({ page, limit, search }),
     staleTime: 30_000, // 30s — inventory can change fast
   });
 }

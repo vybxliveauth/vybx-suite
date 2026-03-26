@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,22 +15,28 @@ import {
   CardTitle,
   CardDescription,
   Separator,
-  Switch,
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
-import { getUser, displayName } from "@/lib/auth";
+import { api } from "@/lib/api";
+import { getUser, setUser, displayName } from "@/lib/auth";
 
+// Password: mínimo 12 chars, una mayúscula, un número y un símbolo (política del backend)
 const profileSchema = z.object({
-  name: z.string().min(2, "Mínimo 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().optional(),
+  firstName: z.string().min(2, "Mínimo 2 caracteres").max(80),
+  lastName:  z.string().max(80).optional(),
+  email:     z.string().email("Email inválido"),
 });
 
 const passwordSchema = z
   .object({
     currentPassword: z.string().min(1, "Requerido"),
-    newPassword: z.string().min(8, "Mínimo 8 caracteres"),
+    newPassword:     z
+      .string()
+      .min(12, "Mínimo 12 caracteres")
+      .regex(/[A-Z]/, "Debe incluir una mayúscula")
+      .regex(/\d/, "Debe incluir un número")
+      .regex(/[^A-Za-z\d]/, "Debe incluir un símbolo"),
     confirmPassword: z.string().min(1, "Requerido"),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
@@ -38,18 +44,23 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
-type ProfileValues = z.infer<typeof profileSchema>;
+type ProfileValues  = z.infer<typeof profileSchema>;
 type PasswordValues = z.infer<typeof passwordSchema>;
 
 export default function SettingsPage() {
   const user = getUser();
-  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileSaved,  setProfileSaved]  = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
-  const [emailNotifs, setEmailNotifs] = useState(true);
+  const [profileError,  setProfileError]  = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   const profileForm = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: displayName(user), email: user?.email ?? "", phone: "" },
+    defaultValues: {
+      firstName: user?.firstName ?? displayName(user),
+      lastName:  user?.lastName  ?? "",
+      email:     user?.email     ?? "",
+    },
   });
 
   const passwordForm = useForm<PasswordValues>({
@@ -57,18 +68,34 @@ export default function SettingsPage() {
   });
 
   async function onSaveProfile(values: ProfileValues) {
-    // TODO: api.patch("/promoter/me", values)
-    await new Promise((r) => setTimeout(r, 600));
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 3000);
+    setProfileError(null);
+    try {
+      const updated = await api.patch<typeof user>("/users/me", {
+        firstName: values.firstName,
+        lastName:  values.lastName || undefined,
+        email:     values.email,
+      });
+      if (updated && user) setUser({ ...user, ...updated });
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch (err: unknown) {
+      setProfileError(err instanceof Error ? err.message : "Error al guardar");
+    }
   }
 
   async function onSavePassword(values: PasswordValues) {
-    // TODO: api.post("/auth/change-password", values)
-    await new Promise((r) => setTimeout(r, 600));
-    setPasswordSaved(true);
-    passwordForm.reset();
-    setTimeout(() => setPasswordSaved(false), 3000);
+    setPasswordError(null);
+    try {
+      await api.patch("/users/me/password", {
+        currentPassword: values.currentPassword,
+        newPassword:     values.newPassword,
+      });
+      setPasswordSaved(true);
+      passwordForm.reset();
+      setTimeout(() => setPasswordSaved(false), 3000);
+    } catch (err: unknown) {
+      setPasswordError(err instanceof Error ? err.message : "Error al cambiar contraseña");
+    }
   }
 
   return (
@@ -87,12 +114,18 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="name">Nombre completo</Label>
-                <Input id="name" {...profileForm.register("name")} />
-                {profileForm.formState.errors.name && (
-                  <p className="text-xs text-destructive">{profileForm.formState.errors.name.message}</p>
-                )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="firstName">Nombre</Label>
+                  <Input id="firstName" {...profileForm.register("firstName")} />
+                  {profileForm.formState.errors.firstName && (
+                    <p className="text-xs text-destructive">{profileForm.formState.errors.firstName.message}</p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="lastName">Apellido</Label>
+                  <Input id="lastName" {...profileForm.register("lastName")} />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
@@ -101,10 +134,11 @@ export default function SettingsPage() {
                   <p className="text-xs text-destructive">{profileForm.formState.errors.email.message}</p>
                 )}
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="phone">Teléfono (opcional)</Label>
-                <Input id="phone" type="tel" placeholder="+52 55 0000 0000" {...profileForm.register("phone")} />
-              </div>
+              {profileError && (
+                <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                  {profileError}
+                </p>
+              )}
               <Button type="submit" size="sm" disabled={profileForm.formState.isSubmitting}>
                 {profileForm.formState.isSubmitting ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -123,6 +157,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">Cambiar contraseña</CardTitle>
+            <CardDescription className="text-xs">Mínimo 12 caracteres, una mayúscula, un número y un símbolo.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={passwordForm.handleSubmit(onSavePassword)} className="space-y-4">
@@ -148,6 +183,11 @@ export default function SettingsPage() {
                   <p className="text-xs text-destructive">{passwordForm.formState.errors.confirmPassword.message}</p>
                 )}
               </div>
+              {passwordError && (
+                <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                  {passwordError}
+                </p>
+              )}
               <Button type="submit" size="sm" disabled={passwordForm.formState.isSubmitting}>
                 {passwordForm.formState.isSubmitting ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -159,22 +199,6 @@ export default function SettingsPage() {
                 {passwordSaved ? "Actualizada" : "Cambiar contraseña"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Notificaciones</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium">Notificaciones por email</p>
-                <p className="text-xs text-muted-foreground">Recibe resúmenes de ventas diarios</p>
-              </div>
-              <Switch checked={emailNotifs} onCheckedChange={setEmailNotifs} />
-            </div>
           </CardContent>
         </Card>
       </div>

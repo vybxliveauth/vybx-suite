@@ -200,14 +200,14 @@ export default function DashboardPage() {
               </p>
             ) : (
               topEvents.map((ev, i) => (
-                <div key={ev.id} className="flex items-center gap-3">
+                <div key={ev.eventId} className="flex items-center gap-3">
                   <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{ev.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ev.ticketsSold.toLocaleString("es-MX")} boletos · {ev.payments} pagos
+                      {ev.soldTickets.toLocaleString("es-MX")} boletos · {ev.successfulPayments} pagos
                     </p>
                   </div>
                   <Badge variant="secondary" className="shrink-0 font-mono text-xs">

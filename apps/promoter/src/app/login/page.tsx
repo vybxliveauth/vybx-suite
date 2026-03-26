@@ -17,8 +17,8 @@ import {
   CardDescription,
 } from "@vybx/ui";
 import { api } from "@/lib/api";
-import { setToken, setUser } from "@/lib/auth";
-import type { LoginResponse } from "@/lib/types";
+import { setUser } from "@/lib/auth";
+import type { AuthUser } from "@/lib/types";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),
@@ -40,15 +40,13 @@ export default function LoginPage() {
   async function onSubmit(values: FormValues) {
     setServerError(null);
     try {
-      const res = await api.post<LoginResponse>("/auth/login", values);
+      const res = await api.post<{ user: AuthUser; success: boolean }>("/auth/login", values);
 
-      // Reject non-promoter accounts
       if (res.user.role !== "PROMOTER" && res.user.role !== "ADMIN" && res.user.role !== "SUPER_ADMIN") {
         setServerError("Esta cuenta no tiene acceso al panel de promotor.");
         return;
       }
 
-      setToken(res.access_token);
       setUser(res.user);
       router.replace("/dashboard");
     } catch (err: unknown) {

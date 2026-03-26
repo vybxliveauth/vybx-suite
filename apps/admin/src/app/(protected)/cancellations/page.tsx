@@ -75,7 +75,7 @@ export default function CancellationsPage() {
     if (statusFilter !== "ALL") qs.set("status", statusFilter);
     if (refundFilter !== "ALL") qs.set("refundStatus", refundFilter);
     api
-      .get<Paginated<CancellationRecord>>(`/admin/cancellations?${qs}`)
+      .get<Paginated<CancellationRecord>>(`/tickets/cancellations/admin?${qs}`)
       .then(setResult)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -102,7 +102,7 @@ export default function CancellationsPage() {
     if (!approveTarget) return;
     setApproving(true);
     try {
-      await api.patch(`/admin/cancellations/${approveTarget.id}/review`, {
+      await api.patch(`/tickets/cancellations/${approveTarget.id}/review`, {
         status: "APPROVED",
         refundStatus: "PENDING",
         reviewNotes: approveNotes.trim() || undefined,
@@ -129,7 +129,7 @@ export default function CancellationsPage() {
     if (!rejectTarget) return;
     setRejecting(true);
     try {
-      await api.patch(`/admin/cancellations/${rejectTarget.id}/review`, {
+      await api.patch(`/tickets/cancellations/${rejectTarget.id}/review`, {
         status: "REJECTED",
         reviewNotes: rejectNotes.trim(),
       });
@@ -153,23 +153,23 @@ export default function CancellationsPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Cancelaciones</h1>
-          <p className="text-sm text-slate-500">Gestión de solicitudes de cancelación y reembolso</p>
+          <p className="text-sm text-slate-400">Gestión de solicitudes de cancelación y reembolso</p>
         </div>
 
         {/* Filters */}
-        <div className="bg-[#030014]/40 border border-white/5 backdrop-blur-xl rounded-xl p-4 flex flex-wrap gap-3 items-center">
+        <div className="bo-filters">
           <Select
             value={statusFilter}
             onValueChange={(v) => setStatusFilter(v as CancellationStatus | "ALL")}
           >
-            <SelectTrigger className="w-44 bg-white/5 border-white/10 text-slate-200">
+            <SelectTrigger className="w-44 bg-[#101722] border-[#243243] text-[#e8edf3]">
               <SelectValue placeholder="Estado solicitud" />
             </SelectTrigger>
-            <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+            <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
               <SelectItem value="ALL">Todos los estados</SelectItem>
               <SelectItem value="REQUESTED">Solicitada</SelectItem>
               <SelectItem value="APPROVED">Aprobada</SelectItem>
@@ -181,10 +181,10 @@ export default function CancellationsPage() {
             value={refundFilter}
             onValueChange={(v) => setRefundFilter(v as RefundStatus | "ALL")}
           >
-            <SelectTrigger className="w-44 bg-white/5 border-white/10 text-slate-200">
+            <SelectTrigger className="w-44 bg-[#101722] border-[#243243] text-[#e8edf3]">
               <SelectValue placeholder="Estado reembolso" />
             </SelectTrigger>
-            <SelectContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+            <SelectContent className="bg-[#0c121a] border-[#243243] shadow-lg">
               <SelectItem value="ALL">Todos los reembolsos</SelectItem>
               <SelectItem value="NONE">Ninguno</SelectItem>
               <SelectItem value="PENDING">Pendiente</SelectItem>
@@ -195,7 +195,7 @@ export default function CancellationsPage() {
         </div>
 
         {/* Table */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={() => load(page)} />
@@ -205,10 +205,10 @@ export default function CancellationsPage() {
               <EmptyState />
             ) : (
               <>
-                <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+                <div className="bo-table-wrap">
                   <Table>
-                    <TableHeader className="bg-white/5">
-                      <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHeader className="bg-[#121b27]">
+                      <TableRow className="border-[#1f2b3a] hover:bg-transparent">
                         <TableHead className="text-slate-400 font-medium h-10">Fecha</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10">Evento</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10 hidden md:table-cell">Usuario</TableHead>
@@ -220,7 +220,7 @@ export default function CancellationsPage() {
                     </TableHeader>
                     <TableBody>
                       {visible.map((c) => (
-                        <TableRow key={c.id} className="border-white/5 hover:bg-white/[0.02] transition-colors align-top">
+                        <TableRow key={c.id} className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors align-top">
                           <TableCell className="py-4 text-slate-500 text-xs whitespace-nowrap">
                             {fmtDate(c.requestedAt)}
                           </TableCell>
@@ -288,7 +288,7 @@ export default function CancellationsPage() {
 
       {/* Approve dialog */}
       <Dialog open={!!approveTarget} onOpenChange={(o) => { if (!o) setApproveTarget(null); }}>
-        <DialogContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+        <DialogContent className="bg-[#0c121a] border-[#243243] shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-white">Aprobar cancelación</DialogTitle>
             <DialogDescription className="text-slate-400">
@@ -306,7 +306,7 @@ export default function CancellationsPage() {
               value={approveNotes}
               onChange={(e) => setApproveNotes(e.target.value)}
               placeholder="Ej. Reembolso procesado por transferencia bancaria…"
-              className="bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600 text-sm resize-none"
+              className="bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600 text-sm resize-none"
             />
           </div>
           <DialogFooter>
@@ -330,7 +330,7 @@ export default function CancellationsPage() {
 
       {/* Reject dialog */}
       <Dialog open={!!rejectTarget} onOpenChange={(o) => { if (!o) setRejectTarget(null); }}>
-        <DialogContent className="bg-[#030014]/95 backdrop-blur-xl border-white/10 shadow-2xl">
+        <DialogContent className="bg-[#0c121a] border-[#243243] shadow-lg">
           <DialogHeader>
             <DialogTitle className="text-white">Rechazar cancelación</DialogTitle>
             <DialogDescription className="text-slate-400">
@@ -344,7 +344,7 @@ export default function CancellationsPage() {
               value={rejectNotes}
               onChange={(e) => setRejectNotes(e.target.value)}
               placeholder="Ej. Solicitud fuera del plazo de 48 horas establecido en los términos…"
-              className="bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600 text-sm resize-none"
+              className="bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600 text-sm resize-none"
             />
           </div>
           <DialogFooter>

@@ -22,24 +22,29 @@ export interface Profile {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export interface DashboardStats {
-  totalRevenue: number;
-  ticketsSold: number;
-  activeEvents: number;
-  successRate: number;           // 0-100
-  sparklines: { date: string; revenue: number; tickets: number; events: number }[];
+  users: { total: number };
+  events: { total: number; active: number };
+  tickets: { sold: number };
+  revenue: { estimated: number; successfulPayments: number };
+  sparklines: {
+    revenue: Array<{ v: number }>;
+    tickets: Array<{ v: number }>;
+    events: Array<{ v: number }>;
+  };
 }
 
 export interface OpsChecklistItem {
   key: string;
   label: string;
-  count: number;
+  pendingCount: number;
   href: string;
   targetHours: number;
   oldestAgeHours: number | null;
+  level: "ok" | "warning" | "breach";
 }
 
 export interface OpsChecklistResponse {
-  items: OpsChecklistItem[];
+  items: Record<string, OpsChecklistItem>;
   generatedAt: string;
 }
 
@@ -72,6 +77,7 @@ export interface EventRecord {
   status: EventStatus;
   isActive: boolean;
   categoryId: string | null;
+  category?: { id: string; name: string } | null;
   owner: { id: string; email: string; firstName?: string; lastName?: string };
   ticketTypes: TicketTypeRecord[];
   createdAt: string;
@@ -97,7 +103,8 @@ export interface UserRecord {
 // ── Transactions ──────────────────────────────────────────────────────────────
 export interface TransactionRecord {
   id: string;
-  orderId: string;
+  orderNumber: string;
+  orderId?: string;
   status: TxStatus;
   amount: number;
   provider: string;

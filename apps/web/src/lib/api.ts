@@ -156,11 +156,13 @@ export function adaptEvent(raw: BackendEvent): Event {
 export async function fetchEvents(params?: {
   page?: number;
   limit?: number;
+  search?: string;
 }): Promise<PaginatedResponse<Event>> {
   const query = new URLSearchParams({
     page: String(params?.page ?? 1),
     limit: String(params?.limit ?? 20),
   });
+  if (params?.search) query.set("q", params.search);
 
   const raw = await request<
     LegacyBackendListResponse<BackendEvent> | CurrentBackendListResponse<BackendEvent>
@@ -247,3 +249,14 @@ export async function fetchProfile(): Promise<AuthUser> {
   const raw = await request<BackendAuthUser>("/auth/profile");
   return adaptAuthUser(raw);
 }
+
+// ─── Generic HTTP helpers ──────────────────────────────────────────────────────
+// Reuse the same request() client so CSRF, credentials, and error handling
+// are consistent across all pages that need mutation helpers.
+
+export const api = {
+  get:    <T>(path: string)                 => request<T>(path, { method: "GET" }),
+  post:   <T>(path: string, body?: unknown) => request<T>(path, { method: "POST",  body: body !== undefined ? JSON.stringify(body) : undefined }),
+  patch:  <T>(path: string, body: unknown)  => request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
+  delete: <T>(path: string)                 => request<T>(path, { method: "DELETE" }),
+};

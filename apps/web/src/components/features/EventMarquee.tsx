@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Event } from "@/types";
-import { MOCK_EVENTS } from "@/lib/mock/events";
 
 // ─── Single marquee item ──────────────────────────────────────────────────────
 
@@ -123,32 +122,11 @@ function MarqueeItem({ event }: { event: Event }) {
   );
 }
 
-// ─── Marquee track ────────────────────────────────────────────────────────────
-
-function MarqueeTrack({ events, reverse = false }: { events: Event[]; reverse?: boolean }) {
-  // Duplicate items to create seamless loop
-  const items = [...events, ...events];
-
-  return (
-    <div style={{ display: "flex", gap: "1rem", animationPlayState: "running" }}>
-      <div style={{
-        display: "flex",
-        gap: "1rem",
-        animation: `${reverse ? "marqueeReverse" : "marquee"} ${Math.max(30, events.length * 6)}s linear infinite`,
-        willChange: "transform",
-      }}>
-        {items.map((event, i) => (
-          <MarqueeItem key={`${event.id}-${i}`} event={event} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── EventMarquee ─────────────────────────────────────────────────────────────
 
 export function EventMarquee({ events }: { events: Event[] }) {
-  const displayed = events.length > 0 ? events : MOCK_EVENTS;
+  if (events.length === 0) return null;
+  const displayed = events;
 
   return (
     <div
@@ -195,10 +173,6 @@ export function EventMarquee({ events }: { events: Event[] }) {
         @keyframes marquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
-        }
-        @keyframes marqueeReverse {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
         }
       `}</style>
     </div>

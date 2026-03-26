@@ -15,7 +15,7 @@ export function PromoterShell({ children, breadcrumb }: PromoterShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden" style={{ background: "transparent" }}>
       {/* Sidebar — hidden on mobile unless open */}
       <div className="hidden md:flex md:shrink-0">
         <Sidebar />

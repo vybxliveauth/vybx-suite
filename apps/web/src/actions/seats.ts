@@ -44,7 +44,7 @@ export async function toggleSeatReservationAction(
     // TODO: validate seat is still available in DB, lock it for this session
     await new Promise((r) => setTimeout(r, 300)); // simulate round-trip
 
-    console.log(`[toggleSeat] seat=${seatId} event=${eventId} session=${sessionId}`);
+    void seatId; void eventId; void sessionId; // TODO: persist reservation to DB
 
     return { status: "success", seatId };
   } catch {

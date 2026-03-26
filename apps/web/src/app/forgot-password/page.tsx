@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useActionState } from "react";
 import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Zap, Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
+import { api } from "@/lib/api";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),
@@ -22,16 +21,8 @@ export default function ForgotPasswordPage() {
   const [state, action, pending] = useActionState(
     async (_prev: { error: string | null; sent: boolean }, data: Fields) => {
       try {
-        const res = await fetch(`${API}/auth/request-password-reset`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: data.email }),
-        });
         // Backend always returns 200 (security: doesn't reveal if email exists)
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.message ?? "Error enviando email");
-        }
+        await api.post("/auth/request-password-reset", { email: data.email });
         return { error: null, sent: true };
       } catch (e) {
         return { error: e instanceof Error ? e.message : "Error inesperado", sent: false };

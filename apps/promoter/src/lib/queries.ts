@@ -31,7 +31,7 @@ export function useEvents(page = 1, pageSize = 50) {
     queryKey: qk.events(page, pageSize),
     queryFn:  () =>
       api.get<PaginatedResponse<Event>>(
-        `/promoter/events?page=${page}&pageSize=${pageSize}`
+        `/promoter/events?page=${page}&limit=${pageSize}`
       ),
   });
 }
@@ -81,4 +81,36 @@ export function useDuplicateEvent() {
       api.post<EventDetail>(`/promoter/events/${id}/duplicate`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
   });
+}
+
+export function useRefunds(page = 1, limit = 20) {
+  return useQuery({
+    queryKey: ["refunds", page, limit],
+    queryFn:  () =>
+      api.get<{ total: number; data: RefundRequest[] }>(
+        `/promoter/refunds?page=${page}&limit=${limit}`
+      ),
+  });
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+export type RefundStatus = "REQUESTED" | "APPROVED" | "REJECTED";
+
+export interface RefundRequest {
+  id: string;
+  status: RefundStatus;
+  refundStatus: string;
+  reason: string | null;
+  requestedAt: string;
+  createdAt: string;
+  ticket: {
+    id: string;
+    user: { id: string; email: string; firstName?: string; lastName?: string };
+    ticketType: {
+      name: string;
+      price: number;
+      event: { id: string; title: string };
+    };
+  };
+  requester: { id: string; email: string; firstName?: string; lastName?: string };
 }

@@ -1,27 +1,36 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { Event } from "@/types";
 import { formatPrice } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MOCK_EVENTS } from "@/lib/mock/events";
 import { EventMarquee } from "@/components/features/EventMarquee";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
 import { AuthModal } from "@/components/features/AuthModal";
 import { useAuthStore } from "@/store/useAuthStore";
 
-// ─── Static data ──────────────────────────────────────────────────────────────
+function normalizeCategory(value: string): string {
+  return value.trim().toLowerCase();
+}
 
-const CATEGORIES = [
-  { label: "All", icon: Star },
-  { label: "Electronic", icon: Zap },
-  { label: "Jazz", icon: Music },
-  { label: "Indie", icon: Flame },
-  { label: "Urban", icon: Ticket },
-];
+function formatCategoryLabel(value: string): string {
+  return value
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function categoryIconFor(value: string) {
+  if (/electr|edm|house|techno/.test(value)) return Zap;
+  if (/jazz/.test(value)) return Music;
+  if (/indie|rock|alternative|alt/.test(value)) return Flame;
+  if (/urban|reggaeton|hip hop|hip-hop|trap/.test(value)) return Ticket;
+  return Star;
+}
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
@@ -38,17 +47,17 @@ function Navbar({ onCartOpen, onAuthOpen }: { onCartOpen: () => void; onAuthOpen
 
   return (
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
-      <a href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
+      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
         <Zap size={22} color="var(--accent-primary)" />
         <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 900, letterSpacing: "-0.5px", color: "var(--text-light)" }}>
           vybx
         </span>
-      </a>
+      </Link>
 
       <div className="hidden-mobile" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "2.5rem" }}>
-        <a href="#events" className="nav-link">Eventos</a>
-        <a href="#" className="nav-link">Artistas</a>
-        <a href="#" className="nav-link">Recintos</a>
+        <Link href="/#events" className="nav-link">Eventos</Link>
+        <Link href="/#events" className="nav-link">Artistas</Link>
+        <Link href="/#events" className="nav-link">Recintos</Link>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -388,13 +397,41 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
   search: string;
   onSearch: (q: string) => void;
 }) {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [page, setPage] = useState(1);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const categoryOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    allEvents.forEach((event) => {
+      event.tags.forEach((tag) => {
+        const key = normalizeCategory(tag);
+        if (!key || map.has(key)) return;
+        map.set(key, formatCategoryLabel(tag));
+      });
+    });
+    const dynamic = Array.from(map.entries())
+      .sort((a, b) => a[1].localeCompare(b[1], "es"))
+      .map(([key, label]) => ({
+        key,
+        label,
+        icon: categoryIconFor(key),
+      }));
+
+    return [{ key: "all", label: "Todos", icon: Star }, ...dynamic];
+  }, [allEvents]);
+
+  useEffect(() => {
+    if (!categoryOptions.some((category) => category.key === activeCategory)) {
+      setActiveCategory("all");
+    }
+  }, [categoryOptions, activeCategory]);
 
   const q = search.trim().toLowerCase();
   const filtered = allEvents
-    .filter((e) => activeCategory === "All" || e.tags.includes(activeCategory))
+    .filter((event) => {
+      if (activeCategory === "all") return true;
+      return event.tags.some((tag) => normalizeCategory(tag) === activeCategory);
+    })
     .filter((e) =>
       !q ||
       e.title.toLowerCase().includes(q) ||
@@ -460,8 +497,8 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "2.5rem" }}>
-        {CATEGORIES.map(({ label, icon: Icon }) => (
-          <button key={label} className={`chip ${activeCategory === label ? "active" : ""}`} onClick={() => setActiveCategory(label)}>
+        {categoryOptions.map(({ key, label, icon: Icon }) => (
+          <button key={key} className={`chip ${activeCategory === key ? "active" : ""}`} onClick={() => setActiveCategory(key)}>
             <Icon size={14} /> {label}
           </button>
         ))}
@@ -469,7 +506,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
 
       {isError && (
         <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
-          Sin conexión al backend — mostrando eventos de demo.
+          Sin conexión al backend. Intenta de nuevo en unos segundos.
         </div>
       )}
 
@@ -480,10 +517,14 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             ? (
               <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "4rem 0", color: "var(--text-muted)" }}>
                 <Search size={32} style={{ opacity: 0.3, marginBottom: "1rem" }} />
-                <p style={{ fontSize: "1rem", fontWeight: 600 }}>Sin resultados para &quot;{search}&quot;</p>
-                <button onClick={() => onSearch("")} style={{ marginTop: "0.75rem", background: "transparent", border: "none", cursor: "pointer", color: "var(--accent-secondary)", fontSize: "0.88rem" }}>
-                  Limpiar búsqueda
-                </button>
+                <p style={{ fontSize: "1rem", fontWeight: 600 }}>
+                  {search ? `Sin resultados para "${search}"` : "No hay eventos publicados todavía."}
+                </p>
+                {search && (
+                  <button onClick={() => onSearch("")} style={{ marginTop: "0.75rem", background: "transparent", border: "none", cursor: "pointer", color: "var(--accent-secondary)", fontSize: "0.88rem" }}>
+                    Limpiar búsqueda
+                  </button>
+                )}
               </div>
             )
             : paginated.map((event) => <EventCard key={event.id} event={event} />)
@@ -498,6 +539,12 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 function Footer() {
+  const footerLinks = [
+    { label: "Privacidad", href: "/privacidad" },
+    { label: "Términos", href: "/terminos" },
+    { label: "Soporte", href: "mailto:soporte@vybxlive.com", external: true },
+  ];
+
   return (
     <footer style={{ padding: "3rem 5% 2rem", borderTop: "1px solid var(--glass-border)", marginTop: "auto" }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
@@ -509,13 +556,28 @@ function Footer() {
         </div>
         <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>© {new Date().getFullYear()} Vybx. Todos los derechos reservados.</p>
         <div style={{ display: "flex", gap: "1.5rem" }}>
-          {["Privacidad", "Términos", "Soporte"].map((link) => (
-            <a key={link} href="#" style={{ fontSize: "0.82rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
-              onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-            >
-              {link}
-            </a>
+          {footerLinks.map((link) => (
+            link.external ? (
+              <a
+                key={link.label}
+                href={link.href}
+                style={{ fontSize: "0.82rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.label}
+                href={link.href}
+                style={{ fontSize: "0.82rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </div>
       </div>
@@ -526,14 +588,21 @@ function Footer() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
-  const { data, isLoading, isError } = useEvents();
-  const events = data?.data ?? MOCK_EVENTS;
   const [cartOpen, setCartOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const { rehydrate } = useAuthStore();
 
   useEffect(() => { rehydrate(); }, [rehydrate]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data, isLoading, isError } = useEvents(1, 20, debouncedSearch || undefined);
+  const events = data?.data ?? [];
 
   return (
     <>

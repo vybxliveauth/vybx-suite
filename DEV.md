@@ -69,17 +69,24 @@ pnpm install
 
 ---
 
-## 4 — Crear usuario admin de prueba
+## 4 — Crear usuarios de prueba
 
 ```bash
 cd ~/Desktop/Proyectos/vybxlive-backend
+
+# Admin
 npx ts-node --project tsconfig.json scripts/seed-admin.ts
+
+# Promotor
+npx ts-node --project tsconfig.json scripts/seed-promoter.ts
 ```
 
 Credenciales creadas:
-- **Email:** `admin@vybx.dev`
-- **Password:** `Admin1234!@#`
-- **Rol:** `SUPER_ADMIN`
+
+| Rol | Email | Password |
+|-----|-------|----------|
+| `SUPER_ADMIN` | `admin@vybx.dev` | `Admin1234!@#` |
+| `PROMOTER` | `promotor@vybx.dev` | `Promotor1234!` |
 
 ---
 
@@ -181,3 +188,18 @@ REDIS_PORT=6379
 REDIS_PASSWORD=vybxlive
 RESEND_API_KEY=REDACTED_RESEND_API_KEY
 ```
+
+---
+
+## Beta release checklist
+
+Antes de pasar a producción:
+
+1. `pnpm lint` en verde (sin errores).
+2. `pnpm typecheck` en verde.
+3. `pnpm build` en verde para las 3 apps.
+4. Validar login/refresh/logout en `web`, `promoter` y `admin` contra backend local.
+5. Validar flujo de compra mínimo (home → evento → checkout → pago mock → tickets).
+6. Confirmar que no hay secretos en el repo (`.env.local` no versionado).
+7. Confirmar CORS y `NEXT_PUBLIC_API_URL` apuntando al entorno correcto.
+8. Ejecutar smoke manual de rutas críticas antes de deploy.

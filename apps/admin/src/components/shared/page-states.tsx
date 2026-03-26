@@ -11,12 +11,17 @@ export function EmptyState({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3 text-white/40">
-      <SearchX className="size-10 opacity-40" />
-      <p className="text-sm font-medium text-white/60">{title}</p>
-      <p className="text-xs text-center max-w-xs">{message}</p>
+    <div className="mx-4 my-4 flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border border-[#243243] bg-[#121b27]/55 px-6 py-10 text-center">
+      <SearchX className="size-9 text-[#6f8093]" />
+      <p className="text-sm font-semibold text-[#d7e4f5]">{title}</p>
+      <p className="max-w-lg text-xs text-[#9aa6b5]">{message}</p>
       {action && (
-        <Button variant="outline" size="sm" onClick={action.onClick} className="mt-2 border-white/10 text-white/60 hover:text-white">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={action.onClick}
+          className="mt-2 border-[#2d4e7c] bg-[#16263a]/60 text-[#d2e5ff] hover:bg-[#1b2e45] hover:text-white"
+        >
           {action.label}
         </Button>
       )}
@@ -32,11 +37,16 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 gap-3 text-white/40">
-      <AlertTriangle className="size-10 text-red-400/60" />
-      <p className="text-sm text-white/60">{message}</p>
+    <div className="mx-4 my-4 flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-2xl border border-red-900/40 bg-red-950/20 px-6 py-10 text-center">
+      <AlertTriangle className="size-9 text-red-400/70" />
+      <p className="text-sm font-semibold text-red-200">{message}</p>
       {onRetry && (
-        <Button variant="outline" size="sm" onClick={onRetry} className="mt-2 border-white/10 text-white/60 hover:text-white">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRetry}
+          className="mt-2 border-red-800/60 text-red-200 hover:bg-red-500/10 hover:text-white"
+        >
           Reintentar
         </Button>
       )}
@@ -48,11 +58,11 @@ export function TableSkeleton({ rows = 8, cols = 5 }: { rows?: number; cols?: nu
   return (
     <div className="space-y-px">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex gap-4 px-4 py-3 border-b border-white/4">
-          {Array.from({ length: cols }).map((_, j) => (
+        <div key={i} className="flex gap-4 border-b border-[#1f2b3a] px-4 py-3">
+          {Array.from({ length: cols }).map((__, j) => (
             <div
               key={j}
-              className="h-3 rounded animate-pulse bg-white/6"
+              className="h-3 animate-pulse rounded bg-[#1b2737]"
               style={{ flex: j === 0 ? 2 : 1 }}
             />
           ))}

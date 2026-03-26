@@ -6,6 +6,33 @@ function getCsrf(): string {
   return match?.[1] ? decodeURIComponent(match[1]) : "";
 }
 
+function normalizePaginated<T>(payload: unknown): T {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return payload as T;
+  }
+
+  const record = payload as {
+    items?: unknown;
+    pagination?: { page?: number; limit?: number; total?: number };
+  };
+
+  if (!Array.isArray(record.items) || !record.pagination) {
+    return payload as T;
+  }
+
+  const page = Number(record.pagination.page ?? 1);
+  const limit = Number(record.pagination.limit ?? 20);
+  const total = Number(record.pagination.total ?? 0);
+
+  return {
+    ...(payload as Record<string, unknown>),
+    data: record.items,
+    total,
+    page,
+    pageSize: limit,
+  } as T;
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers: Record<string, string> = {
@@ -32,7 +59,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (refreshed.ok) {
       const res2 = await fetch(`${BASE}${path}`, { ...init, headers, credentials: "include" });
       if (!res2.ok) throw new Error(await extractError(res2));
-      return res2.json() as Promise<T>;
+      if (res2.status === 204) return undefined as T;
+      return normalizePaginated<T>(await res2.json());
     }
     window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
     throw new Error("Session expired");
@@ -40,7 +68,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   if (!res.ok) throw new Error(await extractError(res));
   if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
+  return normalizePaginated<T>(await res.json());
 }
 
 async function extractError(res: Response): Promise<string> {

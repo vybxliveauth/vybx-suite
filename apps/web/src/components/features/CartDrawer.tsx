@@ -24,7 +24,7 @@ export function CartDrawer({
   open: boolean;
   onClose: () => void;
 }) {
-  const { session, removeItem, updateQuantity, clearCart, remainingSeconds, isReservationActive } =
+  const { session, removeItem, updateQuantity, clearCart, remainingSeconds } =
     useCartStore();
   const [seconds, setSeconds] = useState(0);
 

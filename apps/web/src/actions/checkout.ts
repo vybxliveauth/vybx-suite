@@ -69,7 +69,7 @@ export async function submitCheckoutAction(
       };
     }
 
-    console.error("[checkout action]", error);
+    // error intentionally swallowed — user sees generic message
     return {
       status: "error",
       message: "Something went wrong. Please try again.",
@@ -84,7 +84,6 @@ async function processOrder(data: CheckoutActionInput): Promise<string> {
   await new Promise((r) => setTimeout(r, 800));
 
   // TODO: verify inventory, capture payment intent, write order to DB
-  console.log("[processOrder] data:", data);
-
+  void data;
   return `order-${crypto.randomUUID()}`;
 }

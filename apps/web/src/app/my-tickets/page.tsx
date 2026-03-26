@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,8 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
+import { api } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -91,9 +90,20 @@ function StatusBadge({ status }: { status: TicketStatus }) {
 
 // ─── Ticket Card ──────────────────────────────────────────────────────────────
 
-function TicketCard({ ticket }: { ticket: BackendTicket }) {
+function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelled: (id: string) => void }) {
   const { event } = ticket.ticketType;
   const [qrExpanded, setQrExpanded] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  async function handleCancel() {
+    if (!confirm("¿Solicitar cancelación de este ticket?")) return;
+    setCancelling(true);
+    try {
+      await api.post(`/tickets/${ticket.id}/cancel-request`, {});
+      onCancelled(ticket.id);
+    } catch { /* ignore */ }
+    finally { setCancelling(false); }
+  }
 
   return (
     <div style={{
@@ -181,27 +191,52 @@ function TicketCard({ ticket }: { ticket: BackendTicket }) {
             </p>
           </div>
 
-          {ticket.qrCode && ticket.status === "VALID" && (
-            <button
-              onClick={() => setQrExpanded(!qrExpanded)}
-              style={{
-                display: "flex", alignItems: "center", gap: "0.4rem",
-                padding: "0.45rem 0.9rem",
-                background: qrExpanded ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.05)",
-                border: `1px solid ${qrExpanded ? "rgba(124,58,237,0.5)" : "var(--glass-border)"}`,
-                borderRadius: "var(--radius-pill)",
-                cursor: "pointer",
-                color: qrExpanded ? "#c4b5fd" : "var(--text-muted)",
-                fontSize: "0.78rem",
-                fontWeight: 600,
-                fontFamily: "var(--font-body)",
-                transition: "all 0.2s",
-              }}
-            >
-              <QrCode size={14} />
-              {qrExpanded ? "Ocultar" : "Ver QR"}
-            </button>
-          )}
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {ticket.qrCode && ticket.status === "VALID" && (
+              <button
+                onClick={() => setQrExpanded(!qrExpanded)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.45rem 0.9rem",
+                  background: qrExpanded ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${qrExpanded ? "rgba(124,58,237,0.5)" : "var(--glass-border)"}`,
+                  borderRadius: "var(--radius-pill)",
+                  cursor: "pointer",
+                  color: qrExpanded ? "#c4b5fd" : "var(--text-muted)",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-body)",
+                  transition: "all 0.2s",
+                }}
+              >
+                <QrCode size={14} />
+                {qrExpanded ? "Ocultar" : "Ver QR"}
+              </button>
+            )}
+            {ticket.status === "VALID" && (
+              <button
+                onClick={() => void handleCancel()}
+                disabled={cancelling}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.45rem 0.9rem",
+                  background: "rgba(244,63,94,0.08)",
+                  border: "1px solid rgba(244,63,94,0.25)",
+                  borderRadius: "var(--radius-pill)",
+                  cursor: cancelling ? "not-allowed" : "pointer",
+                  color: "#fda4af",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-body)",
+                  opacity: cancelling ? 0.6 : 1,
+                  transition: "all 0.2s",
+                }}
+              >
+                <XCircle size={14} />
+                {cancelling ? "…" : "Cancelar"}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* QR code expanded */}
@@ -276,17 +311,31 @@ export default function MyTicketsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TicketStatus | "ALL">("ALL");
 
-  useEffect(() => {
-    fetch(`${API}/tickets/my-tickets`, { credentials: "include" })
-      .then(async (r) => {
-        if (r.status === 401) { router.replace("/"); return; }
-        if (!r.ok) throw new Error("Error cargando tickets");
-        const data: TicketsResponse = await r.json();
-        setTickets(data.items);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+  function handleCancelled(id: string) {
+    setTickets((prev) => prev.map((t) => t.id === id ? { ...t, status: "CANCELLED" as TicketStatus } : t));
+  }
+
+  const loadTickets = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.get<TicketsResponse>("/tickets/my-tickets");
+      setTickets(data.items);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (/unauthorized|forbidden|401|403/i.test(message)) {
+        router.replace("/");
+        return;
+      }
+      setError("No pudimos cargar tus tickets. Verifica conexión e intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    void loadTickets();
+  }, [loadTickets]);
 
   const filtered = filter === "ALL" ? tickets : tickets.filter((t) => t.status === filter);
 
@@ -364,15 +413,24 @@ export default function MyTicketsPage() {
             Cargando tickets...
           </div>
         ) : error ? (
-          <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "#fda4af", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <AlertCircle size={16} /> {error}
+          <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "#fda4af", display: "flex", gap: "0.75rem", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+            <span style={{ display: "inline-flex", gap: "0.5rem", alignItems: "center" }}>
+              <AlertCircle size={16} /> {error}
+            </span>
+            <button
+              onClick={() => void loadTickets()}
+              className="btn-secondary"
+              style={{ padding: "0.35rem 0.9rem", fontSize: "0.8rem" }}
+            >
+              Reintentar
+            </button>
           </div>
         ) : filtered.length === 0 ? (
           <EmptyState />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem" }}>
             {filtered.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} />
+              <TicketCard key={ticket.id} ticket={ticket} onCancelled={handleCancelled} />
             ))}
           </div>
         )}

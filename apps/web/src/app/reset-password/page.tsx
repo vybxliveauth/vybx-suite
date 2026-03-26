@@ -9,8 +9,7 @@ import {
   Zap, Lock, Eye, EyeOff, CheckCircle2,
   AlertCircle, Loader2, ShieldCheck, ArrowLeft,
 } from "lucide-react";
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
+import { api } from "@/lib/api";
 
 const schema = z.object({
   password: z
@@ -46,17 +45,7 @@ export default function ResetPasswordPage() {
     async (_prev: { error: string | null; done: boolean }, data: Fields) => {
       if (!token) return { error: "Token inválido o expirado", done: false };
       try {
-        const res = await fetch(`${API}/auth/reset-password`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token, password: data.password }),
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(
-            Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al restablecer"
-          );
-        }
+        await api.post("/auth/reset-password", { token, password: data.password });
         return { error: null, done: true };
       } catch (e) {
         return { error: e instanceof Error ? e.message : "Error inesperado", done: false };

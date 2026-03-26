@@ -16,14 +16,25 @@ const inter = Inter({
   display: "swap",
 });
 
+function resolveMetadataBase(): URL {
+  const fallback = "http://localhost:3000";
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!raw) return new URL(fallback);
+  try {
+    return new URL(raw);
+  } catch {
+    return new URL(fallback);
+  }
+}
+
 export const metadata: Metadata = {
   title: {
-    default: "Vybx — Tickets for Experiences That Matter",
+    default: "Vybx - Tickets para experiencias en vivo",
     template: "%s | Vybx",
   },
   description:
-    "Discover and buy tickets for the best live events near you. Fast, secure, and hassle-free.",
-  metadataBase: new URL("http://localhost:3000"),
+    "Descubre y compra tickets para los mejores eventos en vivo. Rápido, seguro y sin complicaciones.",
+  metadataBase: resolveMetadataBase(),
 };
 
 export default function RootLayout({
@@ -33,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${outfit.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >

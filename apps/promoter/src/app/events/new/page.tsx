@@ -51,7 +51,6 @@ interface CreatedEvent {
 export default function NewEventPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [step, setStep] = useState<"form" | "tiers">("form");
 
   const {
     register,

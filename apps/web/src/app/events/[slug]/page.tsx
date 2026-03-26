@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getEventBySlug, MOCK_EVENTS } from "@/lib/mock/events";
 import { fetchEventById } from "@/lib/api";
 import { EventDetailClient } from "./EventDetailClient";
 
@@ -33,23 +32,15 @@ function extractId(slug: string): string | null {
 }
 
 async function getEvent(slug: string) {
-  // 1. Try mock data first (for dev without backend)
-  const mock = getEventBySlug(slug);
-  if (mock) return mock;
-
-  // 2. Try fetching from backend by extracted full UUID
+  // Fetch from backend by id encoded in slug.
   const eventId = extractId(slug);
-  if (eventId) {
-    const mockById = MOCK_EVENTS.find((e) => e.id === eventId);
-    if (mockById) return mockById;
-    try {
-      return await fetchEventById(eventId);
-    } catch {
-      return null;
-    }
-  }
+  if (!eventId) return null;
 
-  return null;
+  try {
+    return await fetchEventById(eventId);
+  } catch {
+    return null;
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

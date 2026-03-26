@@ -34,7 +34,7 @@ export default function PromoterApplicationsPage() {
     setLoading(true);
     setError(null);
     api
-      .get<Paginated<UserRecord>>(`/admin/users?role=USER&promoterStatus=PENDING_APPROVAL&page=${p}&limit=20`)
+      .get<Paginated<UserRecord>>(`/users/promoter-applications?status=PENDING_APPROVAL&page=${p}&limit=20`)
       .then(setResult)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
@@ -52,7 +52,7 @@ export default function PromoterApplicationsPage() {
   async function handleApprove(userId: string) {
     setActing(userId);
     try {
-      await api.post(`/admin/users/${userId}/approve-promoter`, {});
+      await api.patch(`/users/promoter-applications/${userId}/approve`, {});
       setResult((prev) => ({
         ...prev,
         data: prev.data.filter((u) => u.id !== userId),
@@ -71,7 +71,7 @@ export default function PromoterApplicationsPage() {
     if (feedback.length < 8) return;
     setActing(userId);
     try {
-      await api.post(`/admin/users/${userId}/reject-promoter`, { feedback });
+      await api.patch(`/users/promoter-applications/${userId}/reject`, { feedback });
       setResult((prev) => ({
         ...prev,
         data: prev.data.filter((u) => u.id !== userId),
@@ -87,7 +87,7 @@ export default function PromoterApplicationsPage() {
 
   return (
     <BackofficeShell>
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div>
@@ -99,14 +99,14 @@ export default function PromoterApplicationsPage() {
                 </span>
               )}
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-400">
               Revisión de solicitudes pendientes para acceso como promotor
             </p>
           </div>
         </div>
 
         {/* Table / cards */}
-        <Card className="bg-[#030014]/40 border-white/5 backdrop-blur-xl shadow-2xl">
+        <Card className="bo-card">
           <CardContent className="p-0">
             {error ? (
               <ErrorState message={error} onRetry={() => load(page)} />
@@ -119,10 +119,10 @@ export default function PromoterApplicationsPage() {
               />
             ) : (
               <>
-                <div className="rounded-xl border border-white/5 bg-[#030014]/60 overflow-hidden shadow-inner">
+                <div className="bo-table-wrap">
                   <Table>
-                    <TableHeader className="bg-white/5">
-                      <TableRow className="border-white/5 hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
+                    <TableHeader className="bg-[#121b27]">
+                      <TableRow className="border-[#1f2b3a] hover:bg-transparent text-[11px] text-slate-400 uppercase tracking-wide">
                         <TableHead className="text-slate-400 font-medium h-10">Solicitante</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10 hidden md:table-cell">Datos legales</TableHead>
                         <TableHead className="text-slate-400 font-medium h-10 hidden lg:table-cell">Instagram</TableHead>
@@ -139,7 +139,7 @@ export default function PromoterApplicationsPage() {
                         return (
                           <TableRow
                             key={user.id}
-                            className="border-white/5 hover:bg-white/[0.02] transition-colors align-top"
+                            className="border-[#1f2b3a] hover:bg-[#131e2c] transition-colors align-top"
                           >
                             <TableCell className="py-4">
                               <p className="text-slate-200 font-medium">
@@ -190,7 +190,7 @@ export default function PromoterApplicationsPage() {
                                       [user.id]: e.target.value,
                                     }))
                                   }
-                                  className="text-xs bg-white/5 border-white/10 text-slate-200 placeholder:text-slate-600 resize-none"
+                                  className="text-xs bg-[#101722] border-[#243243] text-[#e8edf3] placeholder:text-slate-600 resize-none"
                                 />
                                 <div className="flex gap-2">
                                   <Button
