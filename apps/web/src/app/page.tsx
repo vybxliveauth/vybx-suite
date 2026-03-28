@@ -1,15 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { SyntheticEvent } from "react";
 import Link from "next/link";
-import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { Drawer } from "vaul";
+import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { Event } from "@/types";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EventMarquee } from "@/components/features/EventMarquee";
+import { EventHighlightsCarousel } from "@/components/features/EventHighlightsCarousel";
+import { EventCommandPalette } from "@/components/features/EventCommandPalette";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
 import { AuthModal } from "@/components/features/AuthModal";
+import { FeaturedEventBentoCard } from "@/components/features/FeaturedEventBentoCard";
+import { ThemeToggle } from "@/components/features/ThemeToggle";
 import { useAuthStore } from "@/store/useAuthStore";
 
 function normalizeCategory(value: string): string {
@@ -32,11 +37,30 @@ function categoryIconFor(value: string) {
   return Star;
 }
 
+const EVENT_IMAGE_FALLBACK =
+  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=80";
+
+function applyImageFallback(event: SyntheticEvent<HTMLImageElement>) {
+  const img = event.currentTarget;
+  if (img.dataset.fallbackApplied === "1") return;
+  img.dataset.fallbackApplied = "1";
+  img.src = EVENT_IMAGE_FALLBACK;
+}
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
-function Navbar({ onCartOpen, onAuthOpen }: { onCartOpen: () => void; onAuthOpen: () => void }) {
+function Navbar({
+  onCartOpen,
+  onAuthOpen,
+  onCommandOpen,
+}: {
+  onCartOpen: () => void;
+  onAuthOpen: () => void;
+  onCommandOpen: () => void;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const { user, logout } = useAuthStore();
 
   useEffect(() => {
@@ -44,6 +68,22 @@ function Navbar({ onCartOpen, onAuthOpen }: { onCartOpen: () => void; onAuthOpen
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [menuOpen]);
 
   return (
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
@@ -60,13 +100,40 @@ function Navbar({ onCartOpen, onAuthOpen }: { onCartOpen: () => void; onAuthOpen
         <Link href="/#events" className="nav-link">Recintos</Link>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <CartButton onClick={onCartOpen} />
+      <div className="nav-actions" style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div className="hidden-mobile">
+          <ThemeToggle />
+        </div>
+
+        <button
+          onClick={onCommandOpen}
+          className="btn-secondary nav-search-btn"
+          style={{ padding: "0.45rem 0.8rem", fontSize: "0.82rem" }}
+          aria-label="Abrir búsqueda rápida"
+        >
+          <Search size={14} />
+          <span className="nav-search-label">Buscar</span>
+          <span
+            className="hidden-mobile"
+            style={{
+              fontSize: "0.68rem",
+              border: "1px solid var(--glass-border)",
+              borderRadius: "var(--radius-pill)",
+              padding: "0.08rem 0.4rem",
+              color: "var(--text-muted)",
+            }}
+          >
+            Ctrl K
+          </span>
+        </button>
+
+        <CartButton onClick={onCartOpen} compactOnMobile />
 
         {user ? (
-          <div style={{ position: "relative" }}>
+          <div ref={menuRef} style={{ position: "relative" }}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
+              className="nav-user-btn"
               style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
                 background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
@@ -82,7 +149,7 @@ function Navbar({ onCartOpen, onAuthOpen }: { onCartOpen: () => void; onAuthOpen
               }}>
                 {user.firstName?.[0]?.toUpperCase() ?? user.email[0].toUpperCase()}
               </div>
-              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-light)" }}>
+              <span className="hidden-mobile" style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-light)" }}>
                 {user.firstName || user.email.split("@")[0]}
               </span>
             </button>
@@ -119,7 +186,7 @@ function Navbar({ onCartOpen, onAuthOpen }: { onCartOpen: () => void; onAuthOpen
             )}
           </div>
         ) : (
-          <button onClick={onAuthOpen} className="btn-secondary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.9rem" }}>
+          <button onClick={onAuthOpen} className="btn-secondary nav-auth-btn" style={{ padding: "0.5rem 1.25rem", fontSize: "0.9rem" }}>
             Ingresar
           </button>
         )}
@@ -206,30 +273,15 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
         {/* Search bar — centered, prominent */}
         <form
           onSubmit={handleSearch}
-          className="fade-in-up"
+          className="fade-in-up search-bar"
           style={{
             display: "flex",
             alignItems: "center",
             gap: "0.75rem",
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.14)",
             borderRadius: "var(--radius-pill)",
-            padding: "0.7rem 0.7rem 0.7rem 1.5rem",
             maxWidth: 580,
             margin: "0 auto",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
             animationDelay: "0.2s",
-            transition: "border-color 0.2s, box-shadow 0.2s",
-          }}
-          onFocus={e => {
-            e.currentTarget.style.borderColor = "rgba(124,58,237,0.6)";
-            e.currentTarget.style.boxShadow = "0 8px 40px rgba(0,0,0,0.3), 0 0 0 3px rgba(124,58,237,0.15)";
-          }}
-          onBlur={e => {
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.14)";
-            e.currentTarget.style.boxShadow = "0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)";
           }}
         >
           <Search size={18} color="var(--text-muted)" style={{ flexShrink: 0 }} />
@@ -277,13 +329,44 @@ function EventCardSkeleton() {
   );
 }
 
+const FEATURED_BENTO_LAYOUT = [
+  "md:col-span-2 md:row-span-2",
+  "md:col-span-1 md:row-span-1",
+  "md:col-span-1 md:row-span-1",
+  "md:col-span-2 md:row-span-1",
+] as const;
+
+function FeaturedEventBentoSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "relative min-h-[260px] overflow-hidden rounded-3xl bg-black/20 shadow-[0_20px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl",
+        className
+      )}
+      aria-hidden
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.06] via-white/[0.02] to-white/[0.07]" />
+      <div className="absolute inset-0 -translate-x-full animate-[bentoShimmer_2.2s_linear_infinite] bg-[linear-gradient(110deg,transparent_20%,rgba(255,255,255,0.2)_45%,transparent_70%)]" />
+      <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
+        <div className="mb-3 h-5 w-28 rounded-full bg-white/15" />
+        <div className="mb-2 h-8 w-[78%] rounded-md bg-white/20" />
+        <div className="mb-4 h-8 w-[62%] rounded-md bg-white/12" />
+        <div className="flex items-center justify-between gap-3">
+          <div className="h-11 w-28 rounded-md bg-white/15" />
+          <div className="h-10 w-28 rounded-full bg-white/20" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Event Card ───────────────────────────────────────────────────────────────
 
 function EventCard({ event }: { event: Event }) {
   const href = `/events/${event.slug}`;
   const date = new Date(event.startDate);
   const day = date.getDate().toString().padStart(2, "0");
-  const month = date.toLocaleString("en", { month: "short" }).toUpperCase();
+  const month = date.toLocaleString("es-DO", { month: "short" }).toUpperCase();
   const minPrice = event.tiers.length > 0 ? Math.min(...event.tiers.map((t) => t.price)) : null;
   const isHighDemand = event.tiers.some((t) => t.stock < 100 && t.stock > 0);
 
@@ -292,7 +375,12 @@ function EventCard({ event }: { event: Event }) {
       <div className="glass-card reveal" style={{ cursor: "pointer" }}>
         <div className="image-wrapper">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={event.imageUrl} alt={event.title} className="card-image" />
+          <img
+            src={event.imageUrl}
+            alt={event.title}
+            className="card-image"
+            onError={applyImageFallback}
+          />
           <div className="date-badge">
             <span className="day">{day}</span>
             <span className="month">{month}</span>
@@ -300,6 +388,11 @@ function EventCard({ event }: { event: Event }) {
           {isHighDemand && (
             <div className="badge-demand" style={{ position: "absolute", bottom: "0.75rem", left: "0.75rem", fontSize: "0.65rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
               <Flame size={10} /> Alta demanda
+            </div>
+          )}
+          {event.isFeatured && (
+            <div className="badge-featured" style={{ position: "absolute", top: "0.75rem", right: "0.75rem", fontSize: "0.65rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <Star size={10} /> Destacado
             </div>
           )}
         </div>
@@ -398,6 +491,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
   onSearch: (q: string) => void;
 }) {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const sectionRef = useRef<HTMLDivElement>(null);
   const categoryOptions = useMemo(() => {
@@ -439,8 +533,32 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
       e.tags.some((t) => t.toLowerCase().includes(q))
     );
 
+  const showcaseEvents = useMemo(() => {
+    if (filtered.length === 0) return [];
+    const featured = filtered
+      .filter((event) => event.isFeatured)
+      .map((event) => ({ event, highlight: "featured" as const }));
+
+    const trending = filtered
+      .filter((event) => !event.isFeatured)
+      .sort((a, b) => {
+        const scoreDiff = (b.trendingScore ?? 0) - (a.trendingScore ?? 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      })
+      .map((event) => ({ event, highlight: "trending" as const }));
+
+    return [...featured, ...trending].slice(0, 4);
+  }, [filtered]);
+  const showcaseFeaturedCount = showcaseEvents.filter((item) => item.highlight === "featured").length;
+  const showcaseTrendingCount = showcaseEvents.filter((item) => item.highlight === "trending").length;
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginatedIds = useMemo(
+    () => paginated.map((event) => event.id).join("|"),
+    [paginated]
+  );
 
   // Reset to page 1 whenever the filtered set changes
   useEffect(() => { setPage(1); }, [search, activeCategory]);
@@ -462,10 +580,11 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
     const cards = sectionRef.current?.querySelectorAll(".reveal");
     cards?.forEach((c) => observer.observe(c));
     return () => observer.disconnect();
-  }, [paginated.length]);
+  }, [paginatedIds]);
 
   return (
-    <section id="events" style={{ padding: "5rem 5%" }} ref={sectionRef}>
+    <section id="events" style={{ padding: "4.6rem var(--page-inline)" }} ref={sectionRef}>
+      <div className="section-shell">
       <div className="events-section-header" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem", marginBottom: "2rem" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: "0.75rem" }}>
           <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "2rem", fontWeight: 800, letterSpacing: "-1px" }}>
@@ -494,9 +613,17 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             </button>
           )}
         </div>
+
+        <button
+          className="events-filter-mobile-btn"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <SlidersHorizontal size={15} />
+          Filtros
+        </button>
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "2.5rem" }}>
+      <div className="events-filter-desktop-row" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "2.5rem" }}>
         {categoryOptions.map(({ key, label, icon: Icon }) => (
           <button key={key} className={`chip ${activeCategory === key ? "active" : ""}`} onClick={() => setActiveCategory(key)}>
             <Icon size={14} /> {label}
@@ -507,6 +634,37 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
       {isError && (
         <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
           Sin conexión al backend. Intenta de nuevo en unos segundos.
+        </div>
+      )}
+
+      {(isLoading || showcaseEvents.length > 0) && (
+        <div className="showcase-shell" style={{ marginBottom: "2.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.2rem, 2vw, 1.45rem)", fontWeight: 800, letterSpacing: "-0.5px" }}>
+              Destacados y Tendencias
+            </h3>
+            {!isLoading && (
+              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                {showcaseFeaturedCount} Editorial · {showcaseTrendingCount} Algoritmo
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:auto-rows-[240px] lg:auto-rows-[250px]">
+            {isLoading
+              ? FEATURED_BENTO_LAYOUT.map((layout, index) => (
+                  <FeaturedEventBentoSkeleton key={`featured-skeleton-${index}`} className={layout} />
+                ))
+              : showcaseEvents.map(({ event, highlight }, index) => (
+                  <FeaturedEventBentoCard
+                    key={`featured-${event.id}`}
+                    event={event}
+                    highlight={highlight}
+                    priority={index === 0 ? "high" : "normal"}
+                    className={FEATURED_BENTO_LAYOUT[index] ?? "md:col-span-1 md:row-span-1"}
+                  />
+                ))}
+          </div>
         </div>
       )}
 
@@ -532,6 +690,80 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
       </div>
 
       <Pagination page={page} totalPages={totalPages} onPage={handlePage} />
+      </div>
+
+      <Drawer.Root open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(3px)",
+              zIndex: 1500,
+            }}
+          />
+          <Drawer.Content
+            style={{
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1501,
+              background: "var(--bg-dark)",
+              borderTop: "1px solid var(--glass-border)",
+              borderTopLeftRadius: "1.2rem",
+              borderTopRightRadius: "1.2rem",
+              maxHeight: "82vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 -20px 60px rgba(0,0,0,0.55)",
+            }}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 999, background: "rgba(255,255,255,0.2)", margin: "0.55rem auto 0.3rem" }} />
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1rem 0.85rem", borderBottom: "1px solid var(--glass-border)" }}>
+              <Drawer.Title style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: 800, color: "var(--text-light)" }}>
+                Filtrar eventos
+              </Drawer.Title>
+              <Drawer.Close asChild>
+                <button
+                  aria-label="Cerrar filtros"
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
+                    border: "1px solid var(--glass-border)",
+                    background: "var(--glass-bg)",
+                    color: "var(--text-muted)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </Drawer.Close>
+            </div>
+
+            <div style={{ overflowY: "auto", padding: "1rem", display: "flex", flexWrap: "wrap", gap: "0.55rem" }}>
+              {categoryOptions.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={`mobile-filter-${key}`}
+                  className={`chip ${activeCategory === key ? "active" : ""}`}
+                  onClick={() => {
+                    setActiveCategory(key);
+                    setFiltersOpen(false);
+                  }}
+                >
+                  <Icon size={14} /> {label}
+                </button>
+              ))}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </section>
   );
 }
@@ -546,7 +778,7 @@ function Footer() {
   ];
 
   return (
-    <footer style={{ padding: "3rem 5% 2rem", borderTop: "1px solid var(--glass-border)", marginTop: "auto" }}>
+    <footer style={{ padding: "3rem var(--page-inline) 2rem", borderTop: "1px solid var(--glass-border)", marginTop: "auto" }}>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Zap size={18} color="var(--accent-primary)" />
@@ -590,6 +822,7 @@ function Footer() {
 export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const { rehydrate } = useAuthStore();
@@ -601,27 +834,29 @@ export default function HomePage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data, isLoading, isError } = useEvents(1, 20, debouncedSearch || undefined);
+  const { data, isLoading, isError } = useEvents(1, 100, debouncedSearch || undefined);
   const events = data?.data ?? [];
 
   return (
     <>
-      <style>{`
-        .hidden-mobile { display: flex; }
-        @media (max-width: 768px) {
-          .hidden-mobile { display: none !important; }
-        }
-      `}</style>
-
-      <Navbar onCartOpen={() => setCartOpen(true)} onAuthOpen={() => setAuthOpen(true)} />
+      <Navbar
+        onCartOpen={() => setCartOpen(true)}
+        onAuthOpen={() => setAuthOpen(true)}
+        onCommandOpen={() => setCommandOpen(true)}
+      />
       <main style={{ paddingTop: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
           <HeroSection onSearch={setSearch} />
-          <EventMarquee events={events} />
+          <EventHighlightsCarousel events={events} />
         </div>
         <EventsSection allEvents={events} isLoading={isLoading} isError={isError} search={search} onSearch={setSearch} />
       </main>
       <Footer />
+      <EventCommandPalette
+        events={events}
+        open={commandOpen}
+        onOpenChange={setCommandOpen}
+      />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
