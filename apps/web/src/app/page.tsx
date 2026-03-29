@@ -807,7 +807,7 @@ export default function HomePage() {
         onAuthOpen={() => setAuthOpen(true)}
         onCommandOpen={() => setCommandOpen(true)}
       />
-      <main style={{ paddingTop: 0 }}>
+      <main id="main-content" style={{ paddingTop: 0 }}>
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
           <HeroSection onSearch={setSearch} />
           <EventHighlightsCarousel events={events} />

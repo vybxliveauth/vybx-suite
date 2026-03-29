@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useActionState, useEffect } from "react";
+import { useState, useActionState, useEffect, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/action-state";
 import { getClientTurnstileToken } from "@/lib/turnstile";
 import { TurnstileWidget } from "@/components/features/TurnstileWidget";
+import { PasswordStrengthMeter } from "@/components/features/PasswordStrengthMeter";
 import { ActionFeedback } from "@/components/ui/action-feedback";
 import Link from "next/link";
 import {
@@ -208,7 +209,7 @@ function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
         placeholder="••••••••"
         autoComplete="current-password"
         suffix={
-          <button type="button" onClick={() => setShowPass(!showPass)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+          <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
             {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         }
@@ -299,9 +300,10 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [resendNotice, setResendNotice] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterFields>({
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFields>({
     resolver: zodResolver(registerSchema),
   });
+  const passwordValue = watch("password", "");
 
   const [state, action, pending] = useActionState<UiActionState, RegisterFields>(
     async (_prev, data) => {
@@ -427,11 +429,12 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
         placeholder="Mín. 12 caracteres"
         autoComplete="new-password"
         suffix={
-          <button type="button" onClick={() => setShowPass(!showPass)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+          <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
             {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         }
       />
+      <PasswordStrengthMeter value={passwordValue} />
       <Field
         label="Confirmar contraseña"
         icon={Lock}
@@ -441,9 +444,6 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
         placeholder="Repite la contraseña"
         autoComplete="new-password"
       />
-      <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
-        La contraseña debe tener mínimo 12 caracteres, una mayúscula, un número y un símbolo.
-      </p>
 
       <TurnstileWidget action="register" />
 
@@ -478,6 +478,8 @@ export function AuthModal({
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const { setUser } = useAuthStore();
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => { if (open) setTab(defaultTab); }, [open, defaultTab]);
 
@@ -495,11 +497,50 @@ export function AuthModal({
     return () => media.removeListener(onChange);
   }, []);
 
+  // Save previous focus and restore on close
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    if (open) document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    if (open) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+      // Focus the modal after render
+      requestAnimationFrame(() => modalRef.current?.focus());
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [open]);
+
+  // Focus trap + Escape key
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab" || !modalRef.current) return;
+
+      const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    },
+    [onClose],
+  );
+
+  useEffect(() => {
+    if (open) document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [open, handleKeyDown]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -518,6 +559,7 @@ export function AuthModal({
       {/* Backdrop */}
       <div
         onClick={onClose}
+        aria-hidden="true"
         style={{
           position: "fixed", inset: 0, zIndex: 1300,
           background: "rgba(0,0,0,0.6)",
@@ -530,6 +572,11 @@ export function AuthModal({
 
       {/* Modal */}
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
+        tabIndex={-1}
         style={{
           position: "fixed",
           top: isMobileViewport ? "max(0.75rem, env(safe-area-inset-top))" : "50%",
@@ -562,6 +609,7 @@ export function AuthModal({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar"
             style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-muted)" }}
           >
             <X size={15} />

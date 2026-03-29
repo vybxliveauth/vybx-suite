@@ -79,7 +79,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+        <nav aria-label="Navegación principal" className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
           {visibleNav.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (

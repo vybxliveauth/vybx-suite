@@ -34,7 +34,7 @@ export function PromoterShell({ children, breadcrumb }: PromoterShellProps) {
           onMenuClick={() => setSidebarOpen(true)}
           breadcrumb={breadcrumb}
         />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
