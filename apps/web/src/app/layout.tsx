@@ -35,6 +35,24 @@ export const metadata: Metadata = {
   description:
     "Descubre y compra tickets para los mejores eventos en vivo. Rápido, seguro y sin complicaciones.",
   metadataBase: resolveMetadataBase(),
+  openGraph: {
+    type: "website",
+    locale: "es_DO",
+    siteName: "Vybx",
+    title: "Vybx - Tickets para experiencias en vivo",
+    description:
+      "Descubre y compra tickets para los mejores eventos en vivo. Rápido, seguro y sin complicaciones.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vybx - Tickets para experiencias en vivo",
+    description:
+      "Descubre y compra tickets para los mejores eventos en vivo.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

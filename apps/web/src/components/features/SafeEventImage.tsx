@@ -1,9 +1,10 @@
 "use client";
 
-import { ImgHTMLAttributes, useEffect, useState } from "react";
+import NextImage, { ImageProps } from "next/image";
+import { useEffect, useState } from "react";
 import { EVENT_IMAGE_FALLBACK, normalizeEventImageUrl } from "@/lib/images";
 
-type SafeEventImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> & {
+type SafeEventImageProps = Omit<ImageProps, "src" | "alt"> & {
   src: string | null | undefined;
   alt: string;
   fallbackSrc?: string;
@@ -25,10 +26,6 @@ export function SafeEventImage({
   alt,
   fallbackSrc = EVENT_IMAGE_FALLBACK,
   retryOnError = true,
-  loading = "lazy",
-  decoding = "async",
-  referrerPolicy = "no-referrer",
-  onError,
   ...props
 }: SafeEventImageProps) {
   const normalizedSource = normalizeEventImageUrl(src);
@@ -41,33 +38,34 @@ export function SafeEventImage({
     setRetried(false);
   }, [normalizedSource]);
 
+  // Data URIs can't go through next/Image optimization — use native img
+  if (resolvedSrc.startsWith("data:")) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img {...(props as React.ImgHTMLAttributes<HTMLImageElement>)} src={resolvedSrc} alt={alt} />
+    );
+  }
+
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <NextImage
       {...props}
       src={resolvedSrc}
       alt={alt}
-      loading={loading}
-      decoding={decoding}
-      referrerPolicy={referrerPolicy}
-      onError={(event) => {
+      onError={() => {
         if (
           retryOnError &&
           !retried &&
           resolvedSrc !== normalizedFallback &&
-          normalizedSource !== normalizedFallback &&
-          !normalizedSource.startsWith("data:")
+          normalizedSource !== normalizedFallback
         ) {
           setRetried(true);
           setResolvedSrc(buildRetryUrl(normalizedSource));
-          onError?.(event);
           return;
         }
 
         if (resolvedSrc !== normalizedFallback) {
           setResolvedSrc(normalizedFallback);
         }
-        onError?.(event);
       }}
     />
   );

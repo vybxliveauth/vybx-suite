@@ -54,6 +54,15 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@vybx/ui", "@vybx/schemas"],
   outputFileTracingRoot: repoRoot,
   turbopack: { root: repoRoot },
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "**.unsplash.com" },
+      // Allow any HTTPS host — event images come from promoter-provided URLs.
+      { protocol: "https", hostname: "**" },
+      ...(isDev ? [{ protocol: "http" as const, hostname: "localhost" }] : []),
+    ],
+  },
   async headers() {
     return [
       {
