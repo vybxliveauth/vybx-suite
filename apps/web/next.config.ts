@@ -15,13 +15,13 @@ const cspDirectives = [
   "default-src 'self'",
   // Next.js requires unsafe-inline + unsafe-eval for its own runtime scripts.
   // Harden further in production by switching to nonce-based CSP in middleware.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https: blob:",
   "font-src 'self' data:",
-  `connect-src 'self' ${[apiUrl, connectSrcExtra].filter(Boolean).join(" ")}`.trim(),
+  `connect-src 'self' https://challenges.cloudflare.com ${[apiUrl, connectSrcExtra].filter(Boolean).join(" ")}`.trim(),
   "media-src 'self' blob:",
-  "frame-src 'none'",
+  "frame-src https://challenges.cloudflare.com",
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",
