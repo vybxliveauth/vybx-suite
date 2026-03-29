@@ -17,6 +17,11 @@ import {
   type UiActionState,
 } from "@/lib/action-state";
 import { ActionFeedback } from "@/components/ui/action-feedback";
+import { resolveApiBaseUrl } from "@vybx/api-client";
+
+const API_BASE_URL = resolveApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
+);
 
 const schema = z.object({
   password: z
@@ -36,13 +41,59 @@ type Fields = z.infer<typeof schema>;
 export default function ResetPasswordPage() {
   const [token, setToken] = useState<string | null>(null);
   const [showPass, setShowPass] = useState(false);
+  const [verifiedByRecovery, setVerifiedByRecovery] = useState(false);
+  const [verifyingEmailToken, setVerifyingEmailToken] = useState(false);
 
   // Token arrives as hash fragment to avoid server-side logging
   useEffect(() => {
     const hash = window.location.hash.slice(1); // remove "#"
     const params = new URLSearchParams(hash);
-    setToken(params.get("token"));
+    const hashToken = params.get("token");
+    if (hashToken?.trim()) {
+      setToken(hashToken.trim());
+      return;
+    }
+
+    const search = new URLSearchParams(window.location.search);
+    const queryToken = search.get("token");
+    setToken(queryToken?.trim() || null);
   }, []);
+
+  // Recovery guard: if a verification token reaches this reset route by mistake,
+  // attempt email verification first to avoid showing a confusing reset-expired error.
+  useEffect(() => {
+    if (!token || verifiedByRecovery) return;
+
+    let cancelled = false;
+    async function tryVerifyEmailToken() {
+      setVerifyingEmailToken(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token }),
+        });
+
+        if (!cancelled && response.ok) {
+          setVerifiedByRecovery(true);
+        }
+      } catch {
+        // Ignore errors here: this is a best-effort safety check.
+      } finally {
+        if (!cancelled) {
+          setVerifyingEmailToken(false);
+        }
+      }
+    }
+
+    void tryVerifyEmailToken();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, verifiedByRecovery]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<Fields>({
     resolver: zodResolver(schema),
@@ -111,6 +162,29 @@ export default function ResetPasswordPage() {
                   Ir al inicio
                 </Link>
               </div>
+            ) : verifiedByRecovery ? (
+              /* ── Recovered verification token ── */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", textAlign: "center" }}>
+                <div style={{
+                  width: 72, height: 72, borderRadius: "50%",
+                  background: "rgba(34,197,94,0.12)",
+                  border: "2px solid rgba(34,197,94,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <CheckCircle2 size={32} color="#4ade80" />
+                </div>
+                <div>
+                  <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "1.4rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.5rem" }}>
+                    Correo verificado
+                  </h1>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
+                    Detectamos un enlace de verificación en la ruta de contraseña. Ya verificamos tu cuenta correctamente.
+                  </p>
+                </div>
+                <Link href="/" className="btn-primary" style={{ textDecoration: "none" }}>
+                  Ir al inicio
+                </Link>
+              </div>
             ) : !token ? (
               /* ── No token ── */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", textAlign: "center" }}>
@@ -126,6 +200,18 @@ export default function ResetPasswordPage() {
                 <Link href="/forgot-password" className="btn-primary" style={{ textDecoration: "none" }}>
                   Solicitar nuevo enlace
                 </Link>
+              </div>
+            ) : verifyingEmailToken ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", textAlign: "center" }}>
+                <Loader2 size={34} color="#a78bfa" style={{ animation: "spin 1s linear infinite" }} />
+                <div>
+                  <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "1.3rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.4rem" }}>
+                    Validando enlace
+                  </h1>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
+                    Estamos revisando si este enlace corresponde a verificación de correo o cambio de contraseña.
+                  </p>
+                </div>
               </div>
             ) : (
               /* ── Form ── */

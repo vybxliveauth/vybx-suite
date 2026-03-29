@@ -41,15 +41,64 @@ export default function VerifyEmailPage() {
   const [token, setToken] = useState<string | null>(null);
   const [state, setState] = useState<VerifyState>("loading");
   const [message, setMessage] = useState("Verificando tu correo...");
+  const [resendEmail, setResendEmail] = useState("");
+  const [resending, setResending] = useState(false);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
 
   useEffect(() => {
     const parsed = getTokenFromUrl();
     setToken(parsed);
+    const searchParams = new URLSearchParams(window.location.search);
+    const emailFromQuery = searchParams.get("email")?.trim() ?? "";
+    if (emailFromQuery) {
+      setResendEmail(emailFromQuery);
+    }
     if (!parsed) {
       setState("missing-token");
       setMessage("El enlace de verificación no es válido o está incompleto.");
     }
   }, []);
+
+  async function handleResendVerification() {
+    const normalizedEmail = resendEmail.trim();
+    if (!normalizedEmail) {
+      setResendError("Ingresa el correo con el que creaste tu cuenta.");
+      setResendNotice(null);
+      return;
+    }
+
+    setResending(true);
+    setResendError(null);
+    setResendNotice(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: normalizedEmail }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(
+          parseErrorMessage(payload, "No se pudo reenviar el correo de verificación."),
+        );
+      }
+      setResendNotice(
+        parseErrorMessage(payload, "Te enviamos un nuevo correo de verificación."),
+      );
+    } catch (error) {
+      setResendError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo reenviar el correo de verificación.",
+      );
+    } finally {
+      setResending(false);
+    }
+  }
 
   useEffect(() => {
     if (!token) return;
@@ -204,10 +253,36 @@ export default function VerifyEmailPage() {
                   Iniciar sesión
                 </Link>
               ) : state === "loading" ? null : (
-                <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
-                  <Link href="/forgot-password" className="btn-primary" style={{ textDecoration: "none" }}>
-                    Solicitar nuevo enlace
-                  </Link>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", width: "100%" }}>
+                  <input
+                    type="email"
+                    placeholder="tu@email.com"
+                    value={resendEmail}
+                    onChange={(event) => setResendEmail(event.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "0.72rem 0.82rem",
+                      borderRadius: "0.65rem",
+                      border: "1px solid var(--glass-border)",
+                      background: "rgba(255,255,255,0.04)",
+                      color: "var(--text-light)",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => void handleResendVerification()}
+                    disabled={resending}
+                    style={{ justifyContent: "center" }}
+                  >
+                    {resending ? "Reenviando..." : "Reenviar verificación"}
+                  </button>
+                  {resendNotice ? (
+                    <p style={{ margin: 0, fontSize: "0.82rem", color: "#9ff3c3" }}>{resendNotice}</p>
+                  ) : null}
+                  {resendError ? (
+                    <p style={{ margin: 0, fontSize: "0.82rem", color: "#fda4af" }}>{resendError}</p>
+                  ) : null}
                   <Link
                     href="/"
                     style={{

@@ -295,6 +295,10 @@ function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
 
 function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
   const [showPass, setShowPass] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string>("");
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFields>({
     resolver: zodResolver(registerSchema),
   });
@@ -320,6 +324,9 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
           const err = await res.json().catch(() => ({}));
           throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al registrar");
         }
+        setRegisteredEmail(data.email);
+        setResendNotice(null);
+        setResendError(null);
         onSuccess();
         return actionSuccessState("Revisa tu email para verificar tu cuenta.");
       } catch (e) {
@@ -329,6 +336,43 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
     uiActionInitialState,
   );
 
+  async function handleResendVerification() {
+    if (!registeredEmail.trim()) return;
+
+    setResendingVerification(true);
+    setResendNotice(null);
+    setResendError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: registeredEmail.trim() }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message =
+          typeof payload?.message === "string"
+            ? payload.message
+            : "No pudimos reenviar el correo de verificación.";
+        throw new Error(message);
+      }
+      setResendNotice(
+        typeof payload?.message === "string"
+          ? payload.message
+          : "Te enviamos un nuevo correo de verificación.",
+      );
+    } catch (error) {
+      setResendError(
+        error instanceof Error
+          ? error.message
+          : "No pudimos reenviar el correo de verificación.",
+      );
+    } finally {
+      setResendingVerification(false);
+    }
+  }
+
   if (state.status === "success") {
     return (
       <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
@@ -337,6 +381,29 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
           ¡Cuenta creada!
         </p>
         <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{state.message}</p>
+        {registeredEmail ? (
+          <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
+            Correo enviado a <strong style={{ color: "var(--text-light)" }}>{registeredEmail}</strong>
+          </p>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => void handleResendVerification()}
+          disabled={resendingVerification}
+          className="btn-secondary"
+          style={{ justifyContent: "center", padding: "0.72rem", marginTop: "0.9rem", width: "100%" }}
+        >
+          {resendingVerification
+            ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Reenviando...</>
+            : "Reenviar verificación"
+          }
+        </button>
+        {resendNotice ? (
+          <p style={{ fontSize: "0.78rem", color: "#9ff3c3", marginTop: "0.55rem" }}>{resendNotice}</p>
+        ) : null}
+        {resendError ? (
+          <p style={{ fontSize: "0.78rem", color: "#fda4af", marginTop: "0.55rem" }}>{resendError}</p>
+        ) : null}
       </div>
     );
   }
