@@ -28,7 +28,7 @@ export function ReservationTimer() {
 
   if (!visible || !session) return null;
 
-  const isExpired = session.isExpired || (seconds === 0 && Date.now() >= session.expiresAt);
+  const isExpired = session.isExpired || !isReservationActive();
   const isUrgent = seconds < 120 && !isExpired; // under 2 min
 
   return (

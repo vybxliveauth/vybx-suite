@@ -5,6 +5,7 @@ import { CartItem, CheckoutSession } from "@/types";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const RESERVATION_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const RESERVATION_EXPIRY_GRACE_MS = 2000; // Avoid edge flicker on client clock jitter
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -92,7 +93,10 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (item) => {
         const { session, startTimer } = get();
-        const existingItems = session?.items ?? [];
+        const sessionStillActive =
+          session && Date.now() < session.expiresAt + RESERVATION_EXPIRY_GRACE_MS;
+        const activeSession = sessionStillActive ? session : null;
+        const existingItems = activeSession?.items ?? [];
         const cartEvent = existingItems[0];
         if (cartEvent && cartEvent.eventId !== item.eventId) {
           return {
@@ -172,7 +176,7 @@ export const useCartStore = create<CartStore>()(
         if (!session) return;
 
         const now = Date.now();
-        if (now >= session.expiresAt && !session.isExpired) {
+        if (now >= session.expiresAt + RESERVATION_EXPIRY_GRACE_MS && !session.isExpired) {
           set({
             session: { ...session, isExpired: true },
           });
@@ -202,14 +206,20 @@ export const useCartStore = create<CartStore>()(
       isReservationActive: () => {
         const { session } = get();
         if (!session) return false;
-        return !session.isExpired && Date.now() < session.expiresAt;
+        return (
+          !session.isExpired &&
+          Date.now() < session.expiresAt + RESERVATION_EXPIRY_GRACE_MS
+        );
       },
 
       remainingSeconds: () => {
         const { session } = get();
         if (!session) return 0;
-        const remaining = Math.max(0, session.expiresAt - Date.now());
-        return Math.floor(remaining / 1000);
+        const remaining = Math.max(
+          0,
+          session.expiresAt + RESERVATION_EXPIRY_GRACE_MS - Date.now()
+        );
+        return remaining === 0 ? 0 : Math.ceil(remaining / 1000);
       },
     }),
     {
@@ -230,7 +240,10 @@ export const useCartStore = create<CartStore>()(
               normalizedItems.length > 0 ? buildSession(normalizedItems) : null;
           }
         }
-        if (state.session && now >= state.session.expiresAt) {
+        if (
+          state.session &&
+          now >= state.session.expiresAt + RESERVATION_EXPIRY_GRACE_MS
+        ) {
           state.session = { ...state.session, isExpired: true };
         } else if (state.session) {
           // Session still valid — restart the countdown timer

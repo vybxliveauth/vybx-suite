@@ -18,6 +18,7 @@ const INITIAL_STATE: CheckoutActionState = {
   status: "idle",
   message: "",
 };
+const CHECKOUT_EXPIRY_GRACE_MS = 2000;
 
 export { INITIAL_STATE as checkoutInitialState };
 
@@ -32,7 +33,11 @@ export async function submitCheckoutAction(
     const cartExpiresAt = formData.get("cartExpiresAt");
     if (cartExpiresAt !== null) {
       const expiryMs = Number(cartExpiresAt);
-      if (!isNaN(expiryMs) && expiryMs > 0 && expiryMs < Date.now()) {
+      if (
+        !isNaN(expiryMs) &&
+        expiryMs > 0 &&
+        expiryMs + CHECKOUT_EXPIRY_GRACE_MS < Date.now()
+      ) {
         return {
           status: "error",
           message:
