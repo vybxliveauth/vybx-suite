@@ -6,6 +6,7 @@ import { Event } from "@/types";
 import { TicketSidebar } from "@/components/features/event-detail/TicketSidebar";
 import { ReservationTimer } from "@/components/features/event-detail/ReservationTimer";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
+import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { ActionFeedback } from "@/components/ui/action-feedback";
 import {
   SEAT_ACTION_FEEDBACK_EVENT,
@@ -21,9 +22,6 @@ import {
   Share2,
   Heart,
 } from "lucide-react";
-
-const EVENT_IMAGE_FALLBACK =
-  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=80";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -104,14 +102,19 @@ function EventHero({ event }: { event: Event }) {
       overflow: "hidden",
     }}>
       {/* BG image */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        backgroundImage: `url(${event.imageUrl}), url(${EVENT_IMAGE_FALLBACK})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        animation: "slowDrift 20s infinite alternate ease-in-out",
-      }} />
+      <SafeEventImage
+        src={event.imageUrl}
+        alt={event.title}
+        loading="eager"
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          animation: "slowDrift 20s infinite alternate ease-in-out",
+        }}
+      />
       {/* Overlays */}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(5,5,8,0.97) 35%, rgba(5,5,8,0.55) 70%, rgba(5,5,8,0.2) 100%)" }} />
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(5,5,8,0.92) 0%, transparent 50%)" }} />
