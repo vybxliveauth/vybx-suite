@@ -55,6 +55,7 @@ export default function NewEventPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
   const [localFlyerPreview, setLocalFlyerPreview] = useState<string | null>(null);
+  const [flyerPreviewFailed, setFlyerPreviewFailed] = useState(false);
 
   const {
     register,
@@ -78,6 +79,10 @@ export default function NewEventPage() {
     () => localFlyerPreview || (imageValue && imageValue.trim().length > 0 ? imageValue : ""),
     [imageValue, localFlyerPreview],
   );
+
+  useEffect(() => {
+    setFlyerPreviewFailed(false);
+  }, [flyerPreview]);
 
   useEffect(() => {
     return () => {
@@ -233,19 +238,26 @@ export default function NewEventPage() {
                 {errors.image && <p className="text-xs text-destructive">{errors.image.message}</p>}
               </div>
 
-              {flyerPreview ? (
+              {flyerPreview && !flyerPreviewFailed ? (
                 <div className="overflow-hidden rounded-md border border-border/60 bg-card/50">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={flyerPreview}
                     alt="Vista previa del flyer"
                     className="h-40 w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    onError={() => setFlyerPreviewFailed(true)}
                   />
                 </div>
               ) : (
                 <div className="rounded-md border border-dashed border-border/60 bg-card/30 p-4 text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <ImagePlus className="size-4" />
-                    Sin flyer cargado.
+                    {flyerPreviewFailed
+                      ? "No se pudo cargar la vista previa del flyer."
+                      : "Sin flyer cargado."}
                   </span>
                 </div>
               )}
