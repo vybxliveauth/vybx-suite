@@ -1,35 +1,53 @@
 "use client";
 
+import {
+  createAuthSessionStore,
+  createSessionUserNormalizer,
+  formatDisplayName,
+} from "@vybx/auth-client";
+import { normalizePromoterPermissionClaims } from "@vybx/permissions";
 import type { AuthUser } from "./types";
 
-const USER_KEY = "vybx_promoter_user";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1";
+const VALID_ROLES = ["USER", "PROMOTER", "ADMIN", "SUPER_ADMIN"] as const;
 
-export function getUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(USER_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
+const normalizeBaseAuthUser = createSessionUserNormalizer<AuthUser["role"]>(VALID_ROLES);
+
+function normalizeAuthUser(input: unknown): AuthUser | null {
+  const base = normalizeBaseAuthUser(input);
+  if (!base) return null;
+
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    return base as AuthUser;
   }
+
+  const raw = input as { permissions?: unknown };
+  if (!Object.prototype.hasOwnProperty.call(raw, "permissions")) {
+    return base as AuthUser;
+  }
+
+  return {
+    ...(base as AuthUser),
+    permissions: normalizePromoterPermissionClaims(raw.permissions),
+  };
 }
 
-export function setUser(user: AuthUser): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-}
+const sessionStore = createAuthSessionStore<AuthUser["role"], AuthUser>({
+  baseUrl: BASE_URL,
+  validRoles: VALID_ROLES,
+  legacyStorageKeys: ["vybx_promoter_user"],
+  normalizeUser: (input) => normalizeAuthUser(input) as AuthUser | null,
+});
 
-export function clearSession(): void {
-  localStorage.removeItem(USER_KEY);
-}
-
-export function isAuthenticated(): boolean {
-  return getUser() !== null;
-}
+export const getUser = sessionStore.getUser;
+export const setUser = sessionStore.setUser;
+export const clearSession = sessionStore.clearSession;
+export const isAuthenticated = sessionStore.isAuthenticated;
+export const subscribeAuthChanges = sessionStore.subscribeAuthChanges;
+export const useAuthUser = sessionStore.useAuthUser;
+export const hydrateUserFromSession = sessionStore.hydrateUserFromSession;
 
 /** Display name helper */
 export function displayName(user: AuthUser | null): string {
-  if (!user) return "Promotor";
-  const full = [user.firstName, user.lastName].filter(Boolean).join(" ");
-  return full || (user.email.split("@")[0] ?? "Promotor");
+  return formatDisplayName(user, "Promotor");
 }

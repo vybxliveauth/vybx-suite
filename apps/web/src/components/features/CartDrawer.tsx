@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCartStore } from "@/store/useCartStore";
-import { formatPrice, formatCountdown } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
+import { FlipCountdown } from "@/components/features/FlipCountdown";
 import {
   X,
   ShoppingCart,
@@ -161,9 +162,7 @@ export function CartDrawer({
             ) : (
               <span style={{ fontSize: "0.8rem", color: isUrgent ? "#fda4af" : "var(--text-muted)" }}>
                 Reserva expira en{" "}
-                <strong style={{ color: isUrgent ? "#fda4af" : "var(--text-light)", fontFamily: "var(--font-heading)" }}>
-                  {formatCountdown(seconds)}
-                </strong>
+                <FlipCountdown seconds={seconds} urgent={isUrgent} compact />
               </span>
             )}
           </div>
@@ -341,7 +340,13 @@ export function CartDrawer({
 
 // ─── Cart Button (for Navbar) ─────────────────────────────────────────────────
 
-export function CartButton({ onClick }: { onClick: () => void }) {
+export function CartButton({
+  onClick,
+  compactOnMobile = false,
+}: {
+  onClick: () => void;
+  compactOnMobile?: boolean;
+}) {
   const { session } = useCartStore();
   const count = session?.items.reduce((a, i) => a + i.quantity, 0) ?? 0;
   const hasItems = count > 0;
@@ -349,6 +354,7 @@ export function CartButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
+      className={compactOnMobile ? "cart-btn cart-btn-compact-mobile" : "cart-btn"}
       style={{
         position: "relative",
         background: hasItems ? "rgba(255,42,95,0.1)" : "var(--glass-bg)",
@@ -371,7 +377,9 @@ export function CartButton({ onClick }: { onClick: () => void }) {
       }}
     >
       <ShoppingCart size={16} />
-      {hasItems ? `${count} ticket${count > 1 ? "s" : ""}` : "Carrito"}
+      <span className="cart-btn-label">
+        {hasItems ? `${count} ticket${count > 1 ? "s" : ""}` : "Carrito"}
+      </span>
       {hasItems && (
         <span style={{
           position: "absolute",

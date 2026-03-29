@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState, useOptimistic, startTransition } from "react";
+import { useActionState, useEffect, useOptimistic, startTransition } from "react";
 import {
   toggleSeatReservationAction,
   seatInitialState,
   type SeatActionState,
 } from "@/actions/seats";
 import { Seat, SeatStatus } from "@/types";
+
+export const SEAT_ACTION_FEEDBACK_EVENT = "vybx:seat-action-feedback";
+export type { SeatActionState };
 
 // ─── Optimistic Seat Reducer ──────────────────────────────────────────────────
 
@@ -44,6 +47,17 @@ export function useSeatSelection(
     optimisticSeatReducer
   );
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (actionState.status === "idle" || !actionState.message) return;
+
+    window.dispatchEvent(
+      new CustomEvent<SeatActionState>(SEAT_ACTION_FEEDBACK_EVENT, {
+        detail: actionState,
+      }),
+    );
+  }, [actionState]);
+
   // ─── Toggle a seat ──────────────────────────────────────────────────────────
 
   function toggleSeat(seatId: string) {
@@ -73,5 +87,6 @@ export function useSeatSelection(
     toggleSeat,
     isPending,
     actionState,
+    actionMessage: actionState.message,
   };
 }

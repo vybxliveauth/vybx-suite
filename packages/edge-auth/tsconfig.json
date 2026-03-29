@@ -1,0 +1,12 @@
+{
+  "extends": "@vybx/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@vybx/edge-auth": ["./src/index.ts"],
+      "@vybx/edge-auth/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import type { SyntheticEvent } from "react";
 import Link from "next/link";
 import { Drawer } from "vaul";
 import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
@@ -14,6 +13,7 @@ import { EventCommandPalette } from "@/components/features/EventCommandPalette";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
 import { AuthModal } from "@/components/features/AuthModal";
 import { FeaturedEventBentoCard } from "@/components/features/FeaturedEventBentoCard";
+import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { ThemeToggle } from "@/components/features/ThemeToggle";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -35,16 +35,6 @@ function categoryIconFor(value: string) {
   if (/indie|rock|alternative|alt/.test(value)) return Flame;
   if (/urban|reggaeton|hip hop|hip-hop|trap/.test(value)) return Ticket;
   return Star;
-}
-
-const EVENT_IMAGE_FALLBACK =
-  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=80";
-
-function applyImageFallback(event: SyntheticEvent<HTMLImageElement>) {
-  const img = event.currentTarget;
-  if (img.dataset.fallbackApplied === "1") return;
-  img.dataset.fallbackApplied = "1";
-  img.src = EVENT_IMAGE_FALLBACK;
 }
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
@@ -374,12 +364,10 @@ function EventCard({ event }: { event: Event }) {
     <Link href={href} style={{ textDecoration: "none", display: "block" }}>
       <div className="glass-card reveal" style={{ cursor: "pointer" }}>
         <div className="image-wrapper">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <SafeEventImage
             src={event.imageUrl}
             alt={event.title}
             className="card-image"
-            onError={applyImageFallback}
           />
           <div className="date-badge">
             <span className="day">{day}</span>
@@ -550,8 +538,6 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
 
     return [...featured, ...trending].slice(0, 4);
   }, [filtered]);
-  const showcaseFeaturedCount = showcaseEvents.filter((item) => item.highlight === "featured").length;
-  const showcaseTrendingCount = showcaseEvents.filter((item) => item.highlight === "trending").length;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -596,24 +582,6 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             </span>
           )}
         </div>
-        <div className="search-mini">
-          <Search size={15} color="var(--text-muted)" />
-          <input
-            value={search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder="Buscar eventos..."
-            style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: "0.88rem", color: "var(--text-light)", fontFamily: "var(--font-body)" }}
-          />
-          {search && (
-            <button
-              onClick={() => onSearch("")}
-              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", padding: 0, lineHeight: 1 }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
-
         <button
           className="events-filter-mobile-btn"
           onClick={() => setFiltersOpen(true)}
@@ -643,11 +611,6 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.2rem, 2vw, 1.45rem)", fontWeight: 800, letterSpacing: "-0.5px" }}>
               Destacados y Tendencias
             </h3>
-            {!isLoading && (
-              <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                {showcaseFeaturedCount} Editorial · {showcaseTrendingCount} Algoritmo
-              </span>
-            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 md:auto-rows-[240px] lg:auto-rows-[250px]">

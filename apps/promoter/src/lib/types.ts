@@ -1,61 +1,45 @@
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
-export type UserRole = "USER" | "PROMOTER" | "ADMIN" | "SUPER_ADMIN";
+import type {
+  ApiError as SharedApiError,
+  BackofficeEventCore,
+  BackofficeEventDetailCore,
+  BackofficeEventMetrics,
+  AuthUserCore,
+  BackofficeEventStatus,
+  BackofficeTicketType,
+  CancellationStatus as SharedCancellationStatus,
+  DashboardResponse as SharedDashboardResponse,
+  DashboardSummary as SharedDashboardSummary,
+  DashboardTopEvent as SharedDashboardTopEvent,
+  LoginResponseCore,
+  NotificationItem as SharedNotificationItem,
+  NotificationsResponse as SharedNotificationsResponse,
+  NotificationSeverity as SharedNotificationSeverity,
+  PaginatedResponse as SharedPaginatedResponse,
+  RefundRequestCore as SharedRefundRequestCore,
+  RefundStatus as SharedRefundStatus,
+  UserRole as SharedUserRole,
+} from "@vybx/types";
 
-export interface AuthUser {
-  userId: string;
-  email: string;
-  role: UserRole;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
-}
+export type UserRole = SharedUserRole;
 
-export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  user: AuthUser;
-}
+export interface AuthUser extends AuthUserCore {}
+
+export type LoginResponse = LoginResponseCore<AuthUser>;
 
 // ── Events ───────────────────────────────────────────────────────────────────
 
 /** Backend EventStatus enum */
-export type EventStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type EventStatus = BackofficeEventStatus;
 
-export interface TicketType {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  sold: number;
-}
+export type TicketType = BackofficeTicketType;
 
-export interface EventMetrics {
-  totalCapacity: number;
-  totalSold: number;
-  occupancyRate: number;  // 0-100
-  grossRevenue: number;
-  successfulPayments: number;
-}
+export type EventMetrics = BackofficeEventMetrics;
 
-export interface Event {
-  id: string;
-  title: string;
-  description: string | null;
-  image: string | null;
-  location: string | null;
-  tags: string[];
-  date: string; // ISO
-  status: EventStatus;
-  isActive: boolean;
-  categoryId: string | null;
-  ownerId: string;
-  metrics?: EventMetrics;
-}
+export type Event = BackofficeEventCore;
 
-export interface EventDetail extends Event {
-  ticketTypes: TicketType[];
-}
+export type EventDetail = BackofficeEventDetailCore<Event, TicketType>;
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 
@@ -84,71 +68,22 @@ export interface EventAnalyticsResponse {
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
-export interface DashboardSummary {
-  totalEvents: number;
-  activeEvents: number;
-  pendingEvents: number;
-  upcomingEvents: number;
-  soldTickets: number;
-  cancelledTickets: number;
-  successfulPayments: number;
-  grossRevenue: number;
-  refundRequestsPending: number;
-}
-
-export interface DashboardTopEvent {
-  eventId: string;
-  title: string;
-  revenue: number;
-  successfulPayments: number;
-  soldTickets: number;
-}
-
-export interface DashboardResponse {
-  summary: DashboardSummary;
-  topEvents: DashboardTopEvent[];
-}
+export type DashboardSummary = SharedDashboardSummary;
+export type DashboardTopEvent = SharedDashboardTopEvent;
+export type DashboardResponse = SharedDashboardResponse;
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 
-export type NotificationSeverity = "INFO" | "WARNING" | "CRITICAL";
-
-export interface NotificationItem {
-  key: string;
-  title: string;
-  message: string;
-  href: string;
-  severity: NotificationSeverity;
-  isRead: boolean;
-  readAt: string | null;
-}
-
-export interface NotificationsResponse {
-  unreadCount: number;
-  generatedAt: string;
-  items: NotificationItem[];
-}
+export type NotificationSeverity = SharedNotificationSeverity;
+export type NotificationItem = SharedNotificationItem;
+export type NotificationsResponse = SharedNotificationsResponse;
 
 // ── Refunds ───────────────────────────────────────────────────────────────────
 
-export type CancellationStatus = "REQUESTED" | "APPROVED" | "REJECTED";
-export type RefundStatus = "NONE" | "PENDING" | "REFUNDED" | "FAILED";
+export type CancellationStatus = SharedCancellationStatus;
+export type RefundStatus = SharedRefundStatus;
 
-export interface RefundRequest {
-  id: string;
-  status: CancellationStatus;
-  refundStatus: RefundStatus;
-  reason: string | null;
-  requestedAt: string;
-  ticket: {
-    id: string;
-    ticketType: {
-      name: string;
-      price: number;
-      event: { id: string; title: string };
-    };
-  };
-}
+export type RefundRequest = SharedRefundRequestCore;
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
@@ -173,14 +108,6 @@ export interface StaffListResponse {
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
+export type PaginatedResponse<T> = SharedPaginatedResponse<T>;
 
-export interface ApiError {
-  message: string;
-  code?: string;
-}
+export type ApiError = SharedApiError;

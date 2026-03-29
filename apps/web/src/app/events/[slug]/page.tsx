@@ -1,61 +1,30 @@
-import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { fetchEventById } from "@/lib/api";
-import { EventDetailClient } from "./EventDetailClient";
+import { EventDetailRouteClient } from "./EventDetailRouteClient";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
-// Extract backend event ID from slug format "event-title__<encoded-id>".
-// Keeps backward compatibility with legacy UUID-tail slugs.
-function extractId(slug: string): string | null {
-  const delimiter = "__";
-  if (slug.includes(delimiter)) {
-    const encodedId = slug.slice(slug.lastIndexOf(delimiter) + delimiter.length);
-    if (encodedId.length > 0) {
-      try {
-        return decodeURIComponent(encodedId);
-      } catch {
-        return encodedId;
-      }
-    }
-  }
-
-  const fullUuidRegex =
-    /([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i;
-  const match = slug.match(fullUuidRegex);
-  if (match?.[1]) return match[1];
-
-  if (fullUuidRegex.test(slug)) return slug;
-  return null;
-}
-
-async function getEvent(slug: string) {
-  // Fetch from backend by id encoded in slug.
-  const eventId = extractId(slug);
-  if (!eventId) return null;
-
-  try {
-    return await fetchEventById(eventId);
-  } catch {
-    return null;
-  }
+function humanizeSlug(slug: string): string {
+  const base = slug.includes("__") ? slug.slice(0, slug.lastIndexOf("__")) : slug;
+  const normalized = base
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) return "Detalle de evento";
+  return normalized.replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const event = await getEvent(slug);
-  if (!event) return { title: "Evento no encontrado" };
+  const title = humanizeSlug(slug);
   return {
-    title: event.title,
-    description: event.description.slice(0, 155),
+    title: `${title} | Vybx`,
+    description: "Detalles del evento, tickets disponibles y compra segura en Vybx.",
   };
 }
 
 export default async function EventPage({ params }: Props) {
   const { slug } = await params;
-  const event = await getEvent(slug);
-  if (!event) notFound();
-  return <EventDetailClient event={event} />;
+  return <EventDetailRouteClient slug={slug} />;
 }

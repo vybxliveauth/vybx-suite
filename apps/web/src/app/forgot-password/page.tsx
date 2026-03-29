@@ -7,6 +7,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Zap, Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+  actionErrorState,
+  actionSuccessState,
+  uiActionInitialState,
+  type UiActionState,
+} from "@/lib/action-state";
+import { ActionFeedback } from "@/components/ui/action-feedback";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),
@@ -18,17 +25,19 @@ export default function ForgotPasswordPage() {
     resolver: zodResolver(schema),
   });
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null; sent: boolean }, data: Fields) => {
+  const [state, action, pending] = useActionState<UiActionState, Fields>(
+    async (_prev, data) => {
       try {
         // Backend always returns 200 (security: doesn't reveal if email exists)
         await api.post("/auth/request-password-reset", { email: data.email });
-        return { error: null, sent: true };
+        return actionSuccessState(
+          "Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña.",
+        );
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Error inesperado", sent: false };
+        return actionErrorState(e, "Error inesperado");
       }
     },
-    { error: null, sent: false }
+    uiActionInitialState,
   );
 
   return (
@@ -56,7 +65,7 @@ export default function ForgotPasswordPage() {
             borderRadius: "var(--radius-2xl)",
             padding: "2rem",
           }}>
-            {state.sent ? (
+            {state.status === "success" ? (
               /* ── Success state ── */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", textAlign: "center" }}>
                 <div style={{
@@ -72,7 +81,7 @@ export default function ForgotPasswordPage() {
                     Revisa tu email
                   </h1>
                   <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.6 }}>
-                    Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña. El enlace expira en 30 minutos.
+                    {state.message} El enlace expira en 30 minutos.
                   </p>
                 </div>
                 <Link href="/" className="btn-secondary" style={{ textDecoration: "none", marginTop: "0.5rem" }}>
@@ -126,11 +135,7 @@ export default function ForgotPasswordPage() {
                     )}
                   </div>
 
-                  {state.error && (
-                    <div style={{ padding: "0.65rem 0.9rem", borderRadius: "var(--radius-md)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.82rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                      <AlertCircle size={14} /> {state.error}
-                    </div>
-                  )}
+                  <ActionFeedback status={state.status} message={state.message} />
 
                   <button type="submit" disabled={pending} className="btn-primary" style={{ justifyContent: "center", marginTop: "0.25rem" }}>
                     {pending

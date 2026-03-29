@@ -30,6 +30,13 @@ type FormValues = z.infer<typeof schema>;
 export default function LoginPage() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
+  const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
 
   const {
     register,
@@ -39,8 +46,35 @@ export default function LoginPage() {
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
+    setVerificationNotice(null);
+    setVerificationEmail(null);
+    setTwoFactorNotice(null);
     try {
-      const res = await api.post<{ user: AuthUser; success: boolean }>("/auth/login", values);
+      const res = await api.post<
+        | { user: AuthUser; success: boolean }
+        | {
+            success: false;
+            requiresTwoFactor: true;
+            challengeId: string;
+            expiresInSeconds: number;
+            message?: string;
+          }
+      >("/auth/login", values);
+
+      if ("requiresTwoFactor" in res && res.requiresTwoFactor) {
+        setTwoFactorChallengeId(res.challengeId);
+        setTwoFactorCode("");
+        setTwoFactorNotice(
+          res.message ||
+            `Código 2FA enviado. Expira en ${Math.max(1, Math.ceil(res.expiresInSeconds / 60))} min.`,
+        );
+        return;
+      }
+
+      if (!("user" in res)) {
+        setServerError("No se pudo completar el inicio de sesión.");
+        return;
+      }
 
       if (res.user.role !== "PROMOTER" && res.user.role !== "ADMIN" && res.user.role !== "SUPER_ADMIN") {
         setServerError("Esta cuenta no tiene acceso al panel de promotor.");
@@ -50,11 +84,55 @@ export default function LoginPage() {
       setUser(res.user);
       router.replace("/dashboard");
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setServerError(err.message);
-      } else {
-        setServerError("Error al iniciar sesión");
+      const message = err instanceof Error ? err.message : "Error al iniciar sesión";
+      setServerError(message);
+      if (message.toLowerCase().includes("verific")) {
+        setVerificationEmail(values.email.trim().toLowerCase());
       }
+    }
+  }
+
+  async function handleVerifyTwoFactor() {
+    if (!twoFactorChallengeId) return;
+    setServerError(null);
+    setVerifyingTwoFactor(true);
+    try {
+      const res = await api.post<{ user: AuthUser; success: boolean }>("/auth/login/2fa", {
+        challengeId: twoFactorChallengeId,
+        code: twoFactorCode.trim(),
+      });
+
+      if (res.user.role !== "PROMOTER" && res.user.role !== "ADMIN" && res.user.role !== "SUPER_ADMIN") {
+        setServerError("Esta cuenta no tiene acceso al panel de promotor.");
+        return;
+      }
+
+      setUser(res.user);
+      router.replace("/dashboard");
+    } catch (err: unknown) {
+      setServerError(err instanceof Error ? err.message : "Código 2FA inválido");
+    } finally {
+      setVerifyingTwoFactor(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!verificationEmail) return;
+    setResendingVerification(true);
+    setVerificationNotice(null);
+    try {
+      const response = await api.post<{ message?: string; success?: boolean }>("/auth/resend-verification", {
+        email: verificationEmail,
+      });
+      setVerificationNotice(
+        response?.message || "Te enviamos un nuevo correo de verificación."
+      );
+    } catch (err: unknown) {
+      setVerificationNotice(
+        err instanceof Error ? err.message : "No se pudo reenviar el correo de verificación."
+      );
+    } finally {
+      setResendingVerification(false);
     }
   }
 
@@ -110,9 +188,58 @@ export default function LoginPage() {
                 </p>
               )}
 
+              {verificationEmail && (
+                <div className="space-y-2 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2">
+                  <p className="text-xs text-amber-100">
+                    Correo pendiente de verificación: <span className="font-medium">{verificationEmail}</span>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={resendingVerification}
+                    onClick={() => void handleResendVerification()}
+                  >
+                    {resendingVerification && <Loader2 className="size-4 animate-spin" />}
+                    Reenviar verificación
+                  </Button>
+                  {verificationNotice && (
+                    <p className="text-xs text-amber-100/90">{verificationNotice}</p>
+                  )}
+                </div>
+              )}
+
+              {twoFactorChallengeId && (
+                <div className="space-y-2 rounded-md border border-sky-400/30 bg-sky-500/10 px-3 py-2">
+                  <Label htmlFor="twoFactorCode">Código 2FA</Label>
+                  <Input
+                    id="twoFactorCode"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={8}
+                    placeholder="123456"
+                    value={twoFactorCode}
+                    onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, ""))}
+                  />
+                  {twoFactorNotice && (
+                    <p className="text-xs text-sky-100/90">{twoFactorNotice}</p>
+                  )}
+                  <Button
+                    type="button"
+                    className="w-full"
+                    disabled={verifyingTwoFactor || twoFactorCode.trim().length < 4}
+                    onClick={() => void handleVerifyTwoFactor()}
+                  >
+                    {verifyingTwoFactor && <Loader2 className="size-4 animate-spin" />}
+                    Verificar 2FA
+                  </Button>
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-                Entrar
+                {twoFactorChallengeId ? "Reintentar login" : "Entrar"}
               </Button>
             </form>
           </CardContent>

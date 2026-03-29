@@ -180,14 +180,16 @@ NEXT_PUBLIC_API_URL=http://localhost:3004
 ### `vybxlive-backend` — `.env`
 
 ```env
-DATABASE_URL=postgresql://vybxlive:change_me_in_env@127.0.0.1:5432/vybx?schema=public
-JWT_SECRET=LniIXAA8q39oMXRcXqnAC0fZxgy37ChyWjbFtCOTyJ94ocslpaiuXTGrKsY5r5TJ
+DATABASE_URL=postgresql://vybxlive:<db_password>@127.0.0.1:5432/vybx?schema=public
+JWT_SECRET=<jwt_secret_min_64_chars>
 PORT=3004
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
-REDIS_PASSWORD=vybxlive
-RESEND_API_KEY=REDACTED_RESEND_API_KEY
+REDIS_PASSWORD=<redis_password>
+RESEND_API_KEY=<resend_api_key>
 ```
+
+Nunca publiques claves reales en `.md`, `.env.example` ni commits.
 
 ---
 

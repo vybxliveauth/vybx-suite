@@ -40,14 +40,15 @@ export async function toggleSeatReservationAction(
 
   const { seatId, eventId, sessionId } = parsed.data;
 
-  try {
-    // TODO: validate seat is still available in DB, lock it for this session
-    await new Promise((r) => setTimeout(r, 300)); // simulate round-trip
+  void eventId;
+  void sessionId;
 
-    void seatId; void eventId; void sessionId; // TODO: persist reservation to DB
-
-    return { status: "success", seatId };
-  } catch {
-    return { status: "error", seatId, message: "Seat no longer available." };
-  }
+  // Fail-fast instead of simulating in-memory success. Assigned seating needs a
+  // dedicated backend seat-lock API with persistent storage and conflict checks.
+  return {
+    status: "error",
+    seatId,
+    message:
+      "Assigned seating is not enabled yet. Use tier-based checkout until backend seat locking is available.",
+  };
 }

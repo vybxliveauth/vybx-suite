@@ -5,7 +5,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/store/useAuthStore";
-import { login, type AuthUser } from "@/lib/api";
+import { login, verifyLoginTwoFactor, type AuthUser } from "@/lib/api";
+import { resolveApiBaseUrl } from "@vybx/api-client";
+import {
+  actionErrorState,
+  actionSuccessState,
+  uiActionInitialState,
+  type UiActionState,
+} from "@/lib/action-state";
+import { getClientTurnstileToken } from "@/lib/turnstile";
+import { TurnstileWidget } from "@/components/features/TurnstileWidget";
+import { ActionFeedback } from "@/components/ui/action-feedback";
 import Link from "next/link";
 import {
   X,
@@ -19,6 +29,10 @@ import {
   Zap,
   CheckCircle2,
 } from "lucide-react";
+
+const API_BASE_URL = resolveApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
+);
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -111,22 +125,73 @@ function Field({
 
 function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
   const [showPass, setShowPass] = useState(false);
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
+  const [twoFactorState, setTwoFactorState] = useState<UiActionState>(uiActionInitialState);
+  const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
   });
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null }, data: LoginFields) => {
+  const [state, action, pending] = useActionState<UiActionState, LoginFields>(
+    async (_prev, data) => {
       try {
-        const user = await login(data);
-        onSuccess(user);
-        return { error: null };
+        const result = await login(data);
+        if (!("user" in result)) {
+          setTwoFactorChallengeId(result.challengeId);
+          setTwoFactorCode("");
+          setTwoFactorNotice(
+            result.message ||
+              `Codigo 2FA enviado. Expira en ${Math.max(1, Math.ceil(result.expiresInSeconds / 60))} min.`,
+          );
+          setTwoFactorState(uiActionInitialState);
+          return uiActionInitialState;
+        }
+        setTwoFactorChallengeId(null);
+        setTwoFactorCode("");
+        setTwoFactorNotice(null);
+        setTwoFactorState(uiActionInitialState);
+        onSuccess(result.user);
+        return actionSuccessState("Sesion iniciada.");
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Credenciales incorrectas" };
+        return actionErrorState(e, "Credenciales incorrectas");
       }
     },
-    { error: null }
+    uiActionInitialState,
   );
+
+  async function handleVerifyTwoFactor() {
+    if (!twoFactorChallengeId) return;
+
+    const normalizedCode = twoFactorCode.trim();
+    if (normalizedCode.length < 4) {
+      setTwoFactorState(actionErrorState(new Error("Ingresa el codigo 2FA de tu correo.")));
+      return;
+    }
+
+    setVerifyingTwoFactor(true);
+    setTwoFactorState(uiActionInitialState);
+    try {
+      const user = await verifyLoginTwoFactor({
+        challengeId: twoFactorChallengeId,
+        code: normalizedCode,
+      });
+      setTwoFactorState(actionSuccessState("Verificacion 2FA completada."));
+      onSuccess(user);
+    } catch (error) {
+      setTwoFactorState(actionErrorState(error, "Codigo 2FA invalido."));
+    } finally {
+      setVerifyingTwoFactor(false);
+    }
+  }
+
+  function resetTwoFactorFlow() {
+    setTwoFactorChallengeId(null);
+    setTwoFactorCode("");
+    setTwoFactorNotice(null);
+    setTwoFactorState(uiActionInitialState);
+  }
 
   return (
     <form
@@ -149,11 +214,58 @@ function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
         }
       />
 
-      {state.error && (
-        <div style={{ padding: "0.6rem 0.85rem", borderRadius: "var(--radius-md)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.8rem", display: "flex", gap: "0.4rem", alignItems: "center" }}>
-          <AlertCircle size={13} /> {state.error}
+      {twoFactorChallengeId && (
+        <div
+          style={{
+            border: "1px solid rgba(124,58,237,0.35)",
+            background: "rgba(124,58,237,0.08)",
+            borderRadius: "var(--radius-lg)",
+            padding: "0.9rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+            {twoFactorNotice ?? "Te enviamos un codigo de verificacion 2FA a tu correo."}
+          </p>
+          <Field
+            label="Codigo 2FA"
+            icon={Lock}
+            value={twoFactorCode}
+            onChange={(event) => setTwoFactorCode(event.target.value)}
+            placeholder="000000"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={10}
+          />
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={() => void handleVerifyTwoFactor()}
+              disabled={verifyingTwoFactor}
+              className="btn-primary"
+              style={{ justifyContent: "center", minWidth: 180 }}
+            >
+              {verifyingTwoFactor
+                ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Verificando...</>
+                : "Validar codigo"
+              }
+            </button>
+            <button
+              type="button"
+              onClick={resetTwoFactorFlow}
+              className="btn-secondary"
+              style={{ justifyContent: "center" }}
+            >
+              Cambiar cuenta
+            </button>
+          </div>
+          <ActionFeedback status={twoFactorState.status} message={twoFactorState.message} />
         </div>
       )}
+
+      <ActionFeedback status={state.status} message={state.message} />
 
       <button
         type="submit"
@@ -187,11 +299,12 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
     resolver: zodResolver(registerSchema),
   });
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null; success: boolean }, data: RegisterFields) => {
+  const [state, action, pending] = useActionState<UiActionState, RegisterFields>(
+    async (_prev, data) => {
       try {
         const csrfToken = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] ?? "";
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004"}/auth/register`, {
+        const turnstileToken = getClientTurnstileToken("register");
+        const res = await fetch(`${API_BASE_URL}/auth/register`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
@@ -200,8 +313,7 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
             password: data.password,
             firstName: data.firstName,
             lastName: data.lastName,
-            // Cloudflare Turnstile test token (always passes in dev with test secret key)
-            turnstileToken: "1x00000000000000000000AA",
+            turnstileToken,
           }),
         });
         if (!res.ok) {
@@ -209,24 +321,22 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
           throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al registrar");
         }
         onSuccess();
-        return { error: null, success: true };
+        return actionSuccessState("Revisa tu email para verificar tu cuenta.");
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Error al registrar", success: false };
+        return actionErrorState(e, "Error al registrar");
       }
     },
-    { error: null, success: false }
+    uiActionInitialState,
   );
 
-  if (state.success) {
+  if (state.status === "success") {
     return (
       <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
         <CheckCircle2 size={40} color="#4ade80" style={{ margin: "0 auto 1rem" }} />
         <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.5rem" }}>
           ¡Cuenta creada!
         </p>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-          Revisa tu email para verificar tu cuenta.
-        </p>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{state.message}</p>
       </div>
     );
   }
@@ -264,16 +374,13 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
         placeholder="Repite la contraseña"
         autoComplete="new-password"
       />
-
       <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
         La contraseña debe tener mínimo 12 caracteres, una mayúscula, un número y un símbolo.
       </p>
 
-      {state.error && (
-        <div style={{ padding: "0.6rem 0.85rem", borderRadius: "var(--radius-md)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.8rem", display: "flex", gap: "0.4rem", alignItems: "center" }}>
-          <AlertCircle size={13} /> {state.error}
-        </div>
-      )}
+      <TurnstileWidget action="register" />
+
+      <ActionFeedback status={state.status} message={state.message} />
 
       <button
         type="submit"
@@ -302,9 +409,24 @@ export function AuthModal({
   defaultTab?: "login" | "register";
 }) {
   const [tab, setTab] = useState<"login" | "register">(defaultTab);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const { setUser } = useAuthStore();
 
   useEffect(() => { if (open) setTab(defaultTab); }, [open, defaultTab]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 768px)");
+    const onChange = () => setIsMobileViewport(media.matches);
+    onChange();
+
+    if (media.addEventListener) {
+      media.addEventListener("change", onChange);
+      return () => media.removeEventListener("change", onChange);
+    }
+
+    media.addListener(onChange);
+    return () => media.removeListener(onChange);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -343,11 +465,16 @@ export function AuthModal({
       <div
         style={{
           position: "fixed",
-          top: "50%",
+          top: isMobileViewport ? "max(0.75rem, env(safe-area-inset-top))" : "50%",
           left: "50%",
-          transform: `translate(-50%, ${open ? "-50%" : "-45%"})`,
+          transform: isMobileViewport
+            ? `translate(-50%, ${open ? "0" : "8px"})`
+            : `translate(-50%, ${open ? "-50%" : "-45%"})`,
           zIndex: 1400,
           width: "min(460px, 96vw)",
+          maxHeight: isMobileViewport
+            ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
+            : "min(780px, 92dvh)",
           background: "var(--bg-dark)",
           border: "1px solid var(--glass-border)",
           borderRadius: "var(--radius-2xl)",
@@ -355,7 +482,9 @@ export function AuthModal({
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1)",
-          overflow: "hidden",
+          overflowX: "hidden",
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
         }}
       >
         {/* Header */}

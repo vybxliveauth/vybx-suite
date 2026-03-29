@@ -1,18 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { createEdgeAuthMiddleware } from "@vybx/edge-auth";
 
-const PUBLIC = ["/login"];
+export const middleware = createEdgeAuthMiddleware({
+  publicPaths: ["/login"],
+  allowedRoles: ["ADMIN", "SUPER_ADMIN"],
+});
 
-export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  if (PUBLIC.some((p) => pathname.startsWith(p))) return NextResponse.next();
-  const token = req.cookies.get("access_token");
-  if (!token) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
-  return NextResponse.next();
-}
-
-export const config = { matcher: ["/((?!_next|favicon.ico|.*\\..*).*)"] };
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};

@@ -2,22 +2,29 @@
 
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { Moon, Sun } from "lucide-react";
+import { Monitor, Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   // Avoid hydration mismatch
   useEffect(() => setMounted(true), []);
   if (!mounted) return <div style={{ width: 40, height: 40 }} />;
 
-  const isDark = resolvedTheme === "dark";
+  const current = theme === "dark" || theme === "light" || theme === "system" ? theme : "system";
+  const nextTheme = current === "system" ? "dark" : current === "dark" ? "light" : "system";
+  const title =
+    current === "system"
+      ? "Tema: sistema (clic para oscuro)"
+      : current === "dark"
+        ? "Tema: oscuro (clic para claro)"
+        : "Tema: claro (clic para sistema)";
 
   return (
     <button
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+      onClick={() => setTheme(nextTheme)}
+      title={title}
       style={{
         width: 40,
         height: 40,
@@ -42,7 +49,7 @@ export function ThemeToggle() {
         (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--glass-border)";
       }}
     >
-      {isDark ? <Sun size={16} /> : <Moon size={16} />}
+      {current === "dark" ? <Sun size={16} /> : current === "light" ? <Moon size={16} /> : <Monitor size={16} />}
     </button>
   );
 }

@@ -784,9 +784,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .event-carousel-track {
-  --carousel-gap: 1.2rem;
+  --carousel-gap: 0.72rem;
   display: flex;
-  gap: var(--carousel-gap);
+  margin-left: calc(var(--carousel-gap) * -1);
   isolation: isolate;
 }
 
@@ -794,10 +794,12 @@ h1, h2, h3, h4, h5, h6 {
   flex: 0 0 86%;
   min-width: 0;
   box-sizing: border-box;
+  padding-left: var(--carousel-gap);
 }
 
 .event-carousel-card {
-  min-height: clamp(176px, 24vh, 220px);
+  aspect-ratio: 2.2 / 1;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-2xl);
@@ -1003,14 +1005,28 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (min-width: 700px) {
+  .event-carousel-track {
+    --carousel-gap: 0.76rem;
+  }
+
   .event-carousel-slide {
-    flex-basis: calc((100% - var(--carousel-gap)) / 2);
+    flex-basis: 50%;
   }
 }
 
 @media (min-width: 1100px) {
+  .event-carousel-track {
+    --carousel-gap: 0.72rem;
+  }
+
   .event-carousel-slide {
-    flex-basis: calc((100% - (var(--carousel-gap) * 3)) / 4);
+    flex-basis: 25%;
+  }
+}
+
+@media (max-width: 768px) {
+  .event-carousel-card {
+    aspect-ratio: 1.85 / 1;
   }
 }
 

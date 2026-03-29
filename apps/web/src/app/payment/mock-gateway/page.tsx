@@ -3,8 +3,11 @@
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { ShieldCheck, CreditCard, Loader2, X, Lock } from "lucide-react";
+import { resolveApiBaseUrl } from "@vybx/api-client";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
+const API = resolveApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
+);
 
 // ─── Inner component (needs useSearchParams) ──────────────────────────────────
 

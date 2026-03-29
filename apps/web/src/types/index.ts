@@ -1,6 +1,8 @@
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export type EventStatus = "live" | "sold_out" | "draft" | "upcoming";
+import type { PublicEventStatus } from "@vybx/types";
+
+export type EventStatus = PublicEventStatus;
 export type TierName = "VIP" | "General" | "Premium" | "Student";
 export type SeatStatus = "available" | "reserved" | "sold";
 
@@ -55,6 +57,11 @@ export interface Event {
   status: EventStatus;
   tiers: TicketTier[];
   tags: string[];
+  isFeatured?: boolean;
+  isTrending?: boolean;
+  trendingScore?: number;
+  ticketsSold?: number;
+  sellThroughRate?: number;
   organizerId: string;
   createdAt: string;
   updatedAt: string;

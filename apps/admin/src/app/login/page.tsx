@@ -1,133 +1,249 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
-import { Button, Input, Label } from "@vybx/ui";
-import { auth } from "@/lib/api";
+import { Zap, Loader2 } from "lucide-react";
+import {
+  Button,
+  Input,
+  Label,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@vybx/ui";
+import { api } from "@/lib/api";
+import { setUser } from "@/lib/auth";
+import type { AuthUser } from "@/lib/types";
 
 const schema = z.object({
-  email:    z.string().email("Email inválido"),
-  password: z.string().min(1, "Requerido"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(1, "La contraseña es requerida"),
 });
-type Form = z.infer<typeof schema>;
+
+type FormValues = z.infer<typeof schema>;
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginForm />
-    </Suspense>
-  );
-}
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
+  const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
 
-function LoginForm() {
-  const router  = useRouter();
-  const params  = useSearchParams();
-  const next    = params.get("next") ?? "/dashboard";
-  const [error, setError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({
-    resolver: zodResolver(schema),
-  });
-
-  async function onSubmit(values: Form) {
-    setError(null);
+  async function onSubmit(values: FormValues) {
+    setServerError(null);
+    setVerificationNotice(null);
+    setVerificationEmail(null);
+    setTwoFactorNotice(null);
     try {
-      const res = await auth.login(values.email, values.password);
-      if (!["ADMIN", "SUPER_ADMIN"].includes(res.user.role)) {
-        setError("No tienes permisos para acceder al panel de administración.");
+      const res = await api.post<
+        | { user: AuthUser; success: boolean }
+        | {
+            success: false;
+            requiresTwoFactor: true;
+            challengeId: string;
+            expiresInSeconds: number;
+            message?: string;
+          }
+      >("/auth/login", values);
+
+      if ("requiresTwoFactor" in res && res.requiresTwoFactor) {
+        setTwoFactorChallengeId(res.challengeId);
+        setTwoFactorCode("");
+        setTwoFactorNotice(
+          res.message ||
+            `Código 2FA enviado. Expira en ${Math.max(1, Math.ceil(res.expiresInSeconds / 60))} min.`,
+        );
         return;
       }
-      router.push(next);
-    } catch {
-      setError("Credenciales incorrectas o sin permisos de acceso.");
+
+      if (!("user" in res)) {
+        setServerError("No se pudo completar el inicio de sesión.");
+        return;
+      }
+
+      if (res.user.role !== "ADMIN" && res.user.role !== "SUPER_ADMIN") {
+        setServerError("Esta cuenta no tiene acceso al panel admin.");
+        return;
+      }
+
+      setUser(res.user);
+      router.replace("/dashboard");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error al iniciar sesión";
+      setServerError(message);
+      if (message.toLowerCase().includes("verific")) {
+        setVerificationEmail(values.email.trim().toLowerCase());
+      }
+    }
+  }
+
+  async function handleVerifyTwoFactor() {
+    if (!twoFactorChallengeId) return;
+    setServerError(null);
+    setVerifyingTwoFactor(true);
+    try {
+      const res = await api.post<{ user: AuthUser; success: boolean }>("/auth/login/2fa", {
+        challengeId: twoFactorChallengeId,
+        code: twoFactorCode.trim(),
+      });
+
+      if (res.user.role !== "ADMIN" && res.user.role !== "SUPER_ADMIN") {
+        setServerError("Esta cuenta no tiene acceso al panel admin.");
+        return;
+      }
+
+      setUser(res.user);
+      router.replace("/dashboard");
+    } catch (err: unknown) {
+      setServerError(err instanceof Error ? err.message : "Código 2FA inválido");
+    } finally {
+      setVerifyingTwoFactor(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    if (!verificationEmail) return;
+    setResendingVerification(true);
+    setVerificationNotice(null);
+    try {
+      const response = await api.post<{ message?: string; success?: boolean }>("/auth/resend-verification", {
+        email: verificationEmail,
+      });
+      setVerificationNotice(
+        response?.message || "Te enviamos un nuevo correo de verificación."
+      );
+    } catch (err: unknown) {
+      setVerificationNotice(
+        err instanceof Error ? err.message : "No se pudo reenviar el correo de verificación."
+      );
+    } finally {
+      setResendingVerification(false);
     }
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center p-4">
-      {/* Background glow */}
-      <div
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{
-          background:
-            "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(30,60,100,0.12), transparent)",
-        }}
-      />
-
-      <div
-        className="w-full max-w-sm rounded-2xl p-8 space-y-6"
-        style={{
-          background: "rgba(13,13,26,0.8)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          backdropFilter: "blur(20px)",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
-        }}
-      >
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <div
-            className="flex size-14 items-center justify-center rounded-2xl text-white font-bold text-lg"
-            style={{
-              background: "linear-gradient(135deg, #1b3659, #2f5588)",
-              boxShadow: "0 0 24px rgba(30,80,160,0.4)",
-            }}
-          >
-            VT
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-sm space-y-6">
+        <div className="flex flex-col items-center gap-2 text-center">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+            <Zap className="size-6 text-primary fill-primary" />
           </div>
-          <div className="text-center">
-            <h1 className="text-lg font-semibold text-white">VybxLive Admin</h1>
-            <p className="text-xs text-white/40 mt-0.5">Acceso restringido para personal autorizado</p>
-          </div>
+          <h1 className="text-xl font-bold">VybeTickets</h1>
+          <p className="text-sm text-muted-foreground">Panel admin</p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-white/70 text-xs">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="username"
-              placeholder="admin@vybx.live"
-              className="bg-white/4 border-white/8 text-white placeholder:text-white/20 focus:border-primary/50"
-              {...register("email")}
-            />
-            {errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
-          </div>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Iniciar sesión</CardTitle>
+            <CardDescription>Accede con tu cuenta administrativa</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  autoComplete="email"
+                  {...register("email")}
+                />
+                {errors.email && (
+                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                )}
+              </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-white/70 text-xs">Contraseña</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••••••"
-              className="bg-white/4 border-white/8 text-white placeholder:text-white/20 focus:border-primary/50"
-              {...register("password")}
-            />
-            {errors.password && <p className="text-xs text-red-400">{errors.password.message}</p>}
-          </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  {...register("password")}
+                />
+                {errors.password && (
+                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                )}
+              </div>
 
-          {error && (
-            <div className="rounded-md bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
-              {error}
-            </div>
-          )}
+              {serverError && (
+                <p className="text-sm text-destructive rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+                  {serverError}
+                </p>
+              )}
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting}
-            style={{ background: "linear-gradient(135deg, #1b3659, #2f5588)" }}
-          >
-            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-            {isSubmitting ? "Verificando…" : "Entrar al Backoffice"}
-          </Button>
-        </form>
+              {verificationEmail && (
+                <div className="space-y-2 rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2">
+                  <p className="text-xs text-amber-100">
+                    Correo pendiente de verificación: <span className="font-medium">{verificationEmail}</span>
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={resendingVerification}
+                    onClick={() => void handleResendVerification()}
+                  >
+                    {resendingVerification && <Loader2 className="size-4 animate-spin" />}
+                    Reenviar verificación
+                  </Button>
+                  {verificationNotice && (
+                    <p className="text-xs text-amber-100/90">{verificationNotice}</p>
+                  )}
+                </div>
+              )}
+
+              {twoFactorChallengeId && (
+                <div className="space-y-2 rounded-md border border-sky-400/30 bg-sky-500/10 px-3 py-2">
+                  <Label htmlFor="twoFactorCode">Código 2FA</Label>
+                  <Input
+                    id="twoFactorCode"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={8}
+                    placeholder="123456"
+                    value={twoFactorCode}
+                    onChange={(event) => setTwoFactorCode(event.target.value.replace(/\D/g, ""))}
+                  />
+                  {twoFactorNotice && (
+                    <p className="text-xs text-sky-100/90">{twoFactorNotice}</p>
+                  )}
+                  <Button
+                    type="button"
+                    className="w-full"
+                    disabled={verifyingTwoFactor || twoFactorCode.trim().length < 4}
+                    onClick={() => void handleVerifyTwoFactor()}
+                  >
+                    {verifyingTwoFactor && <Loader2 className="size-4 animate-spin" />}
+                    Verificar 2FA
+                  </Button>
+                </div>
+              )}
+
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="size-4 animate-spin" />}
+                {twoFactorChallengeId ? "Reintentar login" : "Entrar"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

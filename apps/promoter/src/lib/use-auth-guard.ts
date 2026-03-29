@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { getUser } from "./auth";
+import { useAuthGuardCore } from "@vybx/auth-client";
+import { usePathname, useRouter } from "next/navigation";
+import { clearSession, getUser, hydrateUserFromSession } from "./auth";
 import type { Permission } from "./permissions";
 import { resolvePermissions } from "./permissions";
+import type { UserRole } from "./types";
 
-const ALLOWED_ROLES = new Set(["PROMOTER", "ADMIN", "SUPER_ADMIN"]);
+const ALLOWED_ROLES = new Set<UserRole>(["PROMOTER", "ADMIN", "SUPER_ADMIN"]);
 
 /**
  * Redirects to /login if:
@@ -18,22 +19,20 @@ const ALLOWED_ROLES = new Set(["PROMOTER", "ADMIN", "SUPER_ADMIN"]);
  */
 export function useAuthGuard(permission?: Permission) {
   const router = useRouter();
+  const pathname = usePathname();
 
-  useEffect(() => {
-    const user = getUser();
-
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-
-    if (!ALLOWED_ROLES.has(user.role)) {
-      router.replace("/login");
-      return;
-    }
-
-    if (permission && !resolvePermissions(user).has(permission)) {
-      router.replace("/dashboard");
-    }
-  }, [router, permission]);
+  useAuthGuardCore({
+    permission,
+    pathname: pathname ?? "/dashboard",
+    replace: (href) => router.replace(href),
+    allowedRoles: ALLOWED_ROLES,
+    getRole: (user) => user.role,
+    getUser,
+    hydrateUserFromSession,
+    clearSession,
+    resolvePermissions: (user) => resolvePermissions(user),
+    loginPath: "/login",
+    fallbackPath: "/dashboard",
+    defaultNextPath: "/dashboard",
+  });
 }

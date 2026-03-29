@@ -6,6 +6,11 @@ import { Event } from "@/types";
 import { TicketSidebar } from "@/components/features/event-detail/TicketSidebar";
 import { ReservationTimer } from "@/components/features/event-detail/ReservationTimer";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
+import { ActionFeedback } from "@/components/ui/action-feedback";
+import {
+  SEAT_ACTION_FEEDBACK_EVENT,
+  type SeatActionState,
+} from "@/hooks/useSeatSelection";
 import {
   CalendarDays,
   Clock,
@@ -16,6 +21,9 @@ import {
   Share2,
   Heart,
 } from "lucide-react";
+
+const EVENT_IMAGE_FALLBACK =
+  "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=80";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -99,7 +107,7 @@ function EventHero({ event }: { event: Event }) {
       <div style={{
         position: "absolute",
         inset: 0,
-        backgroundImage: `url(${event.imageUrl})`,
+        backgroundImage: `url(${event.imageUrl}), url(${EVENT_IMAGE_FALLBACK})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         animation: "slowDrift 20s infinite alternate ease-in-out",
@@ -112,7 +120,7 @@ function EventHero({ event }: { event: Event }) {
       <div style={{ position: "relative", zIndex: 2, padding: "0 5%", width: "100%", maxWidth: 800 }}>
         <div className="badge-featured" style={{ marginBottom: "1.2rem" }}>
           <Zap size={11} />
-          {event.tags[0]}
+          {event.isFeatured ? "Destacado" : event.tags[0]}
         </div>
 
         <h1 style={{
@@ -213,6 +221,37 @@ function FactCard({ icon: Icon, label, value }: { icon: React.ElementType; label
 
 export function EventDetailClient({ event }: { event: Event }) {
   const [cartOpen, setCartOpen] = useState(false);
+  const [seatFeedback, setSeatFeedback] = useState<{
+    status: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const handleSeatFeedback = (nativeEvent: globalThis.Event) => {
+      const customEvent = nativeEvent as CustomEvent<SeatActionState>;
+      const payload = customEvent.detail;
+      if (!payload || payload.status === "idle" || !payload.message) return;
+
+      setSeatFeedback({
+        status: payload.status,
+        message: payload.message,
+      });
+    };
+
+    window.addEventListener(SEAT_ACTION_FEEDBACK_EVENT, handleSeatFeedback as EventListener);
+    return () => {
+      window.removeEventListener(
+        SEAT_ACTION_FEEDBACK_EVENT,
+        handleSeatFeedback as EventListener,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!seatFeedback) return;
+    const timer = window.setTimeout(() => setSeatFeedback(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [seatFeedback]);
 
   return (
     <>
@@ -267,6 +306,14 @@ export function EventDetailClient({ event }: { event: Event }) {
       `}</style>
 
       <Navbar onCartOpen={() => setCartOpen(true)} eventTitle={event.title} />
+      {seatFeedback && (
+        <div style={{ padding: "1rem 5% 0", position: "relative", zIndex: 12 }}>
+          <ActionFeedback
+            status={seatFeedback.status}
+            message={seatFeedback.message}
+          />
+        </div>
+      )}
 
       <EventHero event={event} />
 

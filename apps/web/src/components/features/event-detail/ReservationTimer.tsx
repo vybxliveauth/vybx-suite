@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useCartStore } from "@/store/useCartStore";
-import { formatCountdown } from "@/lib/utils";
 import { Clock, X } from "lucide-react";
+import { FlipCountdown } from "@/components/features/FlipCountdown";
 
 export function ReservationTimer() {
   const { session, remainingSeconds, clearCart, isReservationActive } = useCartStore();
@@ -11,7 +11,14 @@ export function ReservationTimer() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (!session) { setVisible(false); return; }
+    if (!session) {
+      setVisible(false);
+      setSeconds(0);
+      return;
+    }
+
+    // Sync immediately to avoid a transient "expired" state on fresh reservations.
+    setSeconds(remainingSeconds());
     setVisible(true);
     const id = setInterval(() => {
       setSeconds(remainingSeconds());
@@ -21,7 +28,7 @@ export function ReservationTimer() {
 
   if (!visible || !session) return null;
 
-  const isExpired = session.isExpired || seconds === 0;
+  const isExpired = session.isExpired || (seconds === 0 && Date.now() >= session.expiresAt);
   const isUrgent = seconds < 120 && !isExpired; // under 2 min
 
   return (
@@ -72,8 +79,9 @@ export function ReservationTimer() {
               fontWeight: 800,
               color: isUrgent ? "#ffd4dd" : "var(--text-light)",
               letterSpacing: "0.5px",
+              display: "inline-flex",
             }}>
-              {formatCountdown(seconds)}
+              <FlipCountdown seconds={seconds} urgent={isUrgent} />
             </span>
           </>
         )}

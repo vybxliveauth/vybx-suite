@@ -59,7 +59,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside className={cn("sidebar flex flex-col h-screen sticky top-0", open && "open")}>
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 h-14 border-b border-white/[0.06] shrink-0">
+        <div className="flex items-center justify-between px-5 h-14 border-b border-border/60 shrink-0">
           <Link href="/dashboard" className="flex items-center gap-2 font-bold text-base">
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground shrink-0">
               <Zap className="size-3.5 fill-current" />
@@ -97,7 +97,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="px-3 py-3 border-t border-white/[0.06] space-y-1">
+        <div className="px-3 py-3 border-t border-border/60 space-y-1">
           <button
             type="button"
             onClick={handleLogout}

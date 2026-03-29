@@ -1,33 +1,23 @@
 import { Event, TicketTier, TierName, PaginatedResponse } from "@/types";
+import {
+  EVENT_IMAGE_FALLBACK,
+  EVENT_IMAGE_THUMBNAIL_FALLBACK,
+  normalizeEventImageUrl,
+} from "@/lib/images";
+import { createApiClient } from "@vybx/api-client";
+import type { PublicAuthUser, UserRole } from "@vybx/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1";
 
 // ─── HTTP Client ──────────────────────────────────────────────────────────────
 
-function getCsrfToken(): string {
-  if (typeof document === "undefined") return "";
-  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : "";
-}
+const client = createApiClient({
+  baseUrl: BASE_URL,
+  retryOnUnauthorized: false,
+});
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const method = (init?.method ?? "GET").toUpperCase();
-  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
-
-  const res = await fetch(`${BASE_URL}${path}`, {
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(isMutating ? { "x-csrf-token": getCsrfToken() } : {}),
-      ...init?.headers,
-    },
-    ...init,
-  });
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(error.message ?? `Request failed: ${res.status}`);
-  }
-  return res.json();
+  return client.request<T>(path, init);
 }
 
 // ─── Backend raw types ────────────────────────────────────────────────────────
@@ -57,6 +47,7 @@ interface BackendEvent {
   tags: string[];
   date: string; // ISO-8601
   isActive: boolean;
+  isFeatured?: boolean;
   status: "PENDING" | "APPROVED" | "REJECTED";
   categoryId: string | null;
   ownerId: string | null;
@@ -109,7 +100,36 @@ function normalizeTierName(name: string): TierName {
   return "General";
 }
 
+function calculateTrendingMetrics(raw: BackendEvent) {
+  const ticketsSold = raw.ticketTypes.reduce((sum, ticketType) => sum + ticketType.sold, 0);
+  const totalInventory = raw.ticketTypes.reduce((sum, ticketType) => sum + ticketType.quantity, 0);
+  const sellThroughRate = totalInventory > 0 ? ticketsSold / totalInventory : 0;
+
+  const now = Date.now();
+  const eventTime = new Date(raw.date).getTime();
+  const daysUntilEvent = Math.ceil((eventTime - now) / (1000 * 60 * 60 * 24));
+
+  // Hybrid signal:
+  // - sales volume (ticketsSold)
+  // - sell-through quality (ratio sold/quantity)
+  // - near-term relevance (upcoming events get a mild boost)
+  const volumeScore = ticketsSold * 1.6;
+  const conversionScore = sellThroughRate * 140;
+  const recencyScore = daysUntilEvent >= 0 ? Math.max(0, 30 - Math.min(30, daysUntilEvent)) : -20;
+  const liveBoost = raw.isActive ? 5 : 0;
+
+  const trendingScore = Math.round(volumeScore + conversionScore + recencyScore + liveBoost);
+
+  return {
+    ticketsSold,
+    sellThroughRate,
+    trendingScore,
+  };
+}
+
 export function adaptEvent(raw: BackendEvent): Event {
+  const trending = calculateTrendingMetrics(raw);
+  const imageUrl = normalizeEventImageUrl(raw.image);
   const tiers: TicketTier[] = raw.ticketTypes.map((tt) => ({
     id: tt.id,
     name: normalizeTierName(tt.name),
@@ -129,8 +149,11 @@ export function adaptEvent(raw: BackendEvent): Event {
     title: raw.title,
     slug,
     description: raw.description ?? "",
-    imageUrl: raw.image ?? "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1600&q=80",
-    thumbnailUrl: raw.image ?? "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80",
+    imageUrl,
+    thumbnailUrl:
+      imageUrl === EVENT_IMAGE_FALLBACK
+        ? EVENT_IMAGE_THUMBNAIL_FALLBACK
+        : imageUrl,
     startDate: raw.date,
     endDate: raw.date,
     doorsOpen: raw.date,
@@ -145,10 +168,26 @@ export function adaptEvent(raw: BackendEvent): Event {
     status: raw.isActive ? "live" : "upcoming",
     tiers,
     tags: raw.tags.length > 0 ? raw.tags : [raw.category?.name ?? "Event"],
+    isFeatured: Boolean(raw.isFeatured),
+    isTrending: trending.trendingScore > 0,
+    trendingScore: trending.trendingScore,
+    ticketsSold: trending.ticketsSold,
+    sellThroughRate: trending.sellThroughRate,
     organizerId: raw.ownerId ?? "unknown",
     createdAt: raw.createdAt,
     updatedAt: raw.createdAt,
   };
+}
+
+function sortByFeaturedAndTrend(events: Event[]): Event[] {
+  return [...events].sort((a, b) => {
+    if (Boolean(a.isFeatured) !== Boolean(b.isFeatured)) {
+      return a.isFeatured ? -1 : 1;
+    }
+    const trendDiff = (b.trendingScore ?? 0) - (a.trendingScore ?? 0);
+    if (trendDiff !== 0) return trendDiff;
+    return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+  });
 }
 
 // ─── API Functions ────────────────────────────────────────────────────────────
@@ -171,8 +210,9 @@ export async function fetchEvents(params?: {
   // Current backend contract: { items, pagination }; keep legacy fallback for compatibility.
   if ("items" in raw && "pagination" in raw) {
     const { items, pagination } = raw;
+    const data = sortByFeaturedAndTrend(items.map(adaptEvent));
     return {
-      data: items.map(adaptEvent),
+      data,
       total: pagination.total,
       page: pagination.page,
       pageSize: pagination.limit,
@@ -180,8 +220,9 @@ export async function fetchEvents(params?: {
     };
   }
 
+  const data = sortByFeaturedAndTrend(raw.data.map(adaptEvent));
   return {
-    data: raw.data.map(adaptEvent),
+    data,
     total: raw.total,
     page: raw.page,
     pageSize: raw.limit,
@@ -201,23 +242,18 @@ export interface LoginPayload {
   password: string;
 }
 
-export interface AuthUser {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  role: "USER" | "PROMOTER" | "ADMIN" | "SUPER_ADMIN";
-  emailVerified: boolean;
-  profileImageUrl: string | null;
-}
+export type AuthUser = PublicAuthUser & {
+  marketingEmailOptIn?: boolean;
+};
 
 interface BackendAuthUser {
   userId: string;
   email: string;
-  role: AuthUser["role"];
+  role: UserRole;
   firstName?: string;
   lastName?: string;
   profileImageUrl?: string;
+  marketingEmailOptIn?: boolean;
 }
 
 function adaptAuthUser(raw: BackendAuthUser): AuthUser {
@@ -227,17 +263,109 @@ function adaptAuthUser(raw: BackendAuthUser): AuthUser {
     firstName: raw.firstName ?? "",
     lastName: raw.lastName ?? "",
     role: raw.role,
-    // Login is blocked until verified on backend, and profile endpoint requires auth.
     emailVerified: true,
     profileImageUrl: raw.profileImageUrl ?? null,
+    marketingEmailOptIn: raw.marketingEmailOptIn ?? true,
   };
 }
 
-export async function login(payload: LoginPayload): Promise<AuthUser> {
-  const res = await request<{ user: BackendAuthUser; success: boolean }>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+export interface RegisterPayload {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  turnstileToken: string;
+}
+
+export async function register(payload: RegisterPayload) {
+  return request<{ success: boolean; needsVerification?: boolean; message?: string }>(
+    "/auth/register",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export type LoginSuccessResponse = {
+  success: true;
+  user: AuthUser;
+};
+
+export type LoginTwoFactorChallengeResponse = {
+  success: false;
+  requiresTwoFactor: true;
+  challengeId: string;
+  expiresInSeconds: number;
+  message?: string;
+};
+
+export type LoginResponse = LoginSuccessResponse | LoginTwoFactorChallengeResponse;
+
+function isTwoFactorChallenge(
+  value:
+    | { user: BackendAuthUser; success?: boolean }
+    | {
+        success: false;
+        requiresTwoFactor: true;
+        challengeId: string;
+        expiresInSeconds: number;
+        message?: string;
+      },
+): value is {
+  success: false;
+  requiresTwoFactor: true;
+  challengeId: string;
+  expiresInSeconds: number;
+  message?: string;
+} {
+  return "requiresTwoFactor" in value && value.requiresTwoFactor === true;
+}
+
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
+  const res = await request<
+    | { user: BackendAuthUser; success?: boolean }
+    | {
+        success: false;
+        requiresTwoFactor: true;
+        challengeId: string;
+        expiresInSeconds: number;
+        message?: string;
+      }
+  >(
+    "/auth/login",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+  if (isTwoFactorChallenge(res)) {
+    return {
+      success: false,
+      requiresTwoFactor: true,
+      challengeId: res.challengeId,
+      expiresInSeconds: res.expiresInSeconds,
+      message: res.message,
+    };
+  }
+
+  return {
+    success: true,
+    user: adaptAuthUser(res.user),
+  };
+}
+
+export async function verifyLoginTwoFactor(payload: {
+  challengeId: string;
+  code: string;
+}): Promise<AuthUser> {
+  const res = await request<{ user: BackendAuthUser; success?: boolean }>(
+    "/auth/login/2fa",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
   return adaptAuthUser(res.user);
 }
 
@@ -245,18 +373,176 @@ export async function logout(): Promise<void> {
   await request("/auth/logout", { method: "POST" });
 }
 
+export async function refresh(): Promise<{ access_token: string }> {
+  return request<{ access_token: string }>("/auth/refresh", { method: "POST" });
+}
+
 export async function fetchProfile(): Promise<AuthUser> {
   const raw = await request<BackendAuthUser>("/auth/profile");
   return adaptAuthUser(raw);
 }
 
-// ─── Generic HTTP helpers ──────────────────────────────────────────────────────
-// Reuse the same request() client so CSRF, credentials, and error handling
-// are consistent across all pages that need mutation helpers.
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+export interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
+export async function fetchCategories(): Promise<Category[]> {
+  const categories = await request<Category[]>("/categories");
+  return categories;
+}
+
+// ─── Checkout / Tickets ───────────────────────────────────────────────────────
+
+export interface CreateIntentPayload {
+  ticketTypeId: string;
+  quantity: number;
+  eventId: string;
+  turnstileToken: string;
+}
+
+export interface CreateCartIntentItemPayload {
+  ticketTypeId: string;
+  quantity: number;
+}
+
+export interface CreateCartIntentPayload {
+  eventId: string;
+  items: CreateCartIntentItemPayload[];
+  turnstileToken?: string;
+}
+
+export interface PaymentIntentResponse {
+  provider: "RD_REDIRECT" | "STRIPE";
+  reference: string;
+  amount: number;
+  currency: string;
+  checkoutUrl: string;
+  expiresAt: string;
+}
+
+export async function apiPaymentsCreateIntent(payload: CreateIntentPayload) {
+  return request<PaymentIntentResponse>("/payments/create-intent", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiPaymentsCreateCartIntent(payload: CreateCartIntentPayload) {
+  return request<PaymentIntentResponse>("/payments/create-cart-intent", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface MyTicket {
+  id: string;
+  [key: string]: unknown;
+}
+
+export async function apiMyTickets() {
+  return request<MyTicket[]>("/tickets/my");
+}
+
+export interface JoinQueuePayload {
+  eventId: string;
+  turnstileToken?: string;
+}
+
+export interface QueueJoinResponse {
+  queueEnabled: boolean;
+  eventId: string;
+  status?: "QUEUED" | "ADMITTED";
+  position?: number;
+  aheadOfYou?: number;
+  activeSlots?: number;
+  estimatedWaitSeconds?: number;
+  queueToken?: string;
+  expiresAt?: string;
+  message?: string;
+}
+
+export async function apiPaymentsJoinQueue(payload: JoinQueuePayload) {
+  return request<QueueJoinResponse>("/payments/queue/join", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface IssueQueueTokenPayload {
+  eventId: string;
+}
+
+export interface IssueQueueTokenResponse {
+  queueEnabled: boolean;
+  tokenRequired?: boolean;
+  eventId: string;
+  queueToken?: string;
+  expiresAt?: string;
+  message?: string;
+}
+
+export async function apiPaymentsIssueQueueToken(payload: IssueQueueTokenPayload) {
+  return request<IssueQueueTokenResponse>("/payments/queue/token", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateEmailPreferences(marketingEmailOptIn: boolean) {
+  return request<{
+    id: string;
+    email: string;
+    marketingEmailOptIn: boolean;
+    marketingEmailOptOutAt?: string | null;
+  }>("/users/me/email-preferences", {
+    method: "PATCH",
+    body: JSON.stringify({ marketingEmailOptIn }),
+  });
+}
+
+export async function apiExportMyData() {
+  return request<{
+    generatedAt: string;
+    data: unknown;
+  }>("/users/me/export", {
+    method: "GET",
+  });
+}
+
+export async function apiDeleteMyAccount(payload: {
+  currentPassword: string;
+  reason?: string;
+}) {
+  return request<{ success: boolean; deletedAt?: string; alreadyDeleted?: boolean }>(
+    "/users/me",
+    {
+      method: "DELETE",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export async function apiUnsubscribeByToken(token: string) {
+  return request<{ success: boolean; message?: string }>("/auth/unsubscribe", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+// ─── Generic HTTP helpers ─────────────────────────────────────────────────────
 
 export const api = {
-  get:    <T>(path: string)                 => request<T>(path, { method: "GET" }),
-  post:   <T>(path: string, body?: unknown) => request<T>(path, { method: "POST",  body: body !== undefined ? JSON.stringify(body) : undefined }),
-  patch:  <T>(path: string, body: unknown)  => request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
-  delete: <T>(path: string)                 => request<T>(path, { method: "DELETE" }),
+  get: <T>(path: string) => request<T>(path, { method: "GET" }),
+  post: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: "POST",
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+  patch: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };

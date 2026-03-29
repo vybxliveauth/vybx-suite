@@ -10,6 +10,13 @@ import {
   AlertCircle, Loader2, ShieldCheck, ArrowLeft,
 } from "lucide-react";
 import { api } from "@/lib/api";
+import {
+  actionErrorState,
+  actionSuccessState,
+  uiActionInitialState,
+  type UiActionState,
+} from "@/lib/action-state";
+import { ActionFeedback } from "@/components/ui/action-feedback";
 
 const schema = z.object({
   password: z
@@ -41,17 +48,19 @@ export default function ResetPasswordPage() {
     resolver: zodResolver(schema),
   });
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null; done: boolean }, data: Fields) => {
-      if (!token) return { error: "Token inválido o expirado", done: false };
+  const [state, action, pending] = useActionState<UiActionState, Fields>(
+    async (_prev, data) => {
+      if (!token) {
+        return actionErrorState(new Error("Token inválido o expirado"));
+      }
       try {
         await api.post("/auth/reset-password", { token, password: data.password });
-        return { error: null, done: true };
+        return actionSuccessState("Tu contraseña fue actualizada correctamente.");
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Error inesperado", done: false };
+        return actionErrorState(e, "Error inesperado");
       }
     },
-    { error: null, done: false }
+    uiActionInitialState,
   );
 
   return (
@@ -79,7 +88,7 @@ export default function ResetPasswordPage() {
             borderRadius: "var(--radius-2xl)",
             padding: "2rem",
           }}>
-            {state.done ? (
+            {state.status === "success" ? (
               /* ── Success ── */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", textAlign: "center" }}>
                 <div style={{
@@ -95,7 +104,7 @@ export default function ResetPasswordPage() {
                     Contraseña actualizada
                   </h1>
                   <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-                    Ya puedes iniciar sesión con tu nueva contraseña.
+                    {state.message}
                   </p>
                 </div>
                 <Link href="/" className="btn-primary" style={{ textDecoration: "none" }}>
@@ -180,11 +189,7 @@ export default function ResetPasswordPage() {
                     Mínimo 12 caracteres · una mayúscula · un número · un símbolo
                   </p>
 
-                  {state.error && (
-                    <div style={{ padding: "0.65rem 0.9rem", borderRadius: "var(--radius-md)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.82rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                      <AlertCircle size={14} /> {state.error}
-                    </div>
-                  )}
+                  <ActionFeedback status={state.status} message={state.message} />
 
                   <button type="submit" disabled={pending} className="btn-primary" style={{ justifyContent: "center", marginTop: "0.25rem" }}>
                     {pending

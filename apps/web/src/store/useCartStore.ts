@@ -29,14 +29,22 @@ function calculateTotals(items: CartItem[]): {
   return { subtotal, fees, total: subtotal + fees };
 }
 
+function enforceSingleEvent(items: CartItem[]): CartItem[] {
+  if (items.length <= 1) return items;
+  const firstEventId = items[0]?.eventId;
+  if (!firstEventId) return items;
+  return items.filter((item) => item.eventId === firstEventId);
+}
+
 function buildSession(items: CartItem[]): CheckoutSession {
   const now = Date.now();
-  const { subtotal, fees, total } = calculateTotals(items);
-  const currency = items[0]?.currency ?? "USD";
+  const normalizedItems = enforceSingleEvent(items);
+  const { subtotal, fees, total } = calculateTotals(normalizedItems);
+  const currency = normalizedItems[0]?.currency ?? "USD";
 
   return {
     id: generateSessionId(),
-    items,
+    items: normalizedItems,
     subtotal,
     fees,
     total,
@@ -54,7 +62,7 @@ interface CartStore {
   timerIntervalId: ReturnType<typeof setInterval> | null;
 
   // Actions
-  addItem: (item: CartItem) => void;
+  addItem: (item: CartItem) => CartAddItemResult;
   removeItem: (tierId: string, eventId: string) => void;
   updateQuantity: (tierId: string, eventId: string, quantity: number) => void;
   clearCart: () => void;
@@ -64,6 +72,15 @@ interface CartStore {
   isReservationActive: () => boolean;
   remainingSeconds: () => number;
 }
+
+type CartAddItemResult =
+  | { ok: true }
+  | {
+      ok: false;
+      reason: "DIFFERENT_EVENT";
+      currentEventId: string;
+      currentEventTitle: string;
+    };
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 
@@ -76,6 +93,15 @@ export const useCartStore = create<CartStore>()(
       addItem: (item) => {
         const { session, startTimer } = get();
         const existingItems = session?.items ?? [];
+        const cartEvent = existingItems[0];
+        if (cartEvent && cartEvent.eventId !== item.eventId) {
+          return {
+            ok: false,
+            reason: "DIFFERENT_EVENT",
+            currentEventId: cartEvent.eventId,
+            currentEventTitle: cartEvent.eventTitle,
+          };
+        }
 
         const alreadyExists = existingItems.find(
           (i) => i.tierId === item.tierId && i.eventId === item.eventId
@@ -99,6 +125,7 @@ export const useCartStore = create<CartStore>()(
 
         set({ session: newSession });
         startTimer();
+        return { ok: true };
       },
 
       removeItem: (tierId, eventId) => {
@@ -196,6 +223,13 @@ export const useCartStore = create<CartStore>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         const now = Date.now();
+        if (state.session) {
+          const normalizedItems = enforceSingleEvent(state.session.items);
+          if (normalizedItems.length !== state.session.items.length) {
+            state.session =
+              normalizedItems.length > 0 ? buildSession(normalizedItems) : null;
+          }
+        }
         if (state.session && now >= state.session.expiresAt) {
           state.session = { ...state.session, isExpired: true };
         } else if (state.session) {

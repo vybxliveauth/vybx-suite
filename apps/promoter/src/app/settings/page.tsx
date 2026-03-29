@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Save, CheckCircle2 } from "lucide-react";
+import { Loader2, Save, CheckCircle2, Monitor, Moon, Sun } from "lucide-react";
 import {
   Button,
   Input,
@@ -14,12 +14,22 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Separator,
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
-import { getUser, setUser, displayName } from "@/lib/auth";
+import { setUser, displayName, useAuthUser } from "@/lib/auth";
+import {
+  readPromoterThemePreference,
+  setPromoterThemePreference,
+  type PromoterThemePreference,
+} from "@/lib/theme";
 
 // Password: mínimo 12 chars, una mayúscula, un número y un símbolo (política del backend)
 const profileSchema = z.object({
@@ -48,11 +58,12 @@ type ProfileValues  = z.infer<typeof profileSchema>;
 type PasswordValues = z.infer<typeof passwordSchema>;
 
 export default function SettingsPage() {
-  const user = getUser();
+  const user = useAuthUser();
   const [profileSaved,  setProfileSaved]  = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
   const [profileError,  setProfileError]  = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [themePreference, setThemePreference] = useState<PromoterThemePreference>("system");
 
   const profileForm = useForm<ProfileValues>({
     resolver: zodResolver(profileSchema),
@@ -67,6 +78,22 @@ export default function SettingsPage() {
     resolver: zodResolver(passwordSchema),
   });
 
+  useEffect(() => {
+    if (!user) return;
+    profileForm.reset(
+      {
+        firstName: user.firstName ?? displayName(user),
+        lastName: user.lastName ?? "",
+        email: user.email ?? "",
+      },
+      { keepDirtyValues: true }
+    );
+  }, [profileForm, user]);
+
+  useEffect(() => {
+    setThemePreference(readPromoterThemePreference());
+  }, []);
+
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
     try {
@@ -75,7 +102,10 @@ export default function SettingsPage() {
         lastName:  values.lastName || undefined,
         email:     values.email,
       });
-      if (updated && user) setUser({ ...user, ...updated });
+      if (updated) {
+        const current = user ?? null;
+        setUser(current ? { ...current, ...updated } : updated);
+      }
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3000);
     } catch (err: unknown) {
@@ -96,6 +126,11 @@ export default function SettingsPage() {
     } catch (err: unknown) {
       setPasswordError(err instanceof Error ? err.message : "Error al cambiar contraseña");
     }
+  }
+
+  function handleThemeChange(nextTheme: PromoterThemePreference) {
+    setThemePreference(nextTheme);
+    setPromoterThemePreference(nextTheme);
   }
 
   return (
@@ -199,6 +234,45 @@ export default function SettingsPage() {
                 {passwordSaved ? "Actualizada" : "Cambiar contraseña"}
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Tema del Panel</CardTitle>
+            <CardDescription>
+              Sincroniza con el sistema o selecciona modo oscuro/claro manual.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Select
+              value={themePreference}
+              onValueChange={(value) => handleThemeChange(value as PromoterThemePreference)}
+            >
+              <SelectTrigger className="w-full md:w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="system">
+                  <span className="inline-flex items-center gap-2">
+                    <Monitor className="size-4" /> Sistema
+                  </span>
+                </SelectItem>
+                <SelectItem value="dark">
+                  <span className="inline-flex items-center gap-2">
+                    <Moon className="size-4" /> Oscuro
+                  </span>
+                </SelectItem>
+                <SelectItem value="light">
+                  <span className="inline-flex items-center gap-2">
+                    <Sun className="size-4" /> Claro
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Preferencia activa: <strong>{themePreference}</strong>
+            </p>
           </CardContent>
         </Card>
       </div>

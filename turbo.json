@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalEnv": ["SCAN_HOSTS", "ADMIN_HOSTS"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

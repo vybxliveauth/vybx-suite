@@ -15,6 +15,18 @@ const betaRuleTuning = {
     "react-hooks/set-state-in-effect": "off",
     "react-hooks/immutability": "off",
     "@next/next/no-html-link-for-pages": "warn",
+    "no-restricted-imports": [
+      "error",
+      {
+        patterns: [
+          {
+            group: ["@/components/ui/*", "!@/components/ui/skeleton"],
+            message:
+              "Use @vybx/ui for shared UI components. Keep only web-local skeleton until migration is complete.",
+          },
+        ],
+      },
+    ],
   },
 };
 

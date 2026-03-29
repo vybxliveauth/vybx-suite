@@ -7,11 +7,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/store/useAuthStore";
-import { fetchProfile, api } from "@/lib/api";
+import {
+  fetchProfile,
+  api,
+  apiDeleteMyAccount,
+  apiExportMyData,
+  apiUpdateEmailPreferences,
+} from "@/lib/api";
+import {
+  actionErrorState,
+  actionSuccessState,
+  uiActionInitialState,
+  type UiActionState,
+} from "@/lib/action-state";
+import { ActionFeedback } from "@/components/ui/action-feedback";
 import {
   Zap, ChevronLeft, User, Mail, Phone, Lock,
-  Eye, EyeOff, CheckCircle2, AlertCircle, Loader2,
-  Save, ShieldCheck, Ticket,
+  Eye, EyeOff, AlertCircle, Loader2,
+  Save, ShieldCheck, Ticket, Download, Trash2,
 } from "lucide-react";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -91,23 +104,6 @@ function Card({ title, icon: Icon, children }: { title: string; icon: React.Elem
   );
 }
 
-function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
-  return (
-    <div style={{
-      padding: "0.7rem 1rem",
-      borderRadius: "var(--radius-xl)",
-      background: type === "success" ? "rgba(34,197,94,0.1)" : "rgba(244,63,94,0.1)",
-      border: `1px solid ${type === "success" ? "rgba(34,197,94,0.3)" : "rgba(244,63,94,0.3)"}`,
-      color: type === "success" ? "#4ade80" : "#fda4af",
-      fontSize: "0.82rem",
-      display: "flex", alignItems: "center", gap: "0.5rem",
-    }}>
-      {type === "success" ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-      {msg}
-    </div>
-  );
-}
-
 // ─── Profile Section ──────────────────────────────────────────────────────────
 
 function ProfileSection() {
@@ -126,8 +122,8 @@ function ProfileSection() {
     if (user) reset({ firstName: user.firstName, lastName: user.lastName, email: user.email });
   }, [user, reset]);
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null; success: boolean }, data: ProfileFields) => {
+  const [state, action, pending] = useActionState<UiActionState, ProfileFields>(
+    async (_prev, data) => {
       try {
         await api.patch("/users/me", {
           firstName: data.firstName,
@@ -138,12 +134,12 @@ function ProfileSection() {
         });
         const updated = await fetchProfile();
         setUser(updated);
-        return { error: null, success: true };
+        return actionSuccessState("Perfil actualizado correctamente.");
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Error desconocido", success: false };
+        return actionErrorState(e, "Error desconocido");
       }
     },
-    { error: null, success: false }
+    uiActionInitialState,
   );
 
   return (
@@ -159,8 +155,7 @@ function ProfileSection() {
           <Field label="Ciudad"              {...register("city")}    placeholder="Santo Domingo" />
         </div>
 
-        {state.error   && <Toast msg={state.error}              type="error" />}
-        {state.success && <Toast msg="Perfil actualizado ✓"     type="success" />}
+        <ActionFeedback status={state.status} message={state.message} />
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
           <button type="submit" disabled={pending} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.65rem 1.5rem" }}>
@@ -181,20 +176,20 @@ function PasswordSection() {
     resolver: zodResolver(passwordSchema),
   });
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null; success: boolean }, data: PasswordFields) => {
+  const [state, action, pending] = useActionState<UiActionState, PasswordFields>(
+    async (_prev, data) => {
       try {
         await api.patch("/users/me/password", {
           currentPassword: data.currentPassword,
           newPassword:     data.newPassword,
         });
         reset();
-        return { error: null, success: true };
+        return actionSuccessState("Contraseña actualizada correctamente.");
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Error desconocido", success: false };
+        return actionErrorState(e, "Error desconocido");
       }
     },
-    { error: null, success: false }
+    uiActionInitialState,
   );
 
   return (
@@ -229,8 +224,7 @@ function PasswordSection() {
           Mínimo 12 caracteres · una mayúscula · un número · un símbolo
         </p>
 
-        {state.error   && <Toast msg={state.error}                    type="error" />}
-        {state.success && <Toast msg="Contraseña actualizada ✓"       type="success" />}
+        <ActionFeedback status={state.status} message={state.message} />
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
           <button type="submit" disabled={pending} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.65rem 1.5rem" }}>
@@ -238,6 +232,273 @@ function PasswordSection() {
           </button>
         </div>
       </form>
+    </Card>
+  );
+}
+
+// ─── Privacy Section ──────────────────────────────────────────────────────────
+
+function PrivacySection() {
+  const router = useRouter();
+  const { user, setUser, logout } = useAuthStore();
+  const [marketingEnabled, setMarketingEnabled] = useState(user?.marketingEmailOptIn ?? true);
+  const [savingPreferences, setSavingPreferences] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteReason, setDeleteReason] = useState("");
+  const [status, setStatus] = useState<UiActionState>(uiActionInitialState);
+
+  useEffect(() => {
+    setMarketingEnabled(user?.marketingEmailOptIn ?? true);
+  }, [user?.marketingEmailOptIn]);
+
+  async function handleSavePreferences() {
+    setStatus(uiActionInitialState);
+    setSavingPreferences(true);
+    try {
+      const response = await apiUpdateEmailPreferences(marketingEnabled);
+      setUser({
+        ...(user ?? {
+          id: "",
+          email: "",
+          firstName: "",
+          lastName: "",
+          role: "USER",
+          emailVerified: true,
+          profileImageUrl: null,
+        }),
+        marketingEmailOptIn: response.marketingEmailOptIn,
+      });
+      setStatus(actionSuccessState("Preferencias de correo actualizadas."));
+    } catch (error) {
+      setStatus(actionErrorState(error, "No pudimos actualizar tus preferencias."));
+    } finally {
+      setSavingPreferences(false);
+    }
+  }
+
+  async function handleExportData() {
+    setStatus(uiActionInitialState);
+    setExportingData(true);
+    try {
+      const exportPayload = await apiExportMyData();
+      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `vybx-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      setStatus(actionSuccessState("Exportación lista. Se descargó tu archivo JSON."));
+    } catch (error) {
+      setStatus(actionErrorState(error, "No pudimos exportar tus datos."));
+    } finally {
+      setExportingData(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!deletePassword.trim()) {
+      setStatus(actionErrorState(new Error("Ingresa tu contraseña actual.")));
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Esta acción elimina tu cuenta y no se puede deshacer. ¿Deseas continuar?",
+    );
+    if (!confirmed) return;
+
+    setStatus(uiActionInitialState);
+    setDeletingAccount(true);
+    try {
+      await apiDeleteMyAccount({
+        currentPassword: deletePassword.trim(),
+        reason: deleteReason.trim() || undefined,
+      });
+      await logout();
+      setStatus(actionSuccessState("Cuenta eliminada. Cerramos tu sesión."));
+      router.replace("/");
+    } catch (error) {
+      setStatus(actionErrorState(error, "No pudimos eliminar tu cuenta."));
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  return (
+    <Card title="Privacidad y datos" icon={ShieldCheck}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div
+          style={{
+            border: "1px solid var(--glass-border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "1rem",
+            background: "rgba(255,255,255,0.02)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ color: "var(--text-light)", fontSize: "0.9rem", fontWeight: 700 }}>
+              Correos promocionales
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+              Activa o desactiva campañas y novedades.
+            </p>
+          </div>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={marketingEnabled}
+              onChange={(event) => setMarketingEnabled(event.target.checked)}
+            />
+            <span style={{ color: "var(--text-light)", fontSize: "0.85rem" }}>
+              {marketingEnabled ? "Activado" : "Desactivado"}
+            </span>
+          </label>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button
+            type="button"
+            disabled={savingPreferences}
+            className="btn-primary"
+            style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 1.2rem" }}
+            onClick={() => void handleSavePreferences()}
+          >
+            {savingPreferences ? (
+              <>
+                <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Guardando...
+              </>
+            ) : (
+              <>
+                <Save size={15} /> Guardar preferencias
+              </>
+            )}
+          </button>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid var(--glass-border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "1rem",
+            background: "rgba(255,255,255,0.02)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ color: "var(--text-light)", fontSize: "0.9rem", fontWeight: 700 }}>
+              Exportar mis datos (GDPR)
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+              Descarga una copia de tu información.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={exportingData}
+            className="btn-secondary"
+            style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.55rem 1rem" }}
+            onClick={() => void handleExportData()}
+          >
+            {exportingData ? (
+              <>
+                <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Preparando...
+              </>
+            ) : (
+              <>
+                <Download size={15} /> Exportar
+              </>
+            )}
+          </button>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid rgba(244,63,94,0.25)",
+            borderRadius: "var(--radius-lg)",
+            padding: "1rem",
+            background: "rgba(244,63,94,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+          }}
+        >
+          <div>
+            <p style={{ color: "var(--text-light)", fontSize: "0.9rem", fontWeight: 700 }}>
+              Eliminar cuenta
+            </p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+              Acción irreversible. Requiere contraseña actual.
+            </p>
+          </div>
+
+          <Field
+            label="Contraseña actual"
+            icon={Lock}
+            type="password"
+            autoComplete="current-password"
+            value={deletePassword}
+            onChange={(event) => setDeletePassword(event.target.value)}
+            placeholder="••••••••"
+          />
+
+          <Field
+            label="Motivo (opcional)"
+            value={deleteReason}
+            onChange={(event) => setDeleteReason(event.target.value)}
+            placeholder="Cuéntanos brevemente"
+            maxLength={280}
+          />
+
+          <div style={{ display: "flex", justifyContent: "flex-end" }}>
+            <button
+              type="button"
+              disabled={deletingAccount}
+              style={{
+                padding: "0.55rem 1.25rem",
+                borderRadius: "var(--radius-pill)",
+                border: "1px solid rgba(244,63,94,0.45)",
+                background: "rgba(244,63,94,0.14)",
+                color: "#fda4af",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "var(--font-body)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.45rem",
+              }}
+              onClick={() => void handleDeleteAccount()}
+            >
+              {deletingAccount ? (
+                <>
+                  <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 size={14} /> Eliminar cuenta
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        <ActionFeedback status={status.status} message={status.message} />
+      </div>
     </Card>
   );
 }
@@ -319,6 +580,7 @@ export default function ProfilePage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
           <ProfileSection />
           <PasswordSection />
+          <PrivacySection />
 
           {/* Danger zone */}
           <div style={{

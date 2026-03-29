@@ -1,0 +1,15 @@
+{
+  "name": "@vybx/api-client",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "license": "MIT",
+  "devDependencies": {
+    "@vybx/tsconfig": "workspace:*",
+    "typescript": "^5"
+  }
+}

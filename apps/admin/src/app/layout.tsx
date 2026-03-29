@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import { Toaster } from "sonner";
+import { Geist, Geist_Mono } from "next/font/google";
+import { QueryProvider } from "@/components/providers/QueryProvider";
+import { ThemeSyncProvider } from "@/components/providers/ThemeSyncProvider";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
-  title: "VybxLive Admin",
-  description: "Panel de administración",
+  title: "VybeTickets — Panel admin",
+  description: "Panel administrativo",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`dark ${geist.variable}`}>
-      <body className="antialiased">
-        {children}
-        <Toaster richColors position="top-right" theme="dark" />
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ThemeSyncProvider />
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

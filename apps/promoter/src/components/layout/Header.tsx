@@ -19,7 +19,7 @@ import {
   Button,
   Input,
 } from "@vybx/ui";
-import { clearSession, getUser, displayName } from "@/lib/auth";
+import { clearSession, useAuthUser, displayName } from "@/lib/auth";
 import { api } from "@/lib/api";
 import type { NotificationItem, NotificationsResponse } from "@/lib/types";
 
@@ -41,7 +41,7 @@ interface HeaderProps {
 export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
   const router   = useRouter();
   const pathname = usePathname();
-  const user     = getUser();
+  const user     = useAuthUser();
 
   const [notifications,  setNotifications]  = useState<NotificationItem[]>([]);
   const [unreadCount,    setUnreadCount]     = useState(0);
@@ -121,7 +121,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-3 px-4 md:px-6 border-b border-white/[0.06] bg-[#030014]/80 backdrop-blur-xl"
+      className="sticky top-0 z-30 flex items-center gap-3 px-4 md:px-6 border-b border-border/60 bg-background/80 backdrop-blur-xl"
       style={{ height: "var(--header-height)" }}
     >
       <button
@@ -131,7 +131,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
           e.preventDefault();
           openMobileMenu();
         }}
-        className="md:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5"
+        className="md:hidden p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40"
         aria-label="Abrir menú"
       >
         <Menu className="size-5" />
@@ -147,7 +147,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
           value={moduleSearch}
           onChange={(e) => setModuleSearch(e.target.value)}
           onKeyDown={handleSearch}
-          className="pl-8 h-8 text-sm bg-white/[0.04] border-white/[0.08] focus-visible:ring-primary/50 placeholder:text-muted-foreground/60"
+          className="pl-8 h-8 text-sm bg-card/50 border-border/60 focus-visible:ring-primary/50 placeholder:text-muted-foreground/60"
         />
       </div>
 
@@ -155,7 +155,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
         {/* Notifications dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-white/5" aria-label="Notificaciones">
+            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-muted/40" aria-label="Notificaciones">
               <Bell className="size-4" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground leading-none">
@@ -210,7 +210,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-white/5 transition-colors">
+            <button className="flex items-center gap-2 rounded-full px-2 py-1 hover:bg-muted/40 transition-colors">
               <Avatar className="size-7">
                 {user?.profileImageUrl && (
                   <AvatarImage src={user.profileImageUrl} alt={name} />

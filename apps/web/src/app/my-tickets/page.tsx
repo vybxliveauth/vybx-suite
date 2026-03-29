@@ -17,6 +17,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { api } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -126,8 +127,7 @@ function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelle
       {/* Event image strip */}
       <div style={{ position: "relative", height: 130, overflow: "hidden" }}>
         {event.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <SafeEventImage
             src={event.image}
             alt={event.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -302,6 +302,37 @@ function EmptyState() {
   );
 }
 
+function FilterEmptyState({
+  filter,
+  onReset,
+}: {
+  filter: TicketStatus | "ALL";
+  onReset: () => void;
+}) {
+  const labelMap: Record<TicketStatus | "ALL", string> = {
+    ALL: "Todos",
+    VALID: "Válidos",
+    USED: "Usados",
+    CANCELLED: "Cancelados",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 240, gap: "1rem", textAlign: "center" }}>
+      <div>
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.05rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.4rem" }}>
+          No hay tickets en “{labelMap[filter]}”
+        </p>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
+          Cambia de filtro para ver el resto de tus compras.
+        </p>
+      </div>
+      <button onClick={onReset} className="btn-secondary" style={{ padding: "0.5rem 1rem", fontSize: "0.82rem" }}>
+        Ver todos
+      </button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MyTicketsPage() {
@@ -373,7 +404,7 @@ export default function MyTicketsPage() {
             Mis tickets
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
-            {loading ? "Cargando..." : `${counts.ALL} ticket${counts.ALL !== 1 ? "s" : ""} en total`}
+            {loading ? "Cargando tus compras..." : `${counts.ALL} ticket${counts.ALL !== 1 ? "s" : ""} en total`}
           </p>
         </div>
 
@@ -426,7 +457,9 @@ export default function MyTicketsPage() {
             </button>
           </div>
         ) : filtered.length === 0 ? (
-          <EmptyState />
+          counts.ALL === 0
+            ? <EmptyState />
+            : <FilterEmptyState filter={filter} onReset={() => setFilter("ALL")} />
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem" }}>
             {filtered.map((ticket) => (

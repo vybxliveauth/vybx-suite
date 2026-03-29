@@ -1,0 +1,28 @@
+title = "vybx-suite gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "resend-api-key"
+description = "Resend API key"
+regex = '''re_[A-Za-z0-9_-]{16,}'''
+tags = ["key", "resend"]
+
+[[rules]]
+id = "stripe-secret-key"
+description = "Stripe secret key"
+regex = '''sk_(live|test)_[A-Za-z0-9]{16,}'''
+tags = ["key", "stripe"]
+
+[[rules]]
+id = "stripe-publishable-key"
+description = "Stripe publishable key"
+regex = '''pk_(live|test)_[A-Za-z0-9]{16,}'''
+tags = ["key", "stripe"]
+
+[[rules]]
+id = "stripe-webhook-secret"
+description = "Stripe webhook signing secret"
+regex = '''whsec_[A-Za-z0-9]{16,}'''
+tags = ["key", "stripe"]

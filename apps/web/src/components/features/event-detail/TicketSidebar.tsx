@@ -5,6 +5,7 @@ import { useCartStore } from "@/store/useCartStore";
 import { formatPrice } from "@/lib/utils";
 import { Event, TicketTier } from "@/types";
 import {
+  AlertCircle,
   Check,
   ChevronDown,
   ChevronUp,
@@ -236,7 +237,8 @@ export function TicketSidebar({ event }: { event: Event }) {
     event.tiers.find((t) => t.stock > 0)?.id ?? event.tiers[0].id
   );
   const [quantity, setQuantity] = useState(1);
-  const { addItem, session } = useCartStore();
+  const [cartWarning, setCartWarning] = useState<string | null>(null);
+  const { addItem, clearCart, session } = useCartStore();
 
   const selectedTier = event.tiers.find((t) => t.id === selectedTierId)!;
   const subtotal = selectedTier.price * quantity;
@@ -246,9 +248,13 @@ export function TicketSidebar({ event }: { event: Event }) {
   const alreadyInCart = session?.items.some(
     (i) => i.tierId === selectedTierId && i.eventId === event.id
   );
+  const cartRootEvent = session?.items[0];
+  const cartHasDifferentEvent = Boolean(
+    cartRootEvent && cartRootEvent.eventId !== event.id
+  );
 
-  function handleAddToCart() {
-    addItem({
+  function buildCurrentCartItem() {
+    return {
       eventId: event.id,
       eventTitle: event.title,
       eventDate: event.startDate,
@@ -257,7 +263,30 @@ export function TicketSidebar({ event }: { event: Event }) {
       quantity,
       unitPrice: selectedTier.price,
       currency: selectedTier.currency,
-    });
+    };
+  }
+
+  function handleAddToCart() {
+    const result = addItem(buildCurrentCartItem());
+    if (!result.ok && result.reason === "DIFFERENT_EVENT") {
+      setCartWarning(
+        `Tu carrito ya contiene entradas de "${result.currentEventTitle}". Finaliza o vacía el carrito antes de cambiar de evento.`
+      );
+      return;
+    }
+    setCartWarning(null);
+  }
+
+  function handleReplaceCartEvent() {
+    clearCart();
+    const result = addItem(buildCurrentCartItem());
+    if (!result.ok && result.reason === "DIFFERENT_EVENT") {
+      setCartWarning(
+        `No se pudo cambiar el carrito al nuevo evento. Intenta de nuevo.`
+      );
+      return;
+    }
+    setCartWarning(null);
   }
 
   return (
@@ -364,11 +393,41 @@ export function TicketSidebar({ event }: { event: Event }) {
         className="btn-primary"
         onClick={handleAddToCart}
         style={{ width: "100%", justifyContent: "center", padding: "0.9rem 1.5rem", fontSize: "1rem" }}
-        disabled={selectedTier.stock === 0}
+        disabled={selectedTier.stock === 0 || cartHasDifferentEvent}
       >
         <ShoppingCart size={18} />
-        {alreadyInCart ? "Actualizar reserva" : "Reservar ahora"}
+        {cartHasDifferentEvent
+          ? "Carrito de otro evento"
+          : alreadyInCart
+            ? "Actualizar reserva"
+            : "Reservar ahora"}
       </button>
+
+      {(cartWarning || cartHasDifferentEvent) && (
+        <>
+          <p style={{ marginTop: "0.75rem", fontSize: "0.74rem", color: "#fda4af", display: "flex", gap: "0.35rem", alignItems: "flex-start", lineHeight: 1.35 }}>
+            <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+            {cartWarning ??
+              `Tu carrito ya tiene entradas de "${cartRootEvent?.eventTitle}". Solo se permite un evento por checkout.`}
+          </p>
+          {cartHasDifferentEvent && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleReplaceCartEvent}
+              style={{
+                width: "100%",
+                justifyContent: "center",
+                marginTop: "0.6rem",
+                padding: "0.7rem 1rem",
+                fontSize: "0.82rem",
+              }}
+            >
+              Vaciar carrito y cambiar evento
+            </button>
+          )}
+        </>
+      )}
 
       <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.75rem" }}>
         Tu reserva se guarda por 10 minutos · Sin cargos hasta confirmar

@@ -1,0 +1,12 @@
+{
+  "extends": "@vybx/tsconfig/base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@vybx/api-client": ["./src/index.ts"],
+      "@vybx/api-client/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

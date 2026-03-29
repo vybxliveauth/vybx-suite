@@ -3,12 +3,28 @@
 import { useEffect, useState, useActionState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Drawer } from "vaul";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCartStore } from "@/store/useCartStore";
-import { formatPrice, formatCountdown, formatEventDate } from "@/lib/utils";
-import { login, fetchProfile, type AuthUser } from "@/lib/api";
+import { formatPrice, formatEventDate } from "@/lib/utils";
+import { login, verifyLoginTwoFactor, fetchProfile, type AuthUser } from "@/lib/api";
+import {
+  actionErrorState,
+  actionSuccessState,
+  uiActionInitialState,
+  type UiActionState,
+} from "@/lib/action-state";
+import {
+  checkoutInitialState,
+  submitCheckoutAction,
+  type CheckoutActionState,
+} from "@/actions/checkout";
+import { ActionFeedback } from "@/components/ui/action-feedback";
+import { getClientTurnstileToken } from "@/lib/turnstile";
+import { FlipCountdown } from "@/components/features/FlipCountdown";
+import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 import {
   Zap,
   ChevronLeft,
@@ -25,6 +41,8 @@ import {
   AlertCircle,
   Loader2,
   CreditCard,
+  ReceiptText,
+  X,
 } from "lucide-react";
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
@@ -128,7 +146,7 @@ function InputField({
 
 // ─── Order Summary ────────────────────────────────────────────────────────────
 
-function OrderSummary() {
+function OrderSummary({ mobile = false }: { mobile?: boolean }) {
   const { session, remainingSeconds } = useCartStore();
   const [seconds, setSeconds] = useState(0);
 
@@ -151,8 +169,8 @@ function OrderSummary() {
       border: "1px solid var(--glass-border)",
       borderRadius: "var(--radius-2xl)",
       overflow: "hidden",
-      position: "sticky",
-      top: 100,
+      position: mobile ? "relative" : "sticky",
+      top: mobile ? undefined : 100,
     }}>
       {/* Header */}
       <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -177,9 +195,7 @@ function OrderSummary() {
         ) : (
           <span style={{ fontSize: "0.78rem", color: isUrgent ? "#fda4af" : "var(--text-muted)" }}>
             Reserva expira en{" "}
-            <strong style={{ fontFamily: "var(--font-heading)", color: isUrgent ? "#fda4af" : "var(--text-light)" }}>
-              {formatCountdown(seconds)}
-            </strong>
+            <FlipCountdown seconds={seconds} urgent={isUrgent} compact />
           </span>
         )}
       </div>
@@ -249,22 +265,73 @@ function OrderSummary() {
 
 function LoginForm({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
   const [showPass, setShowPass] = useState(false);
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
+  const [twoFactorState, setTwoFactorState] = useState<UiActionState>(uiActionInitialState);
+  const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
   });
 
-  const [state, action, pending] = useActionState(
-    async (_prev: { error: string | null }, data: LoginFields) => {
+  const [state, action, pending] = useActionState<UiActionState, LoginFields>(
+    async (_prev, data) => {
       try {
-        const user = await login(data);
-        onSuccess(user);
-        return { error: null };
+        const result = await login(data);
+        if (!("user" in result)) {
+          setTwoFactorChallengeId(result.challengeId);
+          setTwoFactorCode("");
+          setTwoFactorNotice(
+            result.message ||
+              `Codigo 2FA enviado. Expira en ${Math.max(1, Math.ceil(result.expiresInSeconds / 60))} min.`,
+          );
+          setTwoFactorState(uiActionInitialState);
+          return uiActionInitialState;
+        }
+        setTwoFactorChallengeId(null);
+        setTwoFactorCode("");
+        setTwoFactorNotice(null);
+        setTwoFactorState(uiActionInitialState);
+        onSuccess(result.user);
+        return actionSuccessState("Inicio de sesion completado.");
       } catch (e) {
-        return { error: e instanceof Error ? e.message : "Credenciales incorrectas" };
+        return actionErrorState(e, "Credenciales incorrectas");
       }
     },
-    { error: null }
+    uiActionInitialState,
   );
+
+  async function handleVerifyTwoFactor() {
+    if (!twoFactorChallengeId) return;
+
+    const normalizedCode = twoFactorCode.trim();
+    if (normalizedCode.length < 4) {
+      setTwoFactorState(actionErrorState(new Error("Ingresa el codigo 2FA recibido por correo.")));
+      return;
+    }
+
+    setVerifyingTwoFactor(true);
+    setTwoFactorState(uiActionInitialState);
+    try {
+      const user = await verifyLoginTwoFactor({
+        challengeId: twoFactorChallengeId,
+        code: normalizedCode,
+      });
+      setTwoFactorState(actionSuccessState("Verificacion 2FA completada."));
+      onSuccess(user);
+    } catch (error) {
+      setTwoFactorState(actionErrorState(error, "Codigo 2FA invalido."));
+    } finally {
+      setVerifyingTwoFactor(false);
+    }
+  }
+
+  function resetTwoFactorFlow() {
+    setTwoFactorChallengeId(null);
+    setTwoFactorCode("");
+    setTwoFactorNotice(null);
+    setTwoFactorState(uiActionInitialState);
+  }
 
   return (
     <div style={{
@@ -314,11 +381,58 @@ function LoginForm({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
           )}
         />
 
-        {state.error && (
-          <div style={{ padding: "0.65rem 0.9rem", borderRadius: "var(--radius-md)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.82rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <AlertCircle size={14} /> {state.error}
+        {twoFactorChallengeId && (
+          <div
+            style={{
+              border: "1px solid rgba(124,58,237,0.35)",
+              background: "rgba(124,58,237,0.1)",
+              borderRadius: "var(--radius-lg)",
+              padding: "0.9rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem",
+            }}
+          >
+            <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              {twoFactorNotice ?? "Te enviamos un codigo 2FA a tu correo para confirmar el acceso."}
+            </p>
+            <InputField
+              label="Codigo 2FA"
+              icon={Lock}
+              value={twoFactorCode}
+              onChange={(event) => setTwoFactorCode(event.target.value)}
+              placeholder="000000"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={10}
+            />
+            <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                onClick={() => void handleVerifyTwoFactor()}
+                disabled={verifyingTwoFactor}
+                className="btn-primary"
+                style={{ justifyContent: "center", minWidth: 180 }}
+              >
+                {verifyingTwoFactor
+                  ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Verificando...</>
+                  : "Validar codigo"
+                }
+              </button>
+              <button
+                type="button"
+                onClick={resetTwoFactorFlow}
+                className="btn-secondary"
+                style={{ justifyContent: "center" }}
+              >
+                Cambiar cuenta
+              </button>
+            </div>
+            <ActionFeedback status={twoFactorState.status} message={twoFactorState.message} />
           </div>
         )}
+
+        <ActionFeedback status={state.status} message={state.message} />
 
         <button
           type="submit"
@@ -332,6 +446,75 @@ function LoginForm({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
       </form>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+// ─── Payment Method Card ──────────────────────────────────────────────────────
+// Provider-aware: reads NEXT_PUBLIC_PAYMENT_PROVIDER to show the right badge.
+// Both RD Redirect and Stripe Checkout are hosted redirect flows — the user
+// fills buyer info here, then gets redirected to the provider's secure page.
+
+const PAYMENT_PROVIDER =
+  (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "RD_REDIRECT") as
+    | "RD_REDIRECT"
+    | "STRIPE"
+    | "AZUL";
+
+const PROVIDER_LABELS: Record<typeof PAYMENT_PROVIDER, { name: string; detail: string }> = {
+  RD_REDIRECT: {
+    name: "Tarjeta de crédito / débito",
+    detail: "Pago seguro procesado por RD Commerce · Visa, Mastercard y más.",
+  },
+  STRIPE: {
+    name: "Tarjeta de crédito / débito",
+    detail: "Pago seguro procesado por Stripe · Visa, Mastercard, Amex y más.",
+  },
+  AZUL: {
+    name: "Tarjeta de crédito / débito",
+    detail: "Pago seguro procesado por Azul · Visa y Mastercard.",
+  },
+};
+
+function PaymentMethodCard() {
+  const provider = PROVIDER_LABELS[PAYMENT_PROVIDER] ?? PROVIDER_LABELS.RD_REDIRECT;
+  return (
+    <div style={{
+      background: "var(--card-bg)",
+      border: "1px solid var(--glass-border)",
+      borderRadius: "var(--radius-2xl)",
+      padding: "1.75rem",
+    }}>
+      <h2 style={{
+        fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 800,
+        marginBottom: "1.25rem", display: "flex", alignItems: "center",
+        gap: "0.5rem", color: "var(--text-light)",
+      }}>
+        <Lock size={16} color="var(--accent-primary)" />
+        Método de pago
+      </h2>
+
+      <div style={{
+        padding: "1rem",
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: "var(--radius-xl)",
+        display: "flex", alignItems: "center", gap: "0.75rem",
+      }}>
+        <CreditCard size={22} color="var(--accent-secondary)" style={{ flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-light)", marginBottom: "0.15rem" }}>
+            {provider.name}
+          </p>
+          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+            {provider.detail}
+          </p>
+          <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>
+            Serás redirigido al gateway al confirmar.
+          </p>
+        </div>
+        <ShieldCheck size={16} color="#4ade80" style={{ flexShrink: 0 }} />
+      </div>
     </div>
   );
 }
@@ -376,39 +559,10 @@ function BuyerForm({ user, onSubmit, pending }: {
         </div>
       </div>
 
-      {/* Payment — placeholder */}
-      <div style={{
-        background: "var(--card-bg)",
-        border: "1px solid var(--glass-border)",
-        borderRadius: "var(--radius-2xl)",
-        padding: "1.75rem",
-      }}>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 800, marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-light)" }}>
-          <Lock size={16} color="var(--accent-primary)" />
-          Método de pago
-        </h2>
+      {/* Payment method */}
+      <PaymentMethodCard />
 
-        <div style={{
-          padding: "1rem",
-          background: "rgba(255,255,255,0.03)",
-          border: "1px solid var(--glass-border)",
-          borderRadius: "var(--radius-xl)",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-        }}>
-          <CreditCard size={22} color="var(--accent-secondary)" style={{ flexShrink: 0 }} />
-          <div>
-            <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text-light)", marginBottom: "0.15rem" }}>
-              Tarjeta de crédito / débito
-            </p>
-            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-              Serás redirigido al gateway de pago seguro.
-            </p>
-          </div>
-          <ShieldCheck size={16} color="#4ade80" style={{ marginLeft: "auto", flexShrink: 0 }} />
-        </div>
-      </div>
+      <TurnstileWidget action="checkout" />
 
       {/* Submit */}
       <button
@@ -440,6 +594,7 @@ export default function CheckoutPage() {
   const { session } = useCartStore();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -449,60 +604,52 @@ export default function CheckoutPage() {
       .finally(() => setLoadingUser(false));
   }, []);
 
-  const [submitState, submitAction, submitPending] = useActionState(
-    async (prev: { error: string | null }, data: BuyerFields) => {
-      void prev;
-      void data;
-      try {
-        const items = session?.items ?? [];
-        if (items.length === 0) throw new Error("Carrito vacío");
+  const [submitState, submitAction, submitPending] = useActionState<
+    CheckoutActionState,
+    FormData
+  >(submitCheckoutAction, checkoutInitialState);
 
-        const csrfToken = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] ?? "";
-        const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004";
+  useEffect(() => {
+    if (submitState.status !== "success" || !submitState.checkoutUrl) return;
+    sessionStorage.removeItem("vybx_checkout_queue");
+    sessionStorage.removeItem("vybx_checkout_total");
+    window.location.href = submitState.checkoutUrl;
+  }, [submitState]);
 
-        // Create a payment intent for every cart item
-        const checkoutUrls: string[] = [];
-        for (const item of items) {
-          const res = await fetch(`${API_URL}/payments/create-intent`, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-              "x-csrf-token": csrfToken,
-              "idempotency-key": crypto.randomUUID(),
-            },
-            body: JSON.stringify({
-              ticketTypeId: item.tierId,
-              quantity: item.quantity,
-              eventId: item.eventId,
-              turnstileToken: "1x00000000000000000000AA",
-            }),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error creando el pago");
-          }
-          const intent = await res.json();
-          checkoutUrls.push(intent.checkoutUrl);
-        }
+  const submitCheckout = (data: BuyerFields) => {
+    const items = session?.items ?? [];
+    if (items.length === 0) return;
 
-        // Queue remaining checkout URLs so the result page can chain them
-        if (checkoutUrls.length > 1) {
-          sessionStorage.setItem("vybx_checkout_queue", JSON.stringify(checkoutUrls.slice(1)));
-          sessionStorage.setItem("vybx_checkout_total", String(checkoutUrls.length));
-        } else {
-          sessionStorage.removeItem("vybx_checkout_queue");
-          sessionStorage.removeItem("vybx_checkout_total");
-        }
+    const turnstileToken = getClientTurnstileToken("checkout");
+    const queueToken = sessionStorage.getItem("vybx_queue_token") ?? "";
+    const formData = new FormData();
 
-        window.location.href = checkoutUrls[0];
-        return { error: null };
-      } catch (e) {
-        return { error: e instanceof Error ? e.message : "Error al procesar el pago" };
-      }
-    },
-    { error: null }
-  );
+    formData.set("sessionId", session?.id ?? "");
+    formData.set("agreedToTerms", "true");
+    formData.set("promoCode", "");
+    formData.set("attendee.firstName", data.firstName);
+    formData.set("attendee.lastName", data.lastName);
+    formData.set("attendee.email", data.email);
+    formData.set("attendee.phone", data.phone ?? "");
+    // Server-side TTL guard — server action rejects expired carts immediately
+    if (session?.expiresAt) {
+      formData.set("cartExpiresAt", String(session.expiresAt));
+    }
+    formData.set(
+      "items",
+      JSON.stringify(
+        items.map((item) => ({
+          eventId: item.eventId,
+          tierId: item.tierId,
+          quantity: item.quantity,
+        })),
+      ),
+    );
+    if (turnstileToken) formData.set("turnstileToken", turnstileToken);
+    if (queueToken) formData.set("queueToken", queueToken);
+
+    submitAction(formData);
+  };
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -537,7 +684,7 @@ export default function CheckoutPage() {
         </Link>
       </nav>
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 6rem" }}>
+      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 7.25rem" }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, letterSpacing: "-1px", marginBottom: "2.5rem", color: "var(--text-light)" }}>
           Checkout
         </h1>
@@ -562,24 +709,110 @@ export default function CheckoutPage() {
                 </div>
                 <BuyerForm
                   user={user}
-                  onSubmit={(data) => submitAction(data)}
+                  onSubmit={submitCheckout}
                   pending={submitPending}
                 />
               </>
             )}
 
-            {submitState.error && (
-              <div style={{ marginTop: "1rem", padding: "0.85rem 1rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.1)", border: "1px solid rgba(244,63,94,0.3)", color: "#fda4af", fontSize: "0.85rem", display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                <AlertCircle size={15} /> {submitState.error}
+            {(submitState.status === "error" ||
+              submitState.status === "validation_error") && (
+              <div style={{ marginTop: "1rem" }}>
+                <ActionFeedback status={submitState.status} message={submitState.message} />
               </div>
             )}
           </div>
 
           {/* Right: order summary */}
-          <OrderSummary />
+          <div className="checkout-summary-desktop">
+            <OrderSummary />
+          </div>
         </div>
 
       </main>
+
+      <div className="checkout-summary-mobile">
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => setSummaryOpen(true)}
+          style={{
+            width: "100%",
+            justifyContent: "space-between",
+            padding: "0.85rem 1.15rem",
+            textAlign: "left",
+          }}
+          disabled={!session || session.items.length === 0}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem" }}>
+            <ReceiptText size={16} />
+            Ver resumen
+          </span>
+          <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 800 }}>
+            {session ? formatPrice(session.total, session.currency) : "RD$0.00"}
+          </strong>
+        </button>
+      </div>
+
+      <Drawer.Root open={summaryOpen} onOpenChange={setSummaryOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 1500,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(3px)",
+            }}
+          />
+          <Drawer.Content
+            style={{
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 1501,
+              background: "var(--bg-dark)",
+              borderTop: "1px solid var(--glass-border)",
+              borderTopLeftRadius: "1.2rem",
+              borderTopRightRadius: "1.2rem",
+              maxHeight: "86vh",
+              overflowY: "auto",
+              padding: "0.65rem 1rem calc(1rem + env(safe-area-inset-bottom))",
+              boxShadow: "0 -20px 60px rgba(0,0,0,0.55)",
+            }}
+          >
+            <div style={{ width: 40, height: 4, borderRadius: 999, background: "rgba(255,255,255,0.2)", margin: "0.35rem auto 0.55rem" }} />
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.85rem" }}>
+              <Drawer.Title style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: 800, color: "var(--text-light)" }}>
+                Resumen del pedido
+              </Drawer.Title>
+              <Drawer.Close asChild>
+                <button
+                  aria-label="Cerrar resumen"
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
+                    border: "1px solid var(--glass-border)",
+                    background: "var(--glass-bg)",
+                    color: "var(--text-muted)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </Drawer.Close>
+            </div>
+
+            <OrderSummary mobile />
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </>
   );
 }
