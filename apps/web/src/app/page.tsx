@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Drawer } from "vaul";
-import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X, Menu } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { Event } from "@/types";
 import { cn, formatPrice } from "@/lib/utils";
@@ -15,6 +15,8 @@ import { AuthModal } from "@/components/features/AuthModal";
 import { FeaturedEventBentoCard } from "@/components/features/FeaturedEventBentoCard";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { ThemeToggle } from "@/components/features/ThemeToggle";
+import { MobileNavDrawer } from "@/components/features/MobileNavDrawer";
+import { SearchIllustration, EventsIllustration } from "@/components/features/EmptyStateIllustration";
 import { useAuthStore } from "@/store/useAuthStore";
 
 function normalizeCategory(value: string): string {
@@ -50,6 +52,7 @@ function Navbar({
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { user, logout } = useAuthStore();
 
@@ -120,7 +123,7 @@ function Navbar({
         <CartButton onClick={onCartOpen} compactOnMobile />
 
         {user ? (
-          <div ref={menuRef} style={{ position: "relative" }}>
+          <div ref={menuRef} style={{ position: "relative" }} className="hidden-mobile">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="nav-user-btn"
@@ -176,11 +179,38 @@ function Navbar({
             )}
           </div>
         ) : (
-          <button onClick={onAuthOpen} className="btn-secondary nav-auth-btn" style={{ padding: "0.5rem 1.25rem", fontSize: "0.9rem" }}>
+          <button onClick={onAuthOpen} className="btn-secondary nav-auth-btn hidden-mobile" style={{ padding: "0.5rem 1.25rem", fontSize: "0.9rem" }}>
             Ingresar
           </button>
         )}
+
+        {/* Hamburger – mobile only */}
+        <button
+          onClick={() => setMobileNavOpen(true)}
+          className="mobile-only"
+          aria-label="Abrir menú"
+          style={{
+            width: 38,
+            height: 38,
+            borderRadius: "var(--radius-lg)",
+            background: "var(--glass-bg)",
+            border: "1px solid var(--glass-border)",
+            display: "none",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            color: "var(--text-light)",
+          }}
+        >
+          <Menu size={20} />
+        </button>
       </div>
+
+      <MobileNavDrawer
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        onAuthOpen={onAuthOpen}
+      />
     </nav>
   );
 }
@@ -352,30 +382,89 @@ function FeaturedEventBentoSkeleton({ className }: { className?: string }) {
 
 // ─── Event Card ───────────────────────────────────────────────────────────────
 
+function formatRelativeDate(iso: string): string | null {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff < 0) return null;
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return "Hoy";
+  if (days === 1) return "Mañana";
+  if (days <= 7) return `En ${days} días`;
+  return null;
+}
+
 function EventCard({ event }: { event: Event }) {
   const href = `/events/${event.slug}`;
   const date = new Date(event.startDate);
   const day = date.getDate().toString().padStart(2, "0");
   const month = date.toLocaleString("es-DO", { month: "short" }).toUpperCase();
   const minPrice = event.tiers.length > 0 ? Math.min(...event.tiers.map((t) => t.price)) : null;
+  const totalStock = event.tiers.reduce((acc, t) => acc + t.stock, 0);
+  const isLowStock = totalStock > 0 && totalStock <= 50;
+  const isSoldOut = totalStock === 0;
   const isHighDemand = event.tiers.some((t) => t.stock < 100 && t.stock > 0);
+  const relDate = formatRelativeDate(event.startDate);
 
   return (
     <Link href={href} style={{ textDecoration: "none", display: "block" }}>
-      <div className="glass-card reveal" style={{ cursor: "pointer" }}>
+      <div className="glass-card reveal" style={{ cursor: "pointer", position: "relative" }}>
         <div className="image-wrapper">
           <SafeEventImage
             src={event.imageUrl}
             alt={event.title}
             className="card-image"
           />
+          {isSoldOut && (
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 3,
+            }}>
+              <span style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "1.1rem",
+                fontWeight: 800,
+                color: "#fff",
+                textTransform: "uppercase",
+                letterSpacing: "2px",
+                background: "rgba(244,63,94,0.85)",
+                padding: "0.5rem 1.5rem",
+                borderRadius: "var(--radius-pill)",
+              }}>
+                Agotado
+              </span>
+            </div>
+          )}
           <div className="date-badge">
             <span className="day">{day}</span>
             <span className="month">{month}</span>
           </div>
-          {isHighDemand && (
+          {isHighDemand && !isSoldOut && (
             <div className="badge-demand" style={{ position: "absolute", bottom: "0.75rem", left: "0.75rem", fontSize: "0.65rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
               <Flame size={10} /> Alta demanda
+            </div>
+          )}
+          {isLowStock && !isSoldOut && (
+            <div style={{
+              position: "absolute",
+              bottom: "0.75rem",
+              right: "0.75rem",
+              fontSize: "0.62rem",
+              fontWeight: 700,
+              padding: "0.25rem 0.6rem",
+              borderRadius: "var(--radius-pill)",
+              background: "rgba(251,146,60,0.9)",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.25rem",
+              zIndex: 3,
+            }}>
+              <Ticket size={10} />
+              ¡Últimos {totalStock}!
             </div>
           )}
           {event.isFeatured && (
@@ -386,9 +475,20 @@ function EventCard({ event }: { event: Event }) {
         </div>
 
         <div style={{ padding: "1.25rem 1.5rem 1rem", position: "relative", zIndex: 2 }}>
-          <span className="badge-tag" style={{ marginBottom: "0.65rem", display: "inline-block" }}>
-            {event.tags[0] ?? "Event"}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.65rem" }}>
+            <span className="badge-tag">
+              {event.tags[0] ?? "Event"}
+            </span>
+            {relDate && (
+              <span style={{
+                fontSize: "0.68rem",
+                fontWeight: 700,
+                color: relDate === "Hoy" || relDate === "Mañana" ? "var(--accent-primary)" : "var(--accent-tertiary)",
+              }}>
+                {relDate}
+              </span>
+            )}
+          </div>
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem", fontWeight: 800, marginBottom: "0.5rem", lineHeight: 1.2, color: "var(--text-light)" }}>
             {event.title}
           </h3>
@@ -406,7 +506,7 @@ function EventCard({ event }: { event: Event }) {
             </p>
           </div>
           <button className="btn-primary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.85rem" }}>
-            Comprar <ArrowRight size={14} />
+            {isSoldOut ? "Ver detalles" : "Comprar"} <ArrowRight size={14} />
           </button>
         </div>
       </div>
@@ -636,13 +736,20 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
           ? Array.from({ length: PAGE_SIZE }).map((_, i) => <EventCardSkeleton key={i} />)
           : paginated.length === 0
             ? (
-              <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "4rem 0", color: "var(--text-muted)" }}>
-                <Search size={32} style={{ opacity: 0.3, marginBottom: "1rem" }} />
-                <p style={{ fontSize: "1rem", fontWeight: 600 }}>
-                  {search ? `Sin resultados para "${search}"` : "No hay eventos publicados todavía."}
-                </p>
+              <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "3.5rem 1rem", gap: "1.25rem" }}>
+                {search ? <SearchIllustration size={110} /> : <EventsIllustration size={110} />}
+                <div>
+                  <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.2rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.4rem" }}>
+                    {search ? `Sin resultados para "${search}"` : "No hay eventos publicados todavía"}
+                  </p>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", maxWidth: "34ch", margin: "0 auto", lineHeight: 1.5 }}>
+                    {search
+                      ? "Intenta con otro término o explora todas las categorías."
+                      : "Estamos preparando experiencias increíbles. Vuelve pronto."}
+                  </p>
+                </div>
                 {search && (
-                  <button onClick={() => onSearch("")} style={{ marginTop: "0.75rem", background: "transparent", border: "none", cursor: "pointer", color: "var(--accent-secondary)", fontSize: "0.88rem" }}>
+                  <button onClick={() => onSearch("")} className="btn-secondary" style={{ padding: "0.5rem 1.25rem", fontSize: "0.85rem" }}>
                     Limpiar búsqueda
                   </button>
                 )}
@@ -733,48 +840,157 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
 
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
-function Footer() {
-  const footerLinks = [
-    { label: "Privacidad", href: "/privacidad" },
-    { label: "Términos", href: "/terminos" },
-    { label: "Soporte", href: "mailto:soporte@vybxlive.com", external: true },
-  ];
+function FooterLink({ href, label, external }: { href: string; label: string; external?: boolean }) {
+  const style: React.CSSProperties = {
+    fontSize: "0.84rem",
+    color: "var(--text-muted)",
+    textDecoration: "none",
+    transition: "color 0.2s",
+    display: "block",
+    padding: "0.2rem 0",
+  };
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        style={style}
+        target="_blank"
+        rel="noopener noreferrer"
+        onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
+        onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+      >
+        {label}
+      </a>
+    );
+  }
 
   return (
-    <footer style={{ padding: "3rem var(--page-inline) 2rem", borderTop: "1px solid var(--glass-border)", marginTop: "auto" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <Zap size={18} color="var(--accent-primary)" />
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 900, background: "linear-gradient(to right, var(--text-light), var(--accent-primary))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            vybx
-          </span>
-        </div>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>© {new Date().getFullYear()} Vybx. Todos los derechos reservados.</p>
-        <div style={{ display: "flex", gap: "1.5rem" }}>
-          {footerLinks.map((link) => (
-            link.external ? (
+    <Link
+      href={href}
+      style={style}
+      onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
+      onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function Footer() {
+  return (
+    <footer style={{ borderTop: "1px solid var(--glass-border)", marginTop: "auto" }}>
+      {/* Main footer grid */}
+      <div className="footer-grid" style={{
+        display: "grid",
+        gridTemplateColumns: "1.4fr 1fr 1fr 1fr",
+        gap: "2.5rem",
+        padding: "3.5rem var(--page-inline) 3rem",
+        maxWidth: "var(--content-max)",
+        margin: "0 auto",
+      }}>
+        {/* Brand column */}
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+            <Zap size={22} color="var(--accent-primary)" />
+            <span style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "1.5rem",
+              fontWeight: 900,
+              background: "linear-gradient(to right, var(--text-light), var(--accent-primary))",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
+              vybx
+            </span>
+          </div>
+          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: 1.6, maxWidth: "28ch" }}>
+            Tu plataforma para descubrir y comprar tickets de los mejores eventos en vivo.
+          </p>
+          {/* Social icons */}
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
+            {[
+              { label: "Instagram", d: "M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8A1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3Z" },
+              { label: "TikTok", d: "M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6c0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64c0 3.33 2.76 5.7 5.69 5.7c3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48Z" },
+            ].map((social) => (
               <a
-                key={link.label}
-                href={link.href}
-                style={{ fontSize: "0.82rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+                key={social.label}
+                href="#"
+                aria-label={social.label}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: "var(--radius-lg)",
+                  background: "var(--glass-bg)",
+                  border: "1px solid var(--glass-border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "var(--text-muted)",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = "var(--accent-primary)";
+                  e.currentTarget.style.borderColor = "var(--accent-primary)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = "var(--text-muted)";
+                  e.currentTarget.style.borderColor = "var(--glass-border)";
+                }}
               >
-                {link.label}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d={social.d} /></svg>
               </a>
-            ) : (
-              <Link
-                key={link.label}
-                href={link.href}
-                style={{ fontSize: "0.82rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-light)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-              >
-                {link.label}
-              </Link>
-            )
-          ))}
+            ))}
+          </div>
         </div>
+
+        {/* Plataforma column */}
+        <div>
+          <p style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.2px", color: "var(--text-light)", marginBottom: "0.85rem" }}>
+            Plataforma
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+            <FooterLink href="/#events" label="Explorar eventos" />
+            <FooterLink href="/my-tickets" label="Mis tickets" />
+            <FooterLink href="/profile" label="Mi cuenta" />
+          </div>
+        </div>
+
+        {/* Legal column */}
+        <div>
+          <p style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.2px", color: "var(--text-light)", marginBottom: "0.85rem" }}>
+            Legal
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+            <FooterLink href="/privacidad" label="Privacidad" />
+            <FooterLink href="/terminos" label="Términos de uso" />
+          </div>
+        </div>
+
+        {/* Contacto column */}
+        <div>
+          <p style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1.2px", color: "var(--text-light)", marginBottom: "0.85rem" }}>
+            Contacto
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+            <FooterLink href="mailto:soporte@vybxlive.com" label="soporte@vybxlive.com" external />
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div style={{
+        borderTop: "1px solid var(--glass-border)",
+        padding: "1.25rem var(--page-inline)",
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: "0.5rem",
+      }}>
+        <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
+          © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
+        </p>
       </div>
     </footer>
   );

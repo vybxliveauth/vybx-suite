@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { useCartStore } from "@/store/useCartStore";
 import { formatPrice } from "@/lib/utils";
 import { Event, TicketTier } from "@/types";
@@ -275,6 +276,10 @@ export function TicketSidebar({ event }: { event: Event }) {
       return;
     }
     setCartWarning(null);
+    toast.success(
+      alreadyInCart ? "Reserva actualizada" : "Añadido al carrito",
+      { description: `${quantity}× ${selectedTier.name}` },
+    );
   }
 
   function handleReplaceCartEvent() {

@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
+import { AddToCalendarButton } from "@/components/features/AddToCalendarButton";
+import { TicketsIllustration } from "@/components/features/EmptyStateIllustration";
 import { api } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -191,7 +193,17 @@ function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelle
             </p>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            {ticket.status === "VALID" && (
+              <AddToCalendarButton
+                compact
+                event={{
+                  title: event.title,
+                  startDate: event.date,
+                  location: event.location ?? undefined,
+                }}
+              />
+            )}
             {ticket.qrCode && ticket.status === "VALID" && (
               <button
                 onClick={() => setQrExpanded(!qrExpanded)}
@@ -278,24 +290,17 @@ function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelle
 
 function EmptyState() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 300, gap: "1.25rem", textAlign: "center" }}>
-      <div style={{
-        width: 80, height: 80, borderRadius: "50%",
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid var(--glass-border)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <Ticket size={32} color="var(--text-muted)" />
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 360, gap: "1.5rem", textAlign: "center", padding: "2rem 1rem" }}>
+      <TicketsIllustration size={130} />
       <div>
-        <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.2rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.4rem" }}>
+        <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.5rem" }}>
           Sin tickets aún
         </p>
-        <p style={{ color: "var(--text-muted)", fontSize: "0.9rem" }}>
-          Cuando compres tickets aparecerán aquí.
+        <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", maxWidth: "32ch", margin: "0 auto", lineHeight: 1.5 }}>
+          Tu próxima experiencia te espera. Explora los eventos disponibles y asegura tu entrada.
         </p>
       </div>
-      <Link href="/" className="btn-primary" style={{ textDecoration: "none" }}>
+      <Link href="/" className="btn-primary" style={{ textDecoration: "none", padding: "0.7rem 1.5rem", fontSize: "0.92rem" }}>
         Explorar eventos
       </Link>
     </div>

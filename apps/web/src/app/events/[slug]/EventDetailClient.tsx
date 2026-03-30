@@ -2,8 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { Event } from "@/types";
+import { Drawer } from "vaul";
 import { TicketSidebar } from "@/components/features/event-detail/TicketSidebar";
+import { EventCountdown } from "@/components/features/event-detail/EventCountdown";
+import { AddToCalendarButton } from "@/components/features/AddToCalendarButton";
 import { ReservationTimer } from "@/components/features/event-detail/ReservationTimer";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
@@ -12,6 +16,7 @@ import {
   SEAT_ACTION_FEEDBACK_EVENT,
   type SeatActionState,
 } from "@/hooks/useSeatSelection";
+import { formatPrice } from "@/lib/utils";
 import {
   CalendarDays,
   Clock,
@@ -21,6 +26,7 @@ import {
   ChevronLeft,
   Share2,
   Heart,
+  ShoppingCart,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -76,6 +82,7 @@ function Navbar({ onCartOpen, eventTitle }: { onCartOpen: () => void; eventTitle
               void navigator.share({ title: eventTitle, url: window.location.href });
             } else {
               void navigator.clipboard.writeText(window.location.href);
+              toast.success("Enlace copiado");
             }
           }}
         >
@@ -224,6 +231,7 @@ function FactCard({ icon: Icon, label, value }: { icon: React.ElementType; label
 
 export function EventDetailClient({ event }: { event: Event }) {
   const [cartOpen, setCartOpen] = useState(false);
+  const [ticketSheetOpen, setTicketSheetOpen] = useState(false);
   const [seatFeedback, setSeatFeedback] = useState<{
     status: "success" | "error";
     message: string;
@@ -275,13 +283,20 @@ export function EventDetailClient({ event }: { event: Event }) {
           z-index: 10;
         }
 
+        .mobile-ticket-cta {
+          display: none;
+        }
+
         @media (max-width: 900px) {
           .event-detail-grid {
             grid-template-columns: 1fr;
-            padding: 0 5% 4rem;
+            padding: 0 5% calc(5rem + env(safe-area-inset-bottom));
           }
           .sidebar-sticky {
-            position: static !important;
+            display: none;
+          }
+          .mobile-ticket-cta {
+            display: flex;
           }
         }
         @media (max-width: 540px) {
@@ -344,6 +359,9 @@ export function EventDetailClient({ event }: { event: Event }) {
             ))}
           </div>
 
+          {/* Countdown */}
+          <EventCountdown startDate={event.startDate} />
+
           {/* Facts grid */}
           <div className="facts-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem", marginBottom: "2.5rem" }}>
             <FactCard
@@ -392,6 +410,19 @@ export function EventDetailClient({ event }: { event: Event }) {
             }}>
               {event.description}
             </p>
+
+            {/* Add to calendar */}
+            <div style={{ marginTop: "1.5rem" }}>
+              <AddToCalendarButton
+                event={{
+                  title: event.title,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
+                  location: `${event.venue.name}, ${event.venue.address ?? ""}, ${event.venue.city}`,
+                  description: event.description.slice(0, 300),
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -400,6 +431,131 @@ export function EventDetailClient({ event }: { event: Event }) {
           <TicketSidebar event={event} />
         </div>
       </div>
+
+      {/* ── Mobile sticky CTA bar ── */}
+      <div
+        className="mobile-ticket-cta"
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 90,
+          padding: "0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom))",
+          background: "linear-gradient(to top, rgba(10,10,18,0.98), rgba(10,10,18,0.85))",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderTop: "1px solid var(--glass-border)",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
+        }}
+      >
+        <div>
+          <p style={{
+            margin: 0,
+            fontSize: "0.72rem",
+            color: "var(--text-muted)",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}>
+            Desde
+          </p>
+          <p style={{
+            margin: 0,
+            fontFamily: "var(--font-heading)",
+            fontSize: "1.4rem",
+            fontWeight: 800,
+            color: "var(--text-light)",
+            lineHeight: 1.1,
+          }}>
+            {formatPrice(
+              Math.min(...event.tiers.filter(t => t.stock > 0).map(t => t.price)),
+              event.tiers[0]?.currency ?? "DOP",
+            )}
+          </p>
+        </div>
+        <button
+          className="btn-primary"
+          onClick={() => setTicketSheetOpen(true)}
+          style={{
+            padding: "0.75rem 1.5rem",
+            fontSize: "0.95rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <ShoppingCart size={18} />
+          Comprar
+        </button>
+      </div>
+
+      {/* ── Mobile ticket bottom sheet ── */}
+      <Drawer.Root open={ticketSheetOpen} onOpenChange={setTicketSheetOpen}>
+        <Drawer.Portal>
+          <Drawer.Overlay
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              zIndex: 9998,
+            }}
+          />
+          <Drawer.Content
+            style={{
+              position: "fixed",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 9999,
+              background: "var(--bg-dark)",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              maxHeight: "92vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Drag handle */}
+            <div style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "0.75rem 0 0.5rem",
+              flexShrink: 0,
+            }}>
+              <div style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                background: "var(--glass-border)",
+              }} />
+            </div>
+
+            <Drawer.Title style={{
+              padding: "0 1.25rem 0.75rem",
+              fontSize: "1.1rem",
+              fontFamily: "var(--font-heading)",
+              fontWeight: 800,
+              color: "var(--text-light)",
+              flexShrink: 0,
+            }}>
+              Seleccionar entradas
+            </Drawer.Title>
+
+            <div style={{
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
+              padding: "0 0.75rem 1.5rem",
+              paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))",
+            }}>
+              <TicketSidebar event={event} />
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
       <ReservationTimer />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
