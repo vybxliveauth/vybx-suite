@@ -21,6 +21,22 @@ function buildRetryUrl(url: string): string {
   }
 }
 
+/**
+ * Tiny inline SVG base64 placeholder (8x8 gradient) used as blurDataURL.
+ * Creates a branded purple-to-dark gradient blur while the real image loads.
+ */
+const BLUR_PLACEHOLDER =
+  "data:image/svg+xml;base64," +
+  btoa(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8">' +
+      '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">' +
+      '<stop offset="0%" stop-color="#1e1e28"/>' +
+      '<stop offset="100%" stop-color="#2d1b4e"/>' +
+      "</linearGradient></defs>" +
+      '<rect width="8" height="8" fill="url(#g)"/>' +
+      "</svg>",
+  );
+
 export function SafeEventImage({
   src,
   alt,
@@ -51,6 +67,8 @@ export function SafeEventImage({
       {...props}
       src={resolvedSrc}
       alt={alt}
+      placeholder="blur"
+      blurDataURL={BLUR_PLACEHOLDER}
       onError={() => {
         if (
           retryOnError &&

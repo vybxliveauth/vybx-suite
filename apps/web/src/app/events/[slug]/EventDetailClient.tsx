@@ -7,6 +7,7 @@ import { Event } from "@/types";
 import { Drawer } from "vaul";
 import { TicketSidebar } from "@/components/features/event-detail/TicketSidebar";
 import { EventCountdown } from "@/components/features/event-detail/EventCountdown";
+import { RelatedEvents } from "@/components/features/event-detail/RelatedEvents";
 import { AddToCalendarButton } from "@/components/features/AddToCalendarButton";
 import { ReservationTimer } from "@/components/features/event-detail/ReservationTimer";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
@@ -431,6 +432,9 @@ export function EventDetailClient({ event }: { event: Event }) {
           <TicketSidebar event={event} />
         </div>
       </div>
+
+      {/* ── Related Events ── */}
+      <RelatedEvents currentEvent={event} />
 
       {/* ── Mobile sticky CTA bar ── */}
       <div

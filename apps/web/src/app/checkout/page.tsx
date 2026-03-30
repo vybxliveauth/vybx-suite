@@ -450,6 +450,80 @@ function LoginForm({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
   );
 }
 
+// ─── Checkout Steps ──────────────────────────────────────────────────────────
+
+function CheckoutSteps({ currentStep }: { currentStep: number }) {
+  const steps = [
+    { label: "Iniciar sesión", icon: User },
+    { label: "Datos", icon: ReceiptText },
+    { label: "Pagar", icon: CreditCard },
+  ];
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "0",
+      marginBottom: "2.5rem",
+    }}>
+      {steps.map((step, i) => {
+        const isActive = i === currentStep;
+        const isComplete = i < currentStep;
+        const StepIcon = step.icon;
+
+        return (
+          <div key={step.label} style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.4rem", minWidth: 80 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: isComplete
+                  ? "var(--accent-secondary)"
+                  : isActive
+                    ? "rgba(124,58,237,0.15)"
+                    : "rgba(255,255,255,0.04)",
+                border: `2px solid ${isComplete ? "var(--accent-secondary)" : isActive ? "var(--accent-secondary)" : "var(--glass-border)"}`,
+                transition: "all 0.3s ease",
+              }}>
+                {isComplete ? (
+                  <CheckCircle2 size={16} color="#fff" />
+                ) : (
+                  <StepIcon size={15} color={isActive ? "var(--accent-secondary)" : "var(--text-muted)"} />
+                )}
+              </div>
+              <span style={{
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                color: isActive || isComplete ? "var(--text-light)" : "var(--text-muted)",
+                textAlign: "center",
+                transition: "color 0.3s",
+              }}>
+                {step.label}
+              </span>
+            </div>
+            {i < steps.length - 1 && (
+              <div style={{
+                width: 48,
+                height: 2,
+                background: isComplete ? "var(--accent-secondary)" : "var(--glass-border)",
+                marginBottom: "1.4rem",
+                marginInline: "0.25rem",
+                borderRadius: 1,
+                transition: "background 0.3s",
+              }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Payment Method Card ──────────────────────────────────────────────────────
 // Provider-aware: reads NEXT_PUBLIC_PAYMENT_PROVIDER to show the right badge.
 // Both RD Redirect and Stripe Checkout are hosted redirect flows — the user
@@ -685,9 +759,11 @@ export default function CheckoutPage() {
       </nav>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 7.25rem" }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, letterSpacing: "-1px", marginBottom: "2.5rem", color: "var(--text-light)" }}>
+        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, letterSpacing: "-1px", marginBottom: "1.75rem", color: "var(--text-light)" }}>
           Checkout
         </h1>
+
+        <CheckoutSteps currentStep={loadingUser ? 0 : !user ? 0 : submitPending ? 2 : 1} />
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr min(400px, 100%)", gap: "2.5rem", alignItems: "start" }}>
           {/* Left: forms */}

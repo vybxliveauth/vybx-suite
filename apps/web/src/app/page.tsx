@@ -17,6 +17,7 @@ import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { ThemeToggle } from "@/components/features/ThemeToggle";
 import { MobileNavDrawer } from "@/components/features/MobileNavDrawer";
 import { SearchIllustration, EventsIllustration } from "@/components/features/EmptyStateIllustration";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useAuthStore } from "@/store/useAuthStore";
 
 function normalizeCategory(value: string): string {
@@ -392,7 +393,7 @@ function formatRelativeDate(iso: string): string | null {
   return null;
 }
 
-function EventCard({ event }: { event: Event }) {
+function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
   const href = `/events/${event.slug}`;
   const date = new Date(event.startDate);
   const day = date.getDate().toString().padStart(2, "0");
@@ -406,7 +407,7 @@ function EventCard({ event }: { event: Event }) {
 
   return (
     <Link href={href} style={{ textDecoration: "none", display: "block" }}>
-      <div className="glass-card reveal" style={{ cursor: "pointer", position: "relative" }}>
+      <div className="glass-card reveal" style={{ cursor: "pointer", position: "relative", transitionDelay: `${index * 0.06}s` }}>
         <div className="image-wrapper">
           <SafeEventImage
             src={event.imageUrl}
@@ -582,6 +583,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const sectionRef = useRef<HTMLDivElement>(null);
+  useScrollReveal();
   const categoryOptions = useMemo(() => {
     const map = new Map<string, string>();
     allEvents.forEach((event) => {
@@ -755,7 +757,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
                 )}
               </div>
             )
-            : paginated.map((event) => <EventCard key={event.id} event={event} />)
+            : paginated.map((event, i) => <EventCard key={event.id} event={event} index={i} />)
         }
       </div>
 

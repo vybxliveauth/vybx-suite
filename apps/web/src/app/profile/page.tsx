@@ -3,10 +3,11 @@
 import { useEffect, useState, useActionState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/store/useAuthStore";
+import { PasswordStrengthMeter } from "@/components/features/PasswordStrengthMeter";
 import {
   fetchProfile,
   api,
@@ -172,9 +173,10 @@ function ProfileSection() {
 function PasswordSection() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew,     setShowNew]     = useState(false);
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<PasswordFields>({
+  const { register, handleSubmit, formState: { errors }, reset, control } = useForm<PasswordFields>({
     resolver: zodResolver(passwordSchema),
   });
+  const newPasswordValue = useWatch({ control, name: "newPassword", defaultValue: "" });
 
   const [state, action, pending] = useActionState<UiActionState, PasswordFields>(
     async (_prev, data) => {
@@ -220,9 +222,7 @@ function PasswordSection() {
           {...register("confirmPassword")} error={errors.confirmPassword?.message}
           placeholder="Repite la contraseña" autoComplete="new-password"
         />
-        <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
-          Mínimo 12 caracteres · una mayúscula · un número · un símbolo
-        </p>
+        <PasswordStrengthMeter value={newPasswordValue} />
 
         <ActionFeedback status={state.status} message={state.message} />
 
