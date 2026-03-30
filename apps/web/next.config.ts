@@ -58,8 +58,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "**.unsplash.com" },
-      // Allow any HTTPS host — event images come from promoter-provided URLs.
-      { protocol: "https", hostname: "**" },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "**.cloudinary.com" },
       ...(isDev ? [{ protocol: "http" as const, hostname: "localhost" }] : []),
     ],
   },

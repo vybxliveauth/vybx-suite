@@ -28,6 +28,7 @@ import {
   Share2,
   Heart,
   ShoppingCart,
+  Navigation,
 } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -386,6 +387,46 @@ export function EventDetailClient({ event }: { event: Event }) {
               value={`${event.venue.capacity.toLocaleString()} personas`}
             />
           </div>
+
+          {/* Venue directions */}
+          {(event.venue.mapUrl || event.venue.address) && (
+            <a
+              href={
+                event.venue.mapUrl
+                  ?? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event.venue.name}, ${event.venue.address ?? ""}, ${event.venue.city}`)}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.6rem 1.15rem",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: "var(--radius-pill)",
+                color: "var(--text-muted)",
+                fontSize: "0.84rem",
+                fontWeight: 600,
+                textDecoration: "none",
+                transition: "all 0.2s",
+                marginBottom: "2rem",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(6,182,212,0.1)";
+                e.currentTarget.style.borderColor = "rgba(6,182,212,0.3)";
+                e.currentTarget.style.color = "var(--accent-tertiary)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.borderColor = "var(--glass-border)";
+                e.currentTarget.style.color = "var(--text-muted)";
+              }}
+            >
+              <Navigation size={15} />
+              Cómo llegar
+            </a>
+          )}
 
           {/* About */}
           <div style={{ maxWidth: "75ch" }}>

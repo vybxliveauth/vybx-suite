@@ -126,6 +126,18 @@
     radial-gradient(ellipse 60% 60% at 10% 90%, rgba(8, 145, 178, 0.07), transparent);
 }
 
+/* Light theme: mobile CTA bar */
+[data-theme="light"] .mobile-ticket-cta {
+  background: linear-gradient(to top, rgba(248,250,252,0.98), rgba(248,250,252,0.88)) !important;
+  border-top-color: rgba(0,0,0,0.08) !important;
+}
+
+/* Light theme: footer social icons */
+[data-theme="light"] .footer-grid a[aria-label] {
+  background: rgba(0,0,0,0.04);
+  border-color: rgba(0,0,0,0.08);
+}
+
 /* Respect system preference when no manual choice is stored */
 @media (prefers-color-scheme: light) {
   html:not([data-theme]) {
@@ -360,6 +372,24 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
+/* Ripple on click */
+.btn-primary::after,
+.btn-secondary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.35) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+.btn-primary:active::after,
+.btn-secondary:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
 .btn-primary.btn-lg {
   padding: 1rem 2.5rem;
   font-size: 1.05rem;
@@ -379,6 +409,8 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid var(--glass-border);
   cursor: pointer;
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
   transition: var(--transition-smooth);
 }
 
@@ -562,6 +594,33 @@ h1, h2, h3, h4, h5, h6 {
 .fade-in {
   opacity: 0;
   animation: fadeIn 1.2s forwards ease;
+}
+
+/* ─── Skeleton Shimmer ───────────────────────────────────────────────────────── */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.04) 80%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+[data-theme="light"] .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.05) 0%,
+    rgba(0, 0, 0, 0.09) 40%,
+    rgba(0, 0, 0, 0.05) 80%
+  );
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ─── Reveal on scroll ───────────────────────────────────────────────────────── */

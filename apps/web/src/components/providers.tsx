@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
 import { getQueryClient } from "@/lib/query-client";
 import { PageTransitions } from "@/components/layout/PageTransitions";
+import { OfflineBanner } from "@/components/features/OfflineBanner";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
@@ -18,6 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange={false}
     >
       <QueryClientProvider client={queryClient}>
+        <OfflineBanner />
         <PageTransitions>{children}</PageTransitions>
         <Toaster
           position="bottom-right"
