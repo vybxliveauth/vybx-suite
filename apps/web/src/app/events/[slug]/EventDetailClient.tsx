@@ -7,7 +7,7 @@ import { TicketSidebar } from "@/components/features/event-detail/TicketSidebar"
 import { ReservationTimer } from "@/components/features/event-detail/ReservationTimer";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
-import { ActionFeedback } from "@/components/ui/action-feedback";
+import { ActionFeedback } from "@vybx/ui";
 import {
   SEAT_ACTION_FEEDBACK_EVENT,
   type SeatActionState,

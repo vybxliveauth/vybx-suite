@@ -13,7 +13,7 @@ import {
   uiActionInitialState,
   type UiActionState,
 } from "@/lib/action-state";
-import { ActionFeedback } from "@/components/ui/action-feedback";
+import { ActionFeedback } from "@vybx/ui";
 
 const schema = z.object({
   email: z.string().email("Email inválido"),

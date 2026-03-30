@@ -21,7 +21,7 @@ import {
   submitCheckoutAction,
   type CheckoutActionState,
 } from "@/actions/checkout";
-import { ActionFeedback } from "@/components/ui/action-feedback";
+import { ActionFeedback } from "@vybx/ui";
 import { getClientTurnstileToken } from "@/lib/turnstile";
 import { FlipCountdown } from "@/components/features/FlipCountdown";
 import { TurnstileWidget } from "@/components/features/TurnstileWidget";

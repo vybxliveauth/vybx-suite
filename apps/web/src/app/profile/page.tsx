@@ -20,7 +20,7 @@ import {
   uiActionInitialState,
   type UiActionState,
 } from "@/lib/action-state";
-import { ActionFeedback } from "@/components/ui/action-feedback";
+import { ActionFeedback } from "@vybx/ui";
 import {
   Zap, ChevronLeft, User, Mail, Phone, Lock,
   Eye, EyeOff, AlertCircle, Loader2,

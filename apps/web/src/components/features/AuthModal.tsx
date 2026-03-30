@@ -16,7 +16,7 @@ import {
 import { getClientTurnstileToken } from "@/lib/turnstile";
 import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/features/PasswordStrengthMeter";
-import { ActionFeedback } from "@/components/ui/action-feedback";
+import { ActionFeedback } from "@vybx/ui";
 import Link from "next/link";
 import {
   X,

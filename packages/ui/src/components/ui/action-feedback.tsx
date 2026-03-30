@@ -1,14 +1,13 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 
-type FeedbackStatus = "idle" | "success" | "error" | "validation_error";
+export type FeedbackStatus = "idle" | "success" | "error" | "validation_error";
 
-export function ActionFeedback({
-  status,
-  message,
-}: {
+type ActionFeedbackProps = {
   status: FeedbackStatus;
   message: string;
-}) {
+};
+
+export function ActionFeedback({ status, message }: ActionFeedbackProps) {
   if (status === "idle" || !message) return null;
 
   const isPositive = status === "success";
