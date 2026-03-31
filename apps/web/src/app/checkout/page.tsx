@@ -669,6 +669,7 @@ export default function CheckoutPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [turnstileError, setTurnstileError] = useState<string | null>(null);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -694,7 +695,14 @@ export default function CheckoutPage() {
     const items = session?.items ?? [];
     if (items.length === 0) return;
 
-    const turnstileToken = getClientTurnstileToken("checkout");
+    let turnstileToken: string;
+    try {
+      turnstileToken = getClientTurnstileToken("checkout");
+      setTurnstileError(null);
+    } catch (e) {
+      setTurnstileError(e instanceof Error ? e.message : "Error de verificación anti-bot.");
+      return;
+    }
     const queueToken = sessionStorage.getItem("vybx_queue_token") ?? "";
     const formData = new FormData();
 
@@ -789,6 +797,12 @@ export default function CheckoutPage() {
                   pending={submitPending}
                 />
               </>
+            )}
+
+            {turnstileError && (
+              <div style={{ marginTop: "1rem" }}>
+                <ActionFeedback status="error" message={turnstileError} />
+              </div>
             )}
 
             {(submitState.status === "error" ||

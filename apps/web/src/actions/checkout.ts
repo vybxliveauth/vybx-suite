@@ -1,6 +1,7 @@
 "use server";
 
 import { checkoutActionSchema, CheckoutActionInput } from "@/lib/schemas/checkout";
+import { resolveApiBaseUrl } from "@vybx/api-client";
 import { cookies } from "next/headers";
 import { ZodError } from "zod";
 
@@ -143,8 +144,9 @@ async function processOrder(
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const baseUrl =
-    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1";
+  const baseUrl = resolveApiBaseUrl(
+    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
+  );
   const idempotencyKey = crypto.randomUUID();
 
   const response = await fetch(`${baseUrl}/payments/create-cart-intent`, {

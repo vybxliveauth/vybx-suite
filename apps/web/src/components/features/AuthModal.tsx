@@ -29,6 +29,9 @@ import {
   Loader2,
   Zap,
   CheckCircle2,
+  ArrowRight,
+  ArrowLeft,
+  Globe,
 } from "lucide-react";
 
 const API_BASE_URL = resolveApiBaseUrl(
@@ -37,15 +40,17 @@ const API_BASE_URL = resolveApiBaseUrl(
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
-const loginSchema = z.object({
+const emailSchema = z.object({
   email: z.string().email("Email inválido"),
+});
+
+const loginSchema = z.object({
   password: z.string().min(1, "Requerido"),
 });
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "Mínimo 2 caracteres"),
   lastName: z.string().min(2, "Mínimo 2 caracteres"),
-  email: z.string().email("Email inválido"),
   password: z
     .string()
     .min(12, "Mínimo 12 caracteres")
@@ -53,13 +58,18 @@ const registerSchema = z.object({
     .regex(/\d/, "Debe tener un número")
     .regex(/[^A-Za-z\d]/, "Debe tener un símbolo"),
   confirmPassword: z.string(),
+  country: z.string().optional(),
+  acceptTerms: z.literal(true, { errorMap: () => ({ message: "Debes aceptar los términos" }) }),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
 });
 
+type EmailFields = z.infer<typeof emailSchema>;
 type LoginFields = z.infer<typeof loginSchema>;
 type RegisterFields = z.infer<typeof registerSchema>;
+
+type Step = "email" | "login" | "register" | "verify" | "2fa";
 
 // ─── Input Field ──────────────────────────────────────────────────────────────
 
@@ -88,19 +98,19 @@ function Field({
           {...props}
           style={{
             width: "100%",
-            padding: `0.65rem ${suffix ? "2.5rem" : "0.85rem"} 0.65rem ${Icon ? "2.3rem" : "0.85rem"}`,
-            background: "rgba(255,255,255,0.04)",
+            padding: `0.7rem ${suffix ? "2.5rem" : "0.9rem"} 0.7rem ${Icon ? "2.4rem" : "0.9rem"}`,
+            background: "rgba(255,255,255,0.05)",
             border: `1px solid ${error ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
             borderRadius: "var(--radius-lg)",
             color: "var(--text-light)",
-            fontSize: "0.9rem",
+            fontSize: "0.92rem",
             fontFamily: "var(--font-body)",
             outline: "none",
             transition: "border-color 0.2s, box-shadow 0.2s",
           }}
           onFocus={e => {
-            e.target.style.borderColor = "rgba(124,58,237,0.6)";
-            e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.1)";
+            e.target.style.borderColor = "rgba(124,58,237,0.7)";
+            e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.12)";
           }}
           onBlur={e => {
             e.target.style.borderColor = error ? "rgba(244,63,94,0.6)" : "var(--glass-border)";
@@ -122,15 +132,116 @@ function Field({
   );
 }
 
-// ─── Login Tab ────────────────────────────────────────────────────────────────
+// ─── Step Indicator ───────────────────────────────────────────────────────────
 
-function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
+function StepDots({ current }: { current: 1 | 2 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+      {[1, 2].map((n) => (
+        <div
+          key={n}
+          style={{
+            width: n === current ? 20 : 7,
+            height: 7,
+            borderRadius: 999,
+            background: n === current
+              ? "linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))"
+              : "rgba(255,255,255,0.15)",
+            transition: "all 0.3s ease",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── Email Step ───────────────────────────────────────────────────────────────
+
+function EmailStep({
+  onLogin,
+  onRegister,
+}: {
+  onLogin: (email: string) => void;
+  onRegister: (email: string) => void;
+}) {
+  const { register, handleSubmit, formState: { errors } } = useForm<EmailFields>({
+    resolver: zodResolver(emailSchema),
+  });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.3rem" }}>
+          Bienvenido a vybx
+        </h2>
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+          Ingresa tu correo para continuar
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit((d) => onLogin(d.email))}
+        style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+      >
+        <Field
+          label="Correo electrónico"
+          icon={Mail}
+          type="email"
+          {...register("email")}
+          error={errors.email?.message}
+          placeholder="tu@email.com"
+          autoComplete="email"
+          autoFocus
+        />
+
+        <button
+          type="submit"
+          className="btn-primary"
+          style={{ justifyContent: "center", padding: "0.85rem", width: "100%", fontSize: "0.95rem", gap: "0.5rem" }}
+        >
+          Continuar <ArrowRight size={16} />
+        </button>
+      </form>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ flex: 1, height: 1, background: "var(--glass-border)" }} />
+        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>o</span>
+        <div style={{ flex: 1, height: 1, background: "var(--glass-border)" }} />
+      </div>
+
+      <button
+        type="button"
+        onClick={handleSubmit((d) => onRegister(d.email))}
+        className="btn-secondary"
+        style={{ justifyContent: "center", padding: "0.8rem", width: "100%", fontSize: "0.9rem" }}
+      >
+        Crear cuenta nueva
+      </button>
+
+      <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+        Al continuar aceptas nuestros{" "}
+        <Link href="/terminos" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Términos</Link>
+        {" "}y{" "}
+        <Link href="/privacidad" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Política de privacidad</Link>
+      </p>
+    </div>
+  );
+}
+
+// ─── Login Step ───────────────────────────────────────────────────────────────
+
+function LoginStep({
+  email,
+  onBack,
+  onSuccess,
+  onTwoFactor,
+}: {
+  email: string;
+  onBack: () => void;
+  onSuccess: (user: AuthUser) => void;
+  onTwoFactor: (challengeId: string, expiresIn: number, message: string) => void;
+}) {
   const [showPass, setShowPass] = useState(false);
-  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
-  const [twoFactorCode, setTwoFactorCode] = useState("");
-  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
-  const [twoFactorState, setTwoFactorState] = useState<UiActionState>(uiActionInitialState);
-  const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
   });
@@ -138,23 +249,13 @@ function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
   const [state, action, pending] = useActionState<UiActionState, LoginFields>(
     async (_prev, data) => {
       try {
-        const result = await login(data);
+        const result = await login({ email, password: data.password });
         if (!("user" in result)) {
-          setTwoFactorChallengeId(result.challengeId);
-          setTwoFactorCode("");
-          setTwoFactorNotice(
-            result.message ||
-              `Codigo 2FA enviado. Expira en ${Math.max(1, Math.ceil(result.expiresInSeconds / 60))} min.`,
-          );
-          setTwoFactorState(uiActionInitialState);
+          onTwoFactor(result.challengeId, result.expiresInSeconds, result.message ?? "");
           return uiActionInitialState;
         }
-        setTwoFactorChallengeId(null);
-        setTwoFactorCode("");
-        setTwoFactorNotice(null);
-        setTwoFactorState(uiActionInitialState);
         onSuccess(result.user);
-        return actionSuccessState("Sesion iniciada.");
+        return actionSuccessState("Sesión iniciada.");
       } catch (e) {
         return actionErrorState(e, "Credenciales incorrectas");
       }
@@ -162,144 +263,82 @@ function LoginTab({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
     uiActionInitialState,
   );
 
-  async function handleVerifyTwoFactor() {
-    if (!twoFactorChallengeId) return;
-
-    const normalizedCode = twoFactorCode.trim();
-    if (normalizedCode.length < 4) {
-      setTwoFactorState(actionErrorState(new Error("Ingresa el codigo 2FA de tu correo.")));
-      return;
-    }
-
-    setVerifyingTwoFactor(true);
-    setTwoFactorState(uiActionInitialState);
-    try {
-      const user = await verifyLoginTwoFactor({
-        challengeId: twoFactorChallengeId,
-        code: normalizedCode,
-      });
-      setTwoFactorState(actionSuccessState("Verificacion 2FA completada."));
-      onSuccess(user);
-    } catch (error) {
-      setTwoFactorState(actionErrorState(error, "Codigo 2FA invalido."));
-    } finally {
-      setVerifyingTwoFactor(false);
-    }
-  }
-
-  function resetTwoFactorFlow() {
-    setTwoFactorChallengeId(null);
-    setTwoFactorCode("");
-    setTwoFactorNotice(null);
-    setTwoFactorState(uiActionInitialState);
-  }
-
   return (
-    <form
-      onSubmit={handleSubmit((data) => action(data))}
-      style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}
-    >
-      <Field label="Email" icon={Mail} type="email" {...register("email")} error={errors.email?.message} placeholder="tu@email.com" autoComplete="email" />
-      <Field
-        label="Contraseña"
-        icon={Lock}
-        type={showPass ? "text" : "password"}
-        {...register("password")}
-        error={errors.password?.message}
-        placeholder="••••••••"
-        autoComplete="current-password"
-        suffix={
-          <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
-            {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
-        }
-      />
-
-      {twoFactorChallengeId && (
-        <div
-          style={{
-            border: "1px solid rgba(124,58,237,0.35)",
-            background: "rgba(124,58,237,0.08)",
-            borderRadius: "var(--radius-lg)",
-            padding: "0.9rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
-          }}
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", padding: 0, marginBottom: "0.75rem" }}
         >
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-            {twoFactorNotice ?? "Te enviamos un codigo de verificacion 2FA a tu correo."}
-          </p>
-          <Field
-            label="Codigo 2FA"
-            icon={Lock}
-            value={twoFactorCode}
-            onChange={(event) => setTwoFactorCode(event.target.value)}
-            placeholder="000000"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={10}
-          />
-          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={() => void handleVerifyTwoFactor()}
-              disabled={verifyingTwoFactor}
-              className="btn-primary"
-              style={{ justifyContent: "center", minWidth: 180 }}
-            >
-              {verifyingTwoFactor
-                ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Verificando...</>
-                : "Validar codigo"
-              }
-            </button>
-            <button
-              type="button"
-              onClick={resetTwoFactorFlow}
-              className="btn-secondary"
-              style={{ justifyContent: "center" }}
-            >
-              Cambiar cuenta
-            </button>
-          </div>
-          <ActionFeedback status={twoFactorState.status} message={twoFactorState.message} />
-        </div>
-      )}
-
-      <ActionFeedback status={state.status} message={state.message} />
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="btn-primary"
-        style={{ justifyContent: "center", padding: "0.8rem", marginTop: "0.25rem", width: "100%" }}
-      >
-        {pending
-          ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Ingresando...</>
-          : <><Lock size={15} /> Ingresar</>
-        }
-      </button>
-
-      <div style={{ textAlign: "center", marginTop: "0.85rem" }}>
-        <Link href="/forgot-password" style={{ fontSize: "0.82rem", color: "var(--text-muted)", textDecoration: "none" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "var(--accent-secondary)")}
-          onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-        >
-          ¿Olvidaste tu contraseña?
-        </Link>
+          <ArrowLeft size={14} /> Cambiar email
+        </button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.2rem" }}>
+          Ingresa tu contraseña
+        </h2>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <Mail size={13} /> {email}
+        </p>
       </div>
-    </form>
+
+      <form
+        onSubmit={handleSubmit((data) => action(data))}
+        style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
+      >
+        <Field
+          label="Contraseña"
+          icon={Lock}
+          type={showPass ? "text" : "password"}
+          {...register("password")}
+          error={errors.password?.message}
+          placeholder="••••••••"
+          autoComplete="current-password"
+          autoFocus
+          suffix={
+            <button type="button" onClick={() => setShowPass(!showPass)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+              {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          }
+        />
+
+        <ActionFeedback status={state.status} message={state.message} />
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn-primary"
+          style={{ justifyContent: "center", padding: "0.85rem", width: "100%", fontSize: "0.95rem" }}
+        >
+          {pending ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Ingresando...</> : "Ingresar"}
+        </button>
+
+        <div style={{ textAlign: "center" }}>
+          <Link
+            href="/forgot-password"
+            style={{ fontSize: "0.8rem", color: "var(--text-muted)", textDecoration: "none" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--accent-secondary)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
+      </form>
+    </div>
   );
 }
 
-// ─── Register Tab ─────────────────────────────────────────────────────────────
+// ─── Register Step ────────────────────────────────────────────────────────────
 
-function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
+function RegisterStep({
+  email,
+  onBack,
+  onSuccess,
+}: {
+  email: string;
+  onBack: () => void;
+  onSuccess: (registeredEmail: string) => void;
+}) {
   const [showPass, setShowPass] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState<string>("");
-  const [resendingVerification, setResendingVerification] = useState(false);
-  const [resendNotice, setResendNotice] = useState<string | null>(null);
-  const [resendError, setResendError] = useState<string | null>(null);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFields>({
     resolver: zodResolver(registerSchema),
   });
@@ -315,10 +354,11 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
           credentials: "include",
           headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
           body: JSON.stringify({
-            email: data.email,
+            email,
             password: data.password,
             firstName: data.firstName,
             lastName: data.lastName,
+            country: data.country || undefined,
             turnstileToken,
           }),
         });
@@ -326,10 +366,7 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
           const err = await res.json().catch(() => ({}));
           throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al registrar");
         }
-        setRegisteredEmail(data.email);
-        setResendNotice(null);
-        setResendError(null);
-        onSuccess();
+        onSuccess(email);
         return actionSuccessState("Revisa tu email para verificar tu cuenta.");
       } catch (e) {
         return actionErrorState(e, "Error al registrar");
@@ -338,129 +375,266 @@ function RegisterTab({ onSuccess }: { onSuccess: () => void }) {
     uiActionInitialState,
   );
 
-  async function handleResendVerification() {
-    if (!registeredEmail.trim()) return;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", padding: 0, marginBottom: "0.75rem" }}
+        >
+          <ArrowLeft size={14} /> Atrás
+        </button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.2rem" }}>
+          Crea tu cuenta
+        </h2>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <Mail size={13} /> {email}
+        </p>
+      </div>
 
-    setResendingVerification(true);
+      <form
+        onSubmit={handleSubmit((data) => action(data))}
+        style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}
+      >
+        {/* Name row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <Field
+            label="Nombre"
+            icon={User}
+            {...register("firstName")}
+            error={errors.firstName?.message}
+            placeholder="Juan"
+            autoComplete="given-name"
+            autoFocus
+          />
+          <Field
+            label="Apellido"
+            {...register("lastName")}
+            error={errors.lastName?.message}
+            placeholder="Pérez"
+            autoComplete="family-name"
+          />
+        </div>
+
+        {/* Password */}
+        <Field
+          label="Contraseña"
+          icon={Lock}
+          type={showPass ? "text" : "password"}
+          {...register("password")}
+          error={errors.password?.message}
+          placeholder="Mín. 12 caracteres"
+          autoComplete="new-password"
+          suffix={
+            <button type="button" onClick={() => setShowPass(!showPass)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+              {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          }
+        />
+        <PasswordStrengthMeter value={passwordValue} />
+
+        {/* Confirm password */}
+        <Field
+          label="Confirmar contraseña"
+          icon={Lock}
+          type={showPass ? "text" : "password"}
+          {...register("confirmPassword")}
+          error={errors.confirmPassword?.message}
+          placeholder="Repite la contraseña"
+          autoComplete="new-password"
+        />
+
+        {/* Country (optional) */}
+        <Field
+          label="País (opcional)"
+          icon={Globe}
+          {...register("country")}
+          placeholder="República Dominicana"
+          autoComplete="country-name"
+        />
+
+        {/* Terms */}
+        <label style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            {...register("acceptTerms")}
+            style={{ marginTop: "0.15rem", accentColor: "var(--accent-primary)", flexShrink: 0 }}
+          />
+          <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+            Acepto los{" "}
+            <Link href="/terminos" target="_blank" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Términos de uso</Link>
+            {" "}y la{" "}
+            <Link href="/privacidad" target="_blank" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Política de privacidad</Link>
+          </span>
+        </label>
+        {errors.acceptTerms && (
+          <span style={{ fontSize: "0.72rem", color: "#f43f5e", display: "flex", alignItems: "center", gap: "0.3rem", marginTop: "-0.4rem" }}>
+            <AlertCircle size={11} /> {errors.acceptTerms.message}
+          </span>
+        )}
+
+        {/* Turnstile */}
+        <TurnstileWidget action="register" />
+
+        <ActionFeedback status={state.status} message={state.message} />
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn-primary"
+          style={{ justifyContent: "center", padding: "0.85rem", width: "100%", fontSize: "0.95rem" }}
+        >
+          {pending ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Creando cuenta...</> : "Crear cuenta"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Verify Step ──────────────────────────────────────────────────────────────
+
+function VerifyStep({ email }: { email: string }) {
+  const [resending, setResending] = useState(false);
+  const [resendNotice, setResendNotice] = useState<string | null>(null);
+  const [resendError, setResendError] = useState<string | null>(null);
+
+  async function handleResend() {
+    setResending(true);
     setResendNotice(null);
     setResendError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+      const res = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: registeredEmail.trim() }),
+        body: JSON.stringify({ email }),
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        const message =
-          typeof payload?.message === "string"
-            ? payload.message
-            : "No pudimos reenviar el correo de verificación.";
-        throw new Error(message);
-      }
-      setResendNotice(
-        typeof payload?.message === "string"
-          ? payload.message
-          : "Te enviamos un nuevo correo de verificación.",
-      );
-    } catch (error) {
-      setResendError(
-        error instanceof Error
-          ? error.message
-          : "No pudimos reenviar el correo de verificación.",
-      );
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.message ?? "Error al reenviar");
+      setResendNotice(typeof payload?.message === "string" ? payload.message : "Correo reenviado.");
+    } catch (err) {
+      setResendError(err instanceof Error ? err.message : "No pudimos reenviar.");
     } finally {
-      setResendingVerification(false);
+      setResending(false);
     }
   }
 
-  if (state.status === "success") {
-    return (
-      <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
-        <CheckCircle2 size={40} color="#4ade80" style={{ margin: "0 auto 1rem" }} />
-        <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.5rem" }}>
-          ¡Cuenta creada!
-        </p>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{state.message}</p>
-        {registeredEmail ? (
-          <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>
-            Correo enviado a <strong style={{ color: "var(--text-light)" }}>{registeredEmail}</strong>
-          </p>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => void handleResendVerification()}
-          disabled={resendingVerification}
-          className="btn-secondary"
-          style={{ justifyContent: "center", padding: "0.72rem", marginTop: "0.9rem", width: "100%" }}
-        >
-          {resendingVerification
-            ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Reenviando...</>
-            : "Reenviar verificación"
-          }
-        </button>
-        {resendNotice ? (
-          <p style={{ fontSize: "0.78rem", color: "#9ff3c3", marginTop: "0.55rem" }}>{resendNotice}</p>
-        ) : null}
-        {resendError ? (
-          <p style={{ fontSize: "0.78rem", color: "#fda4af", marginTop: "0.55rem" }}>{resendError}</p>
-        ) : null}
+  return (
+    <div style={{ textAlign: "center", padding: "1rem 0" }}>
+      <div style={{
+        width: 72, height: 72, borderRadius: "50%", margin: "0 auto 1.25rem",
+        background: "linear-gradient(135deg, rgba(74,222,128,0.15), rgba(74,222,128,0.05))",
+        border: "1px solid rgba(74,222,128,0.3)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <CheckCircle2 size={36} color="#4ade80" />
       </div>
-    );
+      <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.5rem" }}>
+        ¡Cuenta creada!
+      </h2>
+      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.35rem" }}>
+        Enviamos un enlace de verificación a
+      </p>
+      <p style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text-light)", marginBottom: "1.5rem" }}>
+        {email}
+      </p>
+      <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "1rem", lineHeight: 1.6 }}>
+        Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta. También revisa la carpeta de spam.
+      </p>
+      <button
+        type="button"
+        onClick={() => void handleResend()}
+        disabled={resending}
+        className="btn-secondary"
+        style={{ justifyContent: "center", padding: "0.7rem 1.5rem", margin: "0 auto" }}
+      >
+        {resending ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Reenviando...</> : "Reenviar correo"}
+      </button>
+      {resendNotice && <p style={{ fontSize: "0.78rem", color: "#9ff3c3", marginTop: "0.75rem" }}>{resendNotice}</p>}
+      {resendError && <p style={{ fontSize: "0.78rem", color: "#fda4af", marginTop: "0.75rem" }}>{resendError}</p>}
+    </div>
+  );
+}
+
+// ─── 2FA Step ─────────────────────────────────────────────────────────────────
+
+function TwoFactorStep({
+  challengeId,
+  notice,
+  onSuccess,
+  onBack,
+}: {
+  challengeId: string;
+  notice: string;
+  onSuccess: (user: AuthUser) => void;
+  onBack: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const [state, setState] = useState<UiActionState>(uiActionInitialState);
+  const [verifying, setVerifying] = useState(false);
+
+  async function handleVerify() {
+    const normalized = code.trim();
+    if (normalized.length < 4) {
+      setState(actionErrorState(new Error("Ingresa el código 2FA de tu correo.")));
+      return;
+    }
+    setVerifying(true);
+    setState(uiActionInitialState);
+    try {
+      const user = await verifyLoginTwoFactor({ challengeId, code: normalized });
+      setState(actionSuccessState("Verificación 2FA completada."));
+      onSuccess(user);
+    } catch (err) {
+      setState(actionErrorState(err, "Código 2FA inválido."));
+    } finally {
+      setVerifying(false);
+    }
   }
 
   return (
-    <form
-      onSubmit={handleSubmit((data) => action(data))}
-      style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}
-    >
-      <div className="grid-2col" style={{ gap: "0.75rem" }}>
-        <Field label="Nombre" icon={User} {...register("firstName")} error={errors.firstName?.message} placeholder="Juan" autoComplete="given-name" />
-        <Field label="Apellido" {...register("lastName")} error={errors.lastName?.message} placeholder="Pérez" autoComplete="family-name" />
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", padding: 0, marginBottom: "0.75rem" }}
+        >
+          <ArrowLeft size={14} /> Volver
+        </button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.3rem" }}>
+          Verificación en dos pasos
+        </h2>
+        <p style={{ fontSize: "0.84rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+          {notice || "Te enviamos un código de 6 dígitos a tu correo."}
+        </p>
       </div>
-      <Field label="Email" icon={Mail} type="email" {...register("email")} error={errors.email?.message} placeholder="tu@email.com" autoComplete="email" />
-      <Field
-        label="Contraseña"
-        icon={Lock}
-        type={showPass ? "text" : "password"}
-        {...register("password")}
-        error={errors.password?.message}
-        placeholder="Mín. 12 caracteres"
-        autoComplete="new-password"
-        suffix={
-          <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
-            {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
-        }
-      />
-      <PasswordStrengthMeter value={passwordValue} />
-      <Field
-        label="Confirmar contraseña"
-        icon={Lock}
-        type={showPass ? "text" : "password"}
-        {...register("confirmPassword")}
-        error={errors.confirmPassword?.message}
-        placeholder="Repite la contraseña"
-        autoComplete="new-password"
-      />
 
-      <TurnstileWidget action="register" />
+      <Field
+        label="Código de verificación"
+        icon={Lock}
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        placeholder="000000"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        maxLength={10}
+        autoFocus
+      />
 
       <ActionFeedback status={state.status} message={state.message} />
 
       <button
-        type="submit"
-        disabled={pending}
+        type="button"
+        onClick={() => void handleVerify()}
+        disabled={verifying}
         className="btn-primary"
-        style={{ justifyContent: "center", padding: "0.8rem", marginTop: "0.25rem", width: "100%" }}
+        style={{ justifyContent: "center", padding: "0.85rem", width: "100%" }}
       >
-        {pending
-          ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Creando cuenta...</>
-          : "Crear cuenta"
-        }
+        {verifying ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Verificando...</> : "Verificar código"}
       </button>
-    </form>
+    </div>
   );
 }
 
@@ -475,33 +649,40 @@ export function AuthModal({
   onClose: () => void;
   defaultTab?: "login" | "register";
 }) {
-  const [tab, setTab] = useState<"login" | "register">(defaultTab);
+  const [step, setStep] = useState<Step>("email");
+  const [email, setEmail] = useState("");
+  const [twoFactorData, setTwoFactorData] = useState<{ challengeId: string; expiresIn: number; message: string } | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState("");
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const { setUser } = useAuthStore();
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => { if (open) setTab(defaultTab); }, [open, defaultTab]);
+  // Reset on open
+  useEffect(() => {
+    if (open) {
+      setStep(defaultTab === "register" ? "email" : "email");
+      setEmail("");
+      setTwoFactorData(null);
+      setVerifiedEmail("");
+    }
+  }, [open, defaultTab]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)");
     const onChange = () => setIsMobileViewport(media.matches);
     onChange();
-
     if (media.addEventListener) {
       media.addEventListener("change", onChange);
       return () => media.removeEventListener("change", onChange);
     }
-
     media.addListener(onChange);
     return () => media.removeListener(onChange);
   }, []);
 
-  // Save previous focus and restore on close
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement | null;
-      // Focus the modal after render
       requestAnimationFrame(() => modalRef.current?.focus());
     } else if (previousFocusRef.current) {
       previousFocusRef.current.focus();
@@ -509,30 +690,18 @@ export function AuthModal({
     }
   }, [open]);
 
-  // Focus trap + Escape key
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
+      if (e.key === "Escape") { onClose(); return; }
       if (e.key !== "Tab" || !modalRef.current) return;
-
       const focusable = modalRef.current.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
       );
       if (focusable.length === 0) return;
-
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     },
     [onClose],
   );
@@ -552,6 +721,18 @@ export function AuthModal({
     onClose();
   }
 
+  function handleTwoFactor(challengeId: string, expiresIn: number, message: string) {
+    setTwoFactorData({ challengeId, expiresIn, message });
+    setStep("2fa");
+  }
+
+  function handleRegisterSuccess(registeredEmail: string) {
+    setVerifiedEmail(registeredEmail);
+    setStep("verify");
+  }
+
+  const stepNumber = step === "email" ? 1 : (step === "login" || step === "register") ? 2 : null;
+
   return (
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -562,8 +743,8 @@ export function AuthModal({
         aria-hidden="true"
         style={{
           position: "fixed", inset: 0, zIndex: 1300,
-          background: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(6px)",
+          background: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(8px)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -575,78 +756,108 @@ export function AuthModal({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-label={tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
+        aria-label="Autenticación"
         tabIndex={-1}
         style={{
           position: "fixed",
           top: isMobileViewport ? "max(0.75rem, env(safe-area-inset-top))" : "50%",
           left: "50%",
           transform: isMobileViewport
-            ? `translate(-50%, ${open ? "0" : "8px"})`
-            : `translate(-50%, ${open ? "-50%" : "-45%"})`,
+            ? `translate(-50%, ${open ? "0" : "10px"})`
+            : `translate(-50%, ${open ? "-50%" : "-46%"})`,
           zIndex: 1400,
           width: "min(460px, 96vw)",
           maxHeight: isMobileViewport
             ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
-            : "min(780px, 92dvh)",
+            : "min(820px, 94dvh)",
           background: "var(--bg-dark)",
           border: "1px solid var(--glass-border)",
           borderRadius: "var(--radius-2xl)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+          boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
-          transition: "opacity 0.25s ease, transform 0.3s cubic-bezier(0.16,1,0.3,1)",
+          transition: "opacity 0.25s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1)",
           overflowX: "hidden",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        {/* Header */}
-        <div style={{ padding: "1.5rem 1.75rem 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        {/* Modal Header */}
+        <div style={{
+          padding: "1.25rem 1.75rem 1rem",
+          borderBottom: step !== "email" && step !== "verify" && step !== "2fa" ? "1px solid var(--glass-border)" : "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "linear-gradient(180deg, rgba(124,58,237,0.06) 0%, transparent 100%)",
+          flexShrink: 0,
+        }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Zap size={18} color="var(--accent-primary)" />
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", fontWeight: 900, color: "var(--text-light)" }}>vybx</span>
+            <div style={{
+              width: 30, height: 30, borderRadius: "50%",
+              background: "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <Zap size={15} color="#fff" />
+            </div>
+            <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 900, color: "var(--text-light)" }}>
+              vybx
+            </span>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            style={{ background: "var(--glass-bg)", border: "1px solid var(--glass-border)", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-muted)" }}
-          >
-            <X size={15} />
-          </button>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: "flex", padding: "1.25rem 1.75rem 0", gap: "0.25rem" }}>
-          {(["login", "register"] as const).map((t) => (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.9rem" }}>
+            {stepNumber && <StepDots current={stepNumber as 1 | 2} />}
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              onClick={onClose}
+              aria-label="Cerrar"
               style={{
-                flex: 1,
-                padding: "0.55rem",
-                borderRadius: "var(--radius-lg)",
-                border: "none",
-                cursor: "pointer",
-                fontSize: "0.88rem",
-                fontWeight: 700,
-                fontFamily: "var(--font-body)",
-                transition: "all 0.2s ease",
-                background: tab === t ? "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))" : "rgba(255,255,255,0.04)",
-                color: tab === t ? "#fff" : "var(--text-muted)",
+                background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                borderRadius: "50%", width: 32, height: 32,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "var(--text-muted)",
+                transition: "background 0.2s",
               }}
+              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "var(--glass-bg)")}
             >
-              {t === "login" ? "Ingresar" : "Crear cuenta"}
+              <X size={15} />
             </button>
-          ))}
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="auth-modal-content" style={{ padding: "1.5rem 1.75rem 1.75rem" }}>
-          {tab === "login"
-            ? <LoginTab onSuccess={handleLoginSuccess} />
-            : <RegisterTab onSuccess={() => setTab("login")} />
-          }
+        {/* Modal Content */}
+        <div style={{ padding: "1.75rem", flex: 1 }}>
+          {step === "email" && (
+            <EmailStep
+              onLogin={(e) => { setEmail(e); setStep("login"); }}
+              onRegister={(e) => { setEmail(e); setStep("register"); }}
+            />
+          )}
+          {step === "login" && (
+            <LoginStep
+              email={email}
+              onBack={() => setStep("email")}
+              onSuccess={handleLoginSuccess}
+              onTwoFactor={handleTwoFactor}
+            />
+          )}
+          {step === "register" && (
+            <RegisterStep
+              email={email}
+              onBack={() => setStep("email")}
+              onSuccess={handleRegisterSuccess}
+            />
+          )}
+          {step === "verify" && <VerifyStep email={verifiedEmail} />}
+          {step === "2fa" && twoFactorData && (
+            <TwoFactorStep
+              challengeId={twoFactorData.challengeId}
+              notice={twoFactorData.message}
+              onSuccess={handleLoginSuccess}
+              onBack={() => setStep("login")}
+            />
+          )}
         </div>
       </div>
     </>
