@@ -415,15 +415,17 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
             className="card-image"
           />
           {isSoldOut && (
-            <div style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(0,0,0,0.55)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 3,
-            }}>
+            <div
+              aria-label="Evento agotado"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background: "rgba(0,0,0,0.55)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 3,
+              }}>
               <span style={{
                 fontFamily: "var(--font-heading)",
                 fontSize: "1.1rem",

@@ -5,7 +5,7 @@
   position: absolute;
   left: -9999px;
   top: 0;
-  z-index: 9999;
+  z-index: 1800;
   padding: 0.75rem 1.25rem;
   background: var(--accent-primary);
   color: #fff;
@@ -34,11 +34,27 @@
   --accent-secondary: #7c3aed;
   --accent-tertiary: #06b6d4;
   --accent-glow: rgba(255, 42, 95, 0.5);
+  --accent-error: #f43f5e;
+  --accent-success: #4ade80;
+  --accent-warning: #f59e0b;
+
+  /* Z-index layers */
+  --z-navbar: 100;
+  --z-drawer-backdrop: 1100;
+  --z-drawer: 1200;
+  --z-modal-backdrop: 1300;
+  --z-modal: 1400;
+  --z-toast: 1500;
+  --z-mobile-nav: 1600;
+  --z-offline-banner: 1700;
 
   /* Glass */
   --glass-bg: rgba(20, 20, 25, 0.4);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+
+  /* Nav background (used by sticky inner-page navbars) */
+  --nav-bg: rgba(10, 10, 18, 0.88);
 
   /* Typography */
   --font-heading: "Outfit", sans-serif;
@@ -86,6 +102,10 @@
   --bg-fade: #ffffff;
   --card-bg: rgba(255, 255, 255, 0.6);
   --text-light: #0f172a;
+  --accent-error: #e11d48;
+  --accent-success: #16a34a;
+  --accent-warning: #d97706;
+  --nav-bg: rgba(248, 250, 252, 0.92);
   --text-muted: #64748b;
   --text-secondary: #475569;
   --accent-primary: #e11d48;
@@ -126,10 +146,19 @@
     radial-gradient(ellipse 60% 60% at 10% 90%, rgba(8, 145, 178, 0.07), transparent);
 }
 
-/* Light theme: mobile CTA bar */
-[data-theme="light"] .mobile-ticket-cta {
+/* Light theme: mobile CTA bars */
+[data-theme="light"] .mobile-ticket-cta,
+[data-theme="light"] .checkout-summary-mobile {
   background: linear-gradient(to top, rgba(248,250,252,0.98), rgba(248,250,252,0.88)) !important;
   border-top-color: rgba(0,0,0,0.08) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) .mobile-ticket-cta,
+  html:not([data-theme]) .checkout-summary-mobile {
+    background: linear-gradient(to top, rgba(248,250,252,0.98), rgba(248,250,252,0.88)) !important;
+    border-top-color: rgba(0,0,0,0.08) !important;
+  }
 }
 
 /* Light theme: footer social icons */
@@ -154,6 +183,7 @@
     --glass-bg: rgba(255, 255, 255, 0.5);
     --glass-border: rgba(0, 0, 0, 0.08);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    --nav-bg: rgba(248, 250, 252, 0.92);
 
     /* Bridge tokens for @vybx/ui compatibility (auto light mode) */
     --background: 210 40% 98%;
@@ -426,6 +456,31 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-secondary.btn-lg {
   padding: 1rem 2rem;
+}
+
+/* ─── Form Inputs (shared base) ─────────────────────────────────────────────── */
+.vybx-input {
+  width: 100%;
+  padding: 0.68rem 0.9rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  color: var(--text-light);
+  font-size: 0.92rem;
+  font-family: var(--font-body);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.vybx-input:focus {
+  border-color: rgba(124, 58, 237, 0.6);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+.vybx-input.error {
+  border-color: rgba(244, 63, 94, 0.5);
+}
+[data-theme="light"] .vybx-input {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 /* ─── Badges & Tags ──────────────────────────────────────────────────────────── */
@@ -1095,7 +1150,7 @@ h1, h2, h3, h4, h5, h6 {
     bottom: 0;
     z-index: 1200;
     padding: 0.7rem 0.85rem calc(0.7rem + env(safe-area-inset-bottom));
-    background: linear-gradient(to top, rgba(10, 10, 18, 0.98), rgba(10, 10, 18, 0.75));
+    background: var(--nav-bg);
     border-top: 1px solid var(--glass-border);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);

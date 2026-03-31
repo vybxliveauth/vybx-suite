@@ -34,7 +34,7 @@ import {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDateLong(iso: string) {
-  return new Intl.DateTimeFormat("es-CO", {
+  return new Intl.DateTimeFormat("es-DO", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -43,7 +43,7 @@ function formatDateLong(iso: string) {
 }
 
 function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("es-CO", {
+  return new Intl.DateTimeFormat("es-DO", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -546,7 +546,7 @@ export function EventDetailClient({ event }: { event: Event }) {
               position: "fixed",
               inset: 0,
               background: "rgba(0,0,0,0.5)",
-              zIndex: 9998,
+              zIndex: 1300,
             }}
           />
           <Drawer.Content
@@ -555,7 +555,7 @@ export function EventDetailClient({ event }: { event: Event }) {
               bottom: 0,
               left: 0,
               right: 0,
-              zIndex: 9999,
+              zIndex: 1400,
               background: "var(--bg-dark)",
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,

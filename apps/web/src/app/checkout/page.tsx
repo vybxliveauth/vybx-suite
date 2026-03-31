@@ -745,7 +745,7 @@ export default function CheckoutPage() {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "1rem 5%",
-        background: "rgba(10,10,18,0.85)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--glass-border)",
       }}>

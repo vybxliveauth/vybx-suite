@@ -121,6 +121,8 @@ function TierCard({
       {tier.benefits.length > 0 && (
         <button
           onClick={e => { e.stopPropagation(); setExpanded(!expanded); }}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Ocultar beneficios" : "Ver beneficios"}
           style={{
             display: "flex",
             alignItems: "center",

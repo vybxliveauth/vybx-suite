@@ -83,7 +83,7 @@ function Field({
             outline: "none",
             transition: "border-color 0.2s, box-shadow 0.2s",
           }}
-          onFocus={e => { e.target.style.borderColor = "rgba(124,58,237,0.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.1)"; }}
+          onFocus={e => { e.target.style.borderColor = "rgba(124,58,237,0.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.12)"; }}
           onBlur={e => { e.target.style.borderColor = error ? "rgba(244,63,94,0.5)" : "var(--glass-border)"; e.target.style.boxShadow = "none"; }}
         />
         {suffix && <div style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)" }}>{suffix}</div>}
@@ -534,7 +534,7 @@ export default function ProfilePage() {
         position: "sticky", top: 0, zIndex: 100,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "1rem 5%",
-        background: "rgba(10,10,18,0.9)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--glass-border)",
       }}>

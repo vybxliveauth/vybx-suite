@@ -40,7 +40,7 @@ export function OfflineBanner() {
         top: 0,
         left: 0,
         right: 0,
-        zIndex: 10000,
+        zIndex: 1700,
         padding: "0.65rem 1rem",
         background: reconnecting
           ? "linear-gradient(135deg, rgba(34,197,94,0.95), rgba(22,163,74,0.95))"

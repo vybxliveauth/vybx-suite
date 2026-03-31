@@ -55,7 +55,7 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
               background: "rgba(0,0,0,0.6)",
               backdropFilter: "blur(4px)",
               WebkitBackdropFilter: "blur(4px)",
-              zIndex: 9998,
+              zIndex: 1600,
             }}
           />
 
@@ -77,7 +77,7 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
               width: "min(320px, 85vw)",
               background: "var(--bg-dark)",
               borderLeft: "1px solid var(--glass-border)",
-              zIndex: 9999,
+              zIndex: 1601,
               display: "flex",
               flexDirection: "column",
               overflowY: "auto",
@@ -146,7 +146,7 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
                   color: "#fff",
                   flexShrink: 0,
                 }}>
-                  {user.firstName?.[0]?.toUpperCase() ?? "U"}
+                  {user.firstName?.[0]?.toUpperCase() ?? user.email?.[0]?.toUpperCase() ?? "U"}
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <p style={{

@@ -389,7 +389,7 @@ export default function MyTicketsPage() {
         position: "sticky", top: 0, zIndex: 100,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "1rem 5%",
-        background: "rgba(10,10,18,0.9)",
+        background: "var(--nav-bg)",
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--glass-border)",
       }}>
