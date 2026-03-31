@@ -5,7 +5,8 @@ import Link from "next/link";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Zap, Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Send } from "lucide-react";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import { api } from "@/lib/api";
 import {
   actionErrorState,
@@ -54,9 +55,8 @@ export default function ForgotPasswordPage() {
       }}>
         <div style={{ width: "100%", maxWidth: 440 }}>
           {/* Logo */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", marginBottom: "2.5rem", justifyContent: "center" }}>
-            <Zap size={22} color="var(--accent-primary)" />
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 900, color: "var(--text-light)" }}>vybx</span>
+          <Link href="/" style={{ textDecoration: "none", marginBottom: "2.5rem", display: "flex", justifyContent: "center" }}>
+            <VybxLogo size={28} textSize="1.5rem" />
           </Link>
 
           <div style={{

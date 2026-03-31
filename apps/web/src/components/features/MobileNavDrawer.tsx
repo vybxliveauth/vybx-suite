@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Ticket, User, LogOut, Moon, Sun, Zap } from "lucide-react";
+import { X, Ticket, User, LogOut, Moon, Sun } from "lucide-react";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import { useTheme } from "next-themes";
 import { useAuthStore } from "@/store/useAuthStore";
 
@@ -92,18 +93,7 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
               padding: "1.1rem 1.25rem",
               borderBottom: "1px solid var(--glass-border)",
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <Zap size={20} color="var(--accent-primary)" />
-                <span style={{
-                  fontFamily: "var(--font-heading)",
-                  fontSize: "1.3rem",
-                  fontWeight: 900,
-                  letterSpacing: "-0.5px",
-                  color: "var(--text-light)",
-                }}>
-                  vybx
-                </span>
-              </div>
+              <VybxLogo size={22} textSize="1.3rem" />
               <button
                 onClick={onClose}
                 aria-label="Cerrar menú"

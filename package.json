@@ -23,8 +23,14 @@
     "node": ">=20"
   },
   "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix --no-warn-ignored"
+    "apps/web/**/*.{ts,tsx}": [
+      "eslint --fix --no-warn-ignored --config apps/web/eslint.config.mjs"
+    ],
+    "apps/promoter/**/*.{ts,tsx}": [
+      "eslint --fix --no-warn-ignored --config apps/promoter/eslint.config.mjs"
+    ],
+    "apps/admin/**/*.{ts,tsx}": [
+      "eslint --fix --no-warn-ignored --config apps/admin/eslint.config.mjs"
     ],
     "*.{json,md,css}": [
       "prettier --write"

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Drawer } from "vaul";
 import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X, Menu } from "lucide-react";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import { useEvents } from "@/hooks/useEvents";
 import { Event } from "@/types";
 import { cn, formatPrice } from "@/lib/utils";
@@ -81,11 +82,8 @@ function Navbar({
 
   return (
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-        <Zap size={22} color="var(--accent-primary)" />
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 900, letterSpacing: "-0.5px", color: "var(--text-light)" }}>
-          vybx
-        </span>
+      <Link href="/" style={{ textDecoration: "none" }}>
+        <VybxLogo size={26} textSize="1.5rem" />
       </Link>
 
       <div className="hidden-mobile" style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "2.5rem" }}>
@@ -895,19 +893,8 @@ function Footer() {
       }}>
         {/* Brand column */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-            <Zap size={22} color="var(--accent-primary)" />
-            <span style={{
-              fontFamily: "var(--font-heading)",
-              fontSize: "1.5rem",
-              fontWeight: 900,
-              background: "linear-gradient(to right, var(--text-light), var(--accent-primary))",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
-              vybx
-            </span>
+          <div style={{ marginBottom: "1rem" }}>
+            <VybxLogo size={26} textSize="1.5rem" />
           </div>
           <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: 1.6, maxWidth: "28ch" }}>
             Tu plataforma para descubrir y comprar tickets de los mejores eventos en vivo.

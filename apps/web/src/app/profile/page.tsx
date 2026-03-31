@@ -22,8 +22,9 @@ import {
   type UiActionState,
 } from "@/lib/action-state";
 import { ActionFeedback } from "@vybx/ui";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import {
-  Zap, ChevronLeft, User, Mail, Lock,
+  ChevronLeft, User, Mail, Lock,
   Eye, EyeOff, AlertCircle, Loader2,
   Save, ShieldCheck, Ticket, Download, Trash2,
   Globe, MapPin, LogOut, Settings, Bell,
@@ -409,9 +410,8 @@ export default function ProfilePage() {
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--glass-border)",
       }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-          <Zap size={20} color="var(--accent-primary)" />
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.4rem", fontWeight: 900, color: "var(--text-light)" }}>vybx</span>
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <VybxLogo size={24} textSize="1.4rem" />
         </Link>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
           <Link href="/my-tickets" style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", color: "var(--text-muted)", textDecoration: "none", transition: "color 0.2s" }}

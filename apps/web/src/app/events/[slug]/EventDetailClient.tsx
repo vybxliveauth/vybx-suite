@@ -18,6 +18,7 @@ import {
   type SeatActionState,
 } from "@/hooks/useSeatSelection";
 import { formatPrice } from "@/lib/utils";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import {
   CalendarDays,
   Clock,
@@ -63,11 +64,8 @@ function Navbar({ onCartOpen, eventTitle }: { onCartOpen: () => void; eventTitle
 
   return (
     <nav className={`navbar ${scrolled ? "scrolled" : ""}`} style={{ zIndex: 100 }}>
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-        <Zap size={22} color="var(--accent-primary)" />
-        <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 900, letterSpacing: "-0.5px", color: "var(--text-light)" }}>
-          vybx
-        </span>
+      <Link href="/" style={{ textDecoration: "none" }}>
+        <VybxLogo size={26} textSize="1.5rem" />
       </Link>
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>

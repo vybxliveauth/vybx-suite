@@ -20,9 +20,13 @@ const betaRuleTuning = {
       {
         patterns: [
           {
-            group: ["@/components/ui/*", "!@/components/ui/skeleton"],
+            group: [
+              "@/components/ui/*",
+              "!@/components/ui/skeleton",
+              "!@/components/ui/VybxLogo",
+            ],
             message:
-              "Use @vybx/ui for shared UI components. Keep only web-local skeleton until migration is complete.",
+              "Use @vybx/ui for shared UI components. Keep only skeleton and VybxLogo until migration is complete.",
           },
         ],
       },

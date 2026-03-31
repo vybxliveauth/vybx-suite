@@ -25,8 +25,8 @@ import { ActionFeedback } from "@vybx/ui";
 import { getClientTurnstileToken } from "@/lib/turnstile";
 import { FlipCountdown } from "@/components/features/FlipCountdown";
 import { TurnstileWidget } from "@/components/features/TurnstileWidget";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import {
-  Zap,
   ChevronLeft,
   Lock,
   ShieldCheck,
@@ -757,9 +757,8 @@ export default function CheckoutPage() {
         backdropFilter: "blur(20px)",
         borderBottom: "1px solid var(--glass-border)",
       }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
-          <Zap size={20} color="var(--accent-primary)" />
-          <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.4rem", fontWeight: 900, color: "var(--text-light)" }}>vybx</span>
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <VybxLogo size={24} textSize="1.4rem" />
         </Link>
         <Link href="/" className="btn-secondary" style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.45rem 1rem", fontSize: "0.85rem", textDecoration: "none" }}>
           <ChevronLeft size={14} /> Volver

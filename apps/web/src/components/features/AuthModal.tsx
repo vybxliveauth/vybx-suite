@@ -17,6 +17,7 @@ import { getClientTurnstileToken } from "@/lib/turnstile";
 import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/features/PasswordStrengthMeter";
 import { ActionFeedback } from "@vybx/ui";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 import Link from "next/link";
 import {
   X,
@@ -27,7 +28,6 @@ import {
   EyeOff,
   AlertCircle,
   Loader2,
-  Zap,
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
@@ -794,18 +794,7 @@ export function AuthModal({
           background: "linear-gradient(180deg, rgba(124,58,237,0.06) 0%, transparent 100%)",
           flexShrink: 0,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <div style={{
-              width: 30, height: 30, borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <Zap size={15} color="#fff" />
-            </div>
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 900, color: "var(--text-light)" }}>
-              vybx
-            </span>
-          </div>
+          <VybxLogo size={22} textSize="1.1rem" />
           <div style={{ display: "flex", alignItems: "center", gap: "0.9rem" }}>
             {stepNumber && <StepDots current={stepNumber as 1 | 2} />}
             <button
