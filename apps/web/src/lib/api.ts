@@ -415,6 +415,12 @@ export interface CreateCartIntentPayload {
   turnstileToken?: string;
 }
 
+export interface CreateCartIntentOptions {
+  queueToken?: string;
+  deviceId?: string;
+  idempotencyKey?: string;
+}
+
 export interface PaymentIntentResponse {
   provider: "STRIPE";
   reference: string;
@@ -431,9 +437,21 @@ export async function apiPaymentsCreateIntent(payload: CreateIntentPayload) {
   });
 }
 
-export async function apiPaymentsCreateCartIntent(payload: CreateCartIntentPayload) {
+export async function apiPaymentsCreateCartIntent(
+  payload: CreateCartIntentPayload,
+  options?: CreateCartIntentOptions,
+) {
+  const queueToken = options?.queueToken?.trim();
+  const deviceId = options?.deviceId?.trim();
+  const idempotencyKey = options?.idempotencyKey?.trim();
+  const headers: Record<string, string> = {};
+  if (queueToken) headers["x-queue-token"] = queueToken;
+  if (deviceId) headers["x-device-id"] = deviceId;
+  if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
+
   return request<PaymentIntentResponse>("/payments/create-cart-intent", {
     method: "POST",
+    headers: Object.keys(headers).length > 0 ? headers : undefined,
     body: JSON.stringify(payload),
   });
 }

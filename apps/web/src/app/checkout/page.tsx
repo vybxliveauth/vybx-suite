@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Drawer } from "vaul";
@@ -15,6 +15,7 @@ import {
   fetchProfile,
   apiPaymentsIssueQueueToken,
   apiPaymentsJoinQueue,
+  apiPaymentsCreateCartIntent,
   type AuthUser,
 } from "@/lib/api";
 import {
@@ -23,10 +24,6 @@ import {
   uiActionInitialState,
   type UiActionState,
 } from "@/lib/action-state";
-import {
-  submitCheckoutAction,
-  type CheckoutActionState,
-} from "@/actions/checkout";
 import { ActionFeedback } from "@vybx/ui";
 import { getClientTurnstileToken } from "@/lib/turnstile";
 import { FlipCountdown } from "@/components/features/FlipCountdown";
@@ -67,13 +64,10 @@ const loginSchema = z.object({
 
 type BuyerFields = z.infer<typeof buyerSchema>;
 type LoginFields = z.infer<typeof loginSchema>;
-const checkoutInitialState: CheckoutActionState = {
-  status: "idle",
-  message: "",
-};
 const DEVICE_ID_STORAGE_KEY = "vybx_device_id";
 const QUEUE_TOKEN_STORAGE_KEY = "vybx_queue_token";
 const QUEUE_TOKEN_DEVICE_STORAGE_KEY = "vybx_queue_token_device_id";
+const CHECKOUT_EXPIRY_GRACE_MS = 2000;
 
 function getOrCreateCheckoutDeviceId(): string {
   if (typeof window === "undefined") return "";
@@ -682,6 +676,8 @@ export default function CheckoutPage() {
   const [loadingUser, setLoadingUser] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [turnstileError, setTurnstileError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutPending, setCheckoutPending] = useState(false);
 
   // Check if user is already logged in
   useEffect(() => {
@@ -690,20 +686,6 @@ export default function CheckoutPage() {
       .catch(() => setUser(null))
       .finally(() => setLoadingUser(false));
   }, []);
-
-  const [submitState, submitAction, submitPending] = useActionState<
-    CheckoutActionState,
-    FormData
-  >(submitCheckoutAction, checkoutInitialState);
-
-  useEffect(() => {
-    if (submitState.status !== "success" || !submitState.checkoutUrl) return;
-    sessionStorage.removeItem("vybx_checkout_queue");
-    sessionStorage.removeItem("vybx_checkout_total");
-    sessionStorage.removeItem(QUEUE_TOKEN_STORAGE_KEY);
-    sessionStorage.removeItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY);
-    window.location.href = submitState.checkoutUrl;
-  }, [submitState]);
 
   const getQueueTokenForCheckout = async (
     eventId: string,
@@ -753,9 +735,20 @@ export default function CheckoutPage() {
   const submitCheckout = async (data: BuyerFields) => {
     const items = session?.items ?? [];
     if (items.length === 0) return;
+    setCheckoutError(null);
     const eventId = items[0]?.eventId;
     if (!eventId) {
       setTurnstileError("No se pudo identificar el evento para iniciar el pago.");
+      return;
+    }
+    if (
+      session?.expiresAt &&
+      Number.isFinite(session.expiresAt) &&
+      session.expiresAt + CHECKOUT_EXPIRY_GRACE_MS < Date.now()
+    ) {
+      setCheckoutError(
+        "Tu reserva ha expirado. Vuelve a agregar los tickets e intenta nuevamente.",
+      );
       return;
     }
     const deviceId = getOrCreateCheckoutDeviceId();
@@ -810,34 +803,42 @@ export default function CheckoutPage() {
       }
     }
 
-    const formData = new FormData();
+    setCheckoutPending(true);
+    try {
+      const checkout = await apiPaymentsCreateCartIntent(
+        {
+          eventId,
+          items: items.map((item) => ({
+            ticketTypeId: item.tierId,
+            quantity: item.quantity,
+          })),
+          ...(turnstileToken ? { turnstileToken } : {}),
+        },
+        {
+          queueToken: resolvedQueueToken || undefined,
+          deviceId: deviceId || undefined,
+          idempotencyKey:
+            typeof crypto !== "undefined" &&
+            typeof crypto.randomUUID === "function"
+              ? crypto.randomUUID()
+              : undefined,
+        },
+      );
 
-    formData.set("sessionId", session?.id ?? "");
-    formData.set("agreedToTerms", "true");
-    formData.set("promoCode", "");
-    formData.set("attendee.firstName", data.firstName);
-    formData.set("attendee.lastName", data.lastName);
-    formData.set("attendee.email", data.email);
-    formData.set("attendee.phone", data.phone ?? "");
-    // Server-side TTL guard — server action rejects expired carts immediately
-    if (session?.expiresAt) {
-      formData.set("cartExpiresAt", String(session.expiresAt));
+      sessionStorage.removeItem("vybx_checkout_queue");
+      sessionStorage.removeItem("vybx_checkout_total");
+      sessionStorage.removeItem(QUEUE_TOKEN_STORAGE_KEY);
+      sessionStorage.removeItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY);
+      window.location.href = checkout.checkoutUrl;
+    } catch (e) {
+      setCheckoutError(
+        e instanceof Error && e.message.trim().length > 0
+          ? e.message
+          : "No se pudo iniciar el checkout.",
+      );
+    } finally {
+      setCheckoutPending(false);
     }
-    formData.set(
-      "items",
-      JSON.stringify(
-        items.map((item) => ({
-          eventId: item.eventId,
-          tierId: item.tierId,
-          quantity: item.quantity,
-        })),
-      ),
-    );
-    if (turnstileToken) formData.set("turnstileToken", turnstileToken);
-    if (resolvedQueueToken) formData.set("queueToken", resolvedQueueToken);
-    if (deviceId) formData.set("deviceId", deviceId);
-
-    submitAction(formData);
   };
 
   // Redirect if cart is empty
@@ -877,7 +878,9 @@ export default function CheckoutPage() {
           Checkout
         </h1>
 
-        <CheckoutSteps currentStep={loadingUser ? 0 : !user ? 0 : submitPending ? 2 : 1} />
+        <CheckoutSteps
+          currentStep={loadingUser ? 0 : !user ? 0 : checkoutPending ? 2 : 1}
+        />
 
         <div className="checkout-grid" style={{ display: "grid", gridTemplateColumns: "1fr min(400px, 100%)", gap: "2.5rem", alignItems: "start" }}>
           {/* Left: forms */}
@@ -900,7 +903,7 @@ export default function CheckoutPage() {
                 <BuyerForm
                   user={user}
                   onSubmit={submitCheckout}
-                  pending={submitPending}
+                  pending={checkoutPending}
                 />
               </>
             )}
@@ -911,10 +914,9 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {(submitState.status === "error" ||
-              submitState.status === "validation_error") && (
+            {checkoutError && (
               <div style={{ marginTop: "1rem" }}>
-                <ActionFeedback status={submitState.status} message={submitState.message} />
+                <ActionFeedback status="error" message={checkoutError} />
               </div>
             )}
           </div>
