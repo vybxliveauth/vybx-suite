@@ -23,7 +23,6 @@ import {
   CalendarDays,
   Clock,
   MapPin,
-  Users,
   Zap,
   ChevronLeft,
   Share2,
@@ -147,19 +146,15 @@ function EventHero({ event }: { event: Event }) {
           {event.title}
         </h1>
 
-        {/* Meta row */}
+        {/* Meta row — date+time combined, then venue */}
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem 1.5rem", fontSize: "0.92rem", fontWeight: 500, color: "rgba(255,255,255,0.82)" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <CalendarDays size={14} color="var(--accent-primary)" />
-            {formatDateLong(event.startDate)}
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            <Clock size={14} color="var(--accent-primary)" />
-            {formatTime(event.startDate)}
+            {formatDateLong(event.startDate)} · {formatTime(event.startDate)}
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <MapPin size={14} color="var(--accent-primary)" />
-            {event.venue.name}, {event.venue.city}
+            {event.venue.name}{event.venue.city ? `, ${event.venue.city}` : ""}
           </span>
         </div>
       </div>
@@ -190,39 +185,52 @@ function EventHero({ event }: { event: Event }) {
   );
 }
 
-// ─── Fact Card ────────────────────────────────────────────────────────────────
+// ─── Compact venue + doors-open info card ────────────────────────────────────
 
-function FactCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function EventInfoCard({ event }: { event: Event }) {
+  const mapsUrl = event.venue.mapUrl
+    ?? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      [event.venue.name, event.venue.address, event.venue.city].filter(Boolean).join(", ")
+    )}`;
+  const hasLocation = !!(event.venue.mapUrl || event.venue.address);
+
   return (
-    <div style={{
-      padding: "1rem",
-      border: "1px solid var(--glass-border)",
-      borderRadius: "var(--radius-xl)",
-      background: "rgba(255,255,255,0.02)",
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "0.9rem",
-    }}>
-      <div style={{
-        width: 46,
-        height: 46,
-        borderRadius: 12,
-        background: "rgba(124, 58, 237, 0.12)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        color: "var(--accent-primary)",
-      }}>
-        <Icon size={20} />
+    <div className="event-info-card">
+      {/* Doors open */}
+      <div className="event-info-item">
+        <span className="event-info-icon">
+          <Clock size={16} />
+        </span>
+        <div>
+          <p className="event-info-label">Apertura de puertas</p>
+          <p className="event-info-value">{formatTime(event.doorsOpen)}</p>
+        </div>
       </div>
-      <div>
-        <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.9px" }}>
-          {label}
-        </p>
-        <p style={{ margin: "0.15rem 0 0", fontSize: "0.95rem", fontWeight: 650, color: "var(--text-light)", textTransform: "capitalize" }}>
-          {value}
-        </p>
+
+      <div className="event-info-divider" />
+
+      {/* Venue address + directions */}
+      <div className="event-info-item">
+        <span className="event-info-icon">
+          <MapPin size={16} />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <p className="event-info-label">{event.venue.name}</p>
+          <p className="event-info-value" style={{ opacity: event.venue.address ? 1 : 0.5 }}>
+            {event.venue.address ? `${event.venue.address}, ${event.venue.city}` : event.venue.city}
+          </p>
+          {hasLocation && (
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="event-directions-link"
+            >
+              <Navigation size={11} />
+              Cómo llegar
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -304,9 +312,6 @@ export function EventDetailClient({ event }: { event: Event }) {
           .event-detail-grid {
             padding: 0 4% 3rem;
           }
-          .facts-grid {
-            grid-template-columns: 1fr !important;
-          }
           .event-detail-nav-btn {
             min-width: 38px;
             justify-content: center;
@@ -320,6 +325,13 @@ export function EventDetailClient({ event }: { event: Event }) {
             right: 1rem !important;
             width: 38px !important;
             height: 38px !important;
+          }
+          .event-info-card {
+            flex-direction: column !important;
+          }
+          .event-info-divider {
+            width: 100% !important;
+            height: 1px !important;
           }
         }
       `}</style>
@@ -350,72 +362,11 @@ export function EventDetailClient({ event }: { event: Event }) {
           {/* Countdown */}
           <EventCountdown startDate={event.startDate} />
 
-          {/* Facts grid */}
-          <div className="facts-grid" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem", marginBottom: "2.5rem" }}>
-            <FactCard
-              icon={CalendarDays}
-              label="Fecha"
-              value={formatDateLong(event.startDate)}
-            />
-            <FactCard
-              icon={Clock}
-              label="Apertura de puertas"
-              value={formatTime(event.doorsOpen)}
-            />
-            <FactCard
-              icon={MapPin}
-              label="Lugar"
-              value={`${event.venue.name}, ${event.venue.city}`}
-            />
-            <FactCard
-              icon={Users}
-              label="Capacidad"
-              value={`${event.venue.capacity.toLocaleString()} personas`}
-            />
-          </div>
-
-          {/* Venue directions */}
-          {(event.venue.mapUrl || event.venue.address) && (
-            <a
-              href={
-                event.venue.mapUrl
-                  ?? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${event.venue.name}, ${event.venue.address ?? ""}, ${event.venue.city}`)}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.6rem 1.15rem",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid var(--glass-border)",
-                borderRadius: "var(--radius-pill)",
-                color: "var(--text-muted)",
-                fontSize: "0.84rem",
-                fontWeight: 600,
-                textDecoration: "none",
-                transition: "all 0.2s",
-                marginBottom: "2rem",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = "rgba(6,182,212,0.1)";
-                e.currentTarget.style.borderColor = "rgba(6,182,212,0.3)";
-                e.currentTarget.style.color = "var(--accent-tertiary)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "rgba(255,255,255,0.05)";
-                e.currentTarget.style.borderColor = "var(--glass-border)";
-                e.currentTarget.style.color = "var(--text-muted)";
-              }}
-            >
-              <Navigation size={15} />
-              Cómo llegar
-            </a>
-          )}
+          {/* Compact info card: doors open + venue/address */}
+          <EventInfoCard event={event} />
 
           {/* About */}
-          <div style={{ maxWidth: "75ch" }}>
+          <div style={{ maxWidth: "75ch", marginTop: "2.5rem" }}>
             <h2 style={{
               fontSize: "1.2rem",
               fontWeight: 700,
