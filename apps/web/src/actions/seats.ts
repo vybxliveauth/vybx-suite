@@ -18,8 +18,6 @@ export type SeatActionState = {
   message?: string;
 };
 
-export const seatInitialState: SeatActionState = { status: "idle" };
-
 // ─── Toggle Seat Reservation ──────────────────────────────────────────────────
 
 export async function toggleSeatReservationAction(

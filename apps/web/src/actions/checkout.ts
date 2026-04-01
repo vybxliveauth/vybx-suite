@@ -15,13 +15,7 @@ export type CheckoutActionState = {
   checkoutUrl?: string;
 };
 
-const INITIAL_STATE: CheckoutActionState = {
-  status: "idle",
-  message: "",
-};
 const CHECKOUT_EXPIRY_GRACE_MS = 2000;
-
-export { INITIAL_STATE as checkoutInitialState };
 
 // ─── Server Action ────────────────────────────────────────────────────────────
 

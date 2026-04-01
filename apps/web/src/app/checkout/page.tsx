@@ -24,7 +24,6 @@ import {
   type UiActionState,
 } from "@/lib/action-state";
 import {
-  checkoutInitialState,
   submitCheckoutAction,
   type CheckoutActionState,
 } from "@/actions/checkout";
@@ -68,6 +67,10 @@ const loginSchema = z.object({
 
 type BuyerFields = z.infer<typeof buyerSchema>;
 type LoginFields = z.infer<typeof loginSchema>;
+const checkoutInitialState: CheckoutActionState = {
+  status: "idle",
+  message: "",
+};
 const DEVICE_ID_STORAGE_KEY = "vybx_device_id";
 const QUEUE_TOKEN_STORAGE_KEY = "vybx_queue_token";
 const QUEUE_TOKEN_DEVICE_STORAGE_KEY = "vybx_queue_token_device_id";

@@ -3,13 +3,13 @@
 import { useActionState, useEffect, useOptimistic, startTransition } from "react";
 import {
   toggleSeatReservationAction,
-  seatInitialState,
   type SeatActionState,
 } from "@/actions/seats";
 import { Seat, SeatStatus } from "@/types";
 
 export const SEAT_ACTION_FEEDBACK_EVENT = "vybx:seat-action-feedback";
 export type { SeatActionState };
+const seatInitialState: SeatActionState = { status: "idle" };
 
 // ─── Optimistic Seat Reducer ──────────────────────────────────────────────────
 
