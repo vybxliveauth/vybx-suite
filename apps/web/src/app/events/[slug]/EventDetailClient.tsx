@@ -142,6 +142,7 @@ function EventHero({ event }: { event: Event }) {
           color: "#fff",
           textShadow: "0 4px 32px rgba(0,0,0,0.6)",
           marginBottom: "1.25rem",
+          textWrap: "balance",
         }}>
           {event.title}
         </h1>
@@ -342,20 +343,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           {/* Tags */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1.75rem" }}>
             {event.tags.map((tag) => (
-              <span key={tag} style={{
-                padding: "0.4rem 1rem",
-                borderRadius: "var(--radius-pill)",
-                background: "rgba(124, 58, 237, 0.35)",
-                border: "1px solid rgba(124, 58, 237, 0.65)",
-                color: "#ffffff",
-                fontSize: "0.82rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-                backdropFilter: "blur(10px)",
-              }}>
-                {tag}
-              </span>
+              <span key={tag} className="event-tag">{tag}</span>
             ))}
           </div>
 

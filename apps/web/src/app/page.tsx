@@ -261,8 +261,14 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       {/* ── Content ── */}
       <div style={{ position: "relative", zIndex: 2, maxWidth: 820, width: "100%" }}>
 
+        {/* Announcement pill */}
+        <div className="hero-pill fade-in-up" style={{ animationDelay: "-0.1s" }}>
+          <span className="pill-dot" />
+          New events dropping every week — don&apos;t miss out
+        </div>
+
         {/* Headline */}
-        <h1 className="fade-in-up" style={{
+        <h1 className="fade-in-up text-balance" style={{
           fontFamily: "var(--font-heading)",
           fontSize: "clamp(3.2rem, 8vw, 7rem)",
           fontWeight: 900,
@@ -322,6 +328,24 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
             Buscar
           </button>
         </form>
+
+        {/* Stats / social proof */}
+        <div className="hero-stats fade-in-up" style={{ animationDelay: "0.3s" }}>
+          <div className="hero-stat">
+            <span className="hero-stat-value">500+</span>
+            <span className="hero-stat-label">Events</span>
+          </div>
+          <div className="hero-stat-divider" />
+          <div className="hero-stat">
+            <span className="hero-stat-value">50K+</span>
+            <span className="hero-stat-label">Tickets sold</span>
+          </div>
+          <div className="hero-stat-divider" />
+          <div className="hero-stat">
+            <span className="hero-stat-value">200+</span>
+            <span className="hero-stat-label">Artists</span>
+          </div>
+        </div>
 
       </div>
 
@@ -413,28 +437,8 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
             className="card-image"
           />
           {isSoldOut && (
-            <div
-              aria-label="Evento agotado"
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "rgba(0,0,0,0.55)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 3,
-              }}>
-              <span style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "1.1rem",
-                fontWeight: 800,
-                color: "#fff",
-                textTransform: "uppercase",
-                letterSpacing: "2px",
-                background: "rgba(244,63,94,0.85)",
-                padding: "0.5rem 1.5rem",
-                borderRadius: "var(--radius-pill)",
-              }}>
+            <div aria-label="Evento agotado" className="badge-sold-out-overlay">
+              <span className="badge-sold-out-label">
                 Agotado
               </span>
             </div>
@@ -449,21 +453,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
             </div>
           )}
           {isLowStock && !isSoldOut && (
-            <div style={{
-              position: "absolute",
-              bottom: "0.75rem",
-              right: "0.75rem",
-              fontSize: "0.62rem",
-              fontWeight: 700,
-              padding: "0.25rem 0.6rem",
-              borderRadius: "var(--radius-pill)",
-              background: "rgba(251,146,60,0.9)",
-              color: "#fff",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.25rem",
-              zIndex: 3,
-            }}>
+            <div className="badge-low-stock">
               <Ticket size={10} />
               ¡Últimos {totalStock}!
             </div>
@@ -475,34 +465,35 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
           )}
         </div>
 
-        <div style={{ padding: "1.25rem 1.5rem 1rem", position: "relative", zIndex: 2 }}>
+        <div className="card-body">
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.65rem" }}>
             <span className="badge-tag">
               {event.tags[0] ?? "Event"}
             </span>
             {relDate && (
-              <span style={{
-                fontSize: "0.68rem",
-                fontWeight: 700,
-                color: relDate === "Hoy" || relDate === "Mañana" ? "var(--accent-primary)" : "var(--accent-tertiary)",
-              }}>
+              <span
+                className={relDate === "Hoy" || relDate === "Mañana" ? "date-rel-today" : ""}
+                style={{
+                  fontSize: "0.68rem",
+                  fontWeight: 700,
+                  color: relDate === "Hoy" || relDate === "Mañana" ? "var(--accent-primary)" : "var(--accent-tertiary)",
+                }}
+              >
                 {relDate}
               </span>
             )}
           </div>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem", fontWeight: 800, marginBottom: "0.5rem", lineHeight: 1.2, color: "var(--text-light)" }}>
-            {event.title}
-          </h3>
+          <h3 className="card-title">{event.title}</h3>
           <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.82rem", color: "var(--text-muted)" }}>
             <MapPin size={13} color="var(--accent-primary)" />
             {event.venue.name}{event.venue.city ? `, ${event.venue.city}` : ""}
           </p>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.85rem 1.5rem", borderTop: "1px solid var(--glass-border)", position: "relative", zIndex: 2 }}>
+        <div className="card-footer">
           <div>
-            <p style={{ fontSize: "0.75rem", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-muted)", marginBottom: "0.1rem" }}>Desde</p>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", fontWeight: 800, color: "var(--text-light)" }}>
+            <p className="card-price-label">Desde</p>
+            <p className="card-price-value">
               {minPrice != null ? formatPrice(minPrice, event.tiers[0].currency) : "—"}
             </p>
           </div>
@@ -733,7 +724,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.5rem" }}>
+      <div className="event-grid">
         {isLoading
           ? Array.from({ length: PAGE_SIZE }).map((_, i) => <EventCardSkeleton key={i} />)
           : paginated.length === 0
