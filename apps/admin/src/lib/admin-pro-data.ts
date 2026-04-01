@@ -20,7 +20,7 @@ export type PayoutStatus = "PENDING" | "IN_REVIEW" | "PAID";
 export type PayoutItem = {
   id: string;
   promoter: string;
-  gateway: "AZUL" | "CARDNET";
+  gateway: "STRIPE_CONNECT" | "PAYPAL";
   grossSales: number;
   vybeCommission: number;
   itbis: number;
@@ -73,7 +73,7 @@ export const seedPromoters: PromoterKyc[] = [
     id: "prm-004",
     name: "Arena Fest",
     email: "contact@arenafest.do",
-    company: "Arena Fest RD",
+    company: "Arena Fest US",
     documentsOk: true,
     bankVerified: true,
     status: "PENDING",
@@ -86,7 +86,7 @@ export const seedPayouts: PayoutItem[] = [
   {
     id: "pyt-001",
     promoter: "Luna Events",
-    gateway: "AZUL",
+    gateway: "STRIPE_CONNECT",
     grossSales: 560000,
     vybeCommission: 56000,
     itbis: 90720,
@@ -97,7 +97,7 @@ export const seedPayouts: PayoutItem[] = [
   {
     id: "pyt-002",
     promoter: "Caribe House",
-    gateway: "CARDNET",
+    gateway: "PAYPAL",
     grossSales: 320000,
     vybeCommission: 38400,
     itbis: 51840,
@@ -108,7 +108,7 @@ export const seedPayouts: PayoutItem[] = [
   {
     id: "pyt-003",
     promoter: "Arena Fest",
-    gateway: "AZUL",
+    gateway: "STRIPE_CONNECT",
     grossSales: 790000,
     vybeCommission: 94800,
     itbis: 128160,
@@ -158,7 +158,7 @@ export const seedActivity: ActivityItem[] = [
     id: "act-001",
     type: "sale",
     title: "Nueva venta en Festival del Malecon",
-    subtitle: "2 tickets VIP · RD$8,400",
+    subtitle: "2 tickets VIP · US$140",
     at: new Date(now - 1000 * 60 * 3).toISOString(),
   },
   {
@@ -171,8 +171,8 @@ export const seedActivity: ActivityItem[] = [
   {
     id: "act-003",
     type: "payout",
-    title: "Liquidacion enviada a Azul",
-    subtitle: "Luna Events · RD$413,280 neto",
+    title: "Liquidacion enviada a Stripe",
+    subtitle: "Luna Events · US$6,888 neto",
     at: new Date(now - 1000 * 60 * 16).toISOString(),
   },
 ];

@@ -529,7 +529,7 @@ export type PromoterApplicationStatus =
   | "APPROVED"
   | "REJECTED";
 
-export type PromoterPayoutMethod = "AZUL" | "CARDNET" | "BANK_TRANSFER";
+export type PromoterPayoutMethod = "STRIPE_CONNECT" | "PAYPAL" | "BANK_TRANSFER";
 
 export interface AdminPromoterApplication {
   id: string;

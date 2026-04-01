@@ -532,32 +532,14 @@ function CheckoutSteps({ currentStep }: { currentStep: number }) {
 }
 
 // ─── Payment Method Card ──────────────────────────────────────────────────────
-// Provider-aware: reads NEXT_PUBLIC_PAYMENT_PROVIDER to show the right badge.
-// Stripe Checkout is the primary provider for the US market.
-
-const PAYMENT_PROVIDER =
-  (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "STRIPE") as
-    | "RD_REDIRECT"
-    | "STRIPE"
-    | "AZUL";
-
-const PROVIDER_LABELS: Record<typeof PAYMENT_PROVIDER, { name: string; detail: string }> = {
-  RD_REDIRECT: {
-    name: "Credit / Debit Card",
-    detail: "Secure payment · Visa, Mastercard and more.",
-  },
-  STRIPE: {
-    name: "Credit / Debit Card",
-    detail: "Secure payment via Stripe · Visa, Mastercard, Amex and more.",
-  },
-  AZUL: {
-    name: "Credit / Debit Card",
-    detail: "Secure payment · Visa and Mastercard.",
-  },
+// Stripe Checkout is the only provider for the US launch.
+const PROVIDER_LABEL = {
+  name: "Credit / Debit Card",
+  detail: "Secure payment via Stripe · Visa, Mastercard, Amex and more.",
 };
 
 function PaymentMethodCard() {
-  const provider = PROVIDER_LABELS[PAYMENT_PROVIDER] ?? PROVIDER_LABELS.STRIPE;
+  const provider = PROVIDER_LABEL;
   return (
     <div style={{
       background: "var(--card-bg)",

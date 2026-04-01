@@ -416,7 +416,7 @@ export interface CreateCartIntentPayload {
 }
 
 export interface PaymentIntentResponse {
-  provider: "RD_REDIRECT" | "STRIPE";
+  provider: "STRIPE";
   reference: string;
   amount: number;
   currency: string;

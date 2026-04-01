@@ -84,9 +84,9 @@ function riskBadge(level: "low" | "medium" | "high") {
 
 function payoutMethodLabel(method?: PromoterPayoutMethod | null) {
   if (!method) return "Sin metodo";
-  if (method === "AZUL") return "Azul";
-  if (method === "CARDNET") return "Cardnet";
-  return "Transferencia";
+  if (method === "STRIPE_CONNECT") return "Stripe Connect";
+  if (method === "PAYPAL") return "PayPal";
+  return "Transferencia bancaria";
 }
 
 export default function PromotersPage() {
@@ -218,7 +218,7 @@ export default function PromotersPage() {
       },
       {
         id: "bank",
-        header: "Banco RD",
+        header: "Metodo de liquidacion",
         cell: ({ row }) => (
           <div className="text-xs space-y-1">
             {row.original.bankVerified ? (
@@ -337,13 +337,16 @@ export default function PromotersPage() {
     }
 
     const methodInput = window.prompt(
-      "Metodo de liquidacion (AZUL, CARDNET, BANK_TRANSFER):",
-      "BANK_TRANSFER"
+      "Metodo de liquidacion (STRIPE_CONNECT, PAYPAL, BANK_TRANSFER):",
+      "STRIPE_CONNECT"
     );
     if (!methodInput) return;
     const normalizedMethod = methodInput.trim().toUpperCase();
-    if (!["AZUL", "CARDNET", "BANK_TRANSFER"].includes(normalizedMethod)) {
-      setBulkNotice({ tone: "error", text: "Metodo invalido. Usa AZUL, CARDNET o BANK_TRANSFER." });
+    if (!["STRIPE_CONNECT", "PAYPAL", "BANK_TRANSFER"].includes(normalizedMethod)) {
+      setBulkNotice({
+        tone: "error",
+        text: "Metodo invalido. Usa STRIPE_CONNECT, PAYPAL o BANK_TRANSFER.",
+      });
       return;
     }
 

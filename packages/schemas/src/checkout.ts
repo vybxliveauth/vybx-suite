@@ -18,7 +18,7 @@ export type AttendeeFormData = z.infer<typeof attendeeSchema>;
 
 // ─── Payment ──────────────────────────────────────────────────────────────────
 // Used only for Stripe Elements flow (client-side tokenization).
-// Not required when using hosted checkout pages (Stripe Checkout, RD Redirect).
+// Not required when using hosted checkout pages (Stripe Checkout).
 
 export const paymentSchema = z.object({
   paymentIntentId: z
@@ -81,7 +81,7 @@ export type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 // ─── Checkout Action Schema ───────────────────────────────────────────────────
 // Minimal schema for what the server action validates before calling the backend.
-// Both RD Redirect and Stripe Checkout are redirect-based — the frontend never
+// Stripe Checkout is redirect-based — the frontend never
 // handles card data or generates a payment intent. The backend creates the
 // payment session and returns a checkoutUrl to redirect to.
 
