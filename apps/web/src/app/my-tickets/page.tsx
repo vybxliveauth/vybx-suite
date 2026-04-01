@@ -14,6 +14,7 @@ import {
   Clock,
   Loader2,
   AlertCircle,
+  Send,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
@@ -92,10 +93,201 @@ function StatusBadge({ status }: { status: TicketStatus }) {
 
 // ─── Ticket Card ──────────────────────────────────────────────────────────────
 
-function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelled: (id: string) => void }) {
+// ─── Transfer Modal ───────────────────────────────────────────────────────────
+
+function TransferModal({
+  ticket,
+  onClose,
+  onTransferred,
+}: {
+  ticket: BackendTicket;
+  onClose: () => void;
+  onTransferred: (id: string) => void;
+}) {
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  async function handleSubmit() {
+    const email = recipientEmail.trim().toLowerCase();
+    if (!email) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post(`/tickets/${ticket.id}/transfer`, { recipientEmail: email });
+      setSuccess(true);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/no active account|not found/i.test(msg)) {
+        setError("No encontramos una cuenta activa con ese correo.");
+      } else if (/yourself|ti mismo/i.test(msg)) {
+        setError("No puedes transferirte un ticket a ti mismo.");
+      } else if (/cutoff|occurred|cierra/i.test(msg)) {
+        setError("Ya no es posible transferir este ticket (el evento está próximo o ya ocurrió).");
+      } else {
+        setError("No se pudo completar la transferencia. Intenta de nuevo.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed", inset: 0, zIndex: 200,
+        background: "rgba(0,0,0,0.75)",
+        backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "1rem",
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        width: "100%", maxWidth: 420,
+        background: "var(--card-bg)",
+        border: "1px solid var(--glass-border)",
+        borderRadius: "var(--radius-2xl)",
+        padding: "2rem",
+        display: "flex", flexDirection: "column", gap: "1.25rem",
+      }}>
+        {success ? (
+          <>
+            <div style={{ textAlign: "center" }}>
+              <CheckCircle2 size={48} color="#4ade80" style={{ margin: "0 auto 1rem" }} />
+              <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.5rem" }}>
+                ¡Ticket transferido!
+              </h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.5 }}>
+                Tu ticket ha sido transferido a <strong style={{ color: "var(--text-light)" }}>{recipientEmail}</strong>.
+                El destinatario recibirá un correo de confirmación.
+              </p>
+            </div>
+            <button
+              onClick={() => { onTransferred(ticket.id); onClose(); }}
+              className="btn-primary"
+              style={{ width: "100%", padding: "0.7rem", fontSize: "0.9rem", textAlign: "center" }}
+            >
+              Cerrar
+            </button>
+          </>
+        ) : (
+          <>
+            <div>
+              <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.2rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.25rem" }}>
+                Transferir ticket
+              </h2>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
+                {ticket.ticketType.event.title} — {ticket.ticketType.name}
+              </p>
+            </div>
+
+            <div style={{
+              padding: "0.75rem 1rem",
+              background: "rgba(251,191,36,0.06)",
+              border: "1px solid rgba(251,191,36,0.2)",
+              borderRadius: "var(--radius-xl)",
+              color: "#fbbf24",
+              fontSize: "0.8rem",
+              lineHeight: 1.5,
+            }}>
+              Esta acción es permanente. Una vez transferido, el ticket pasará al nuevo propietario y desaparecerá de tu lista.
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-muted)" }}>
+                Correo del destinatario
+              </label>
+              <input
+                type="email"
+                value={recipientEmail}
+                onChange={(e) => setRecipientEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
+                placeholder="ejemplo@correo.com"
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  padding: "0.65rem 0.9rem",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid var(--glass-border)",
+                  borderRadius: "var(--radius-xl)",
+                  color: "var(--text-light)",
+                  fontSize: "0.9rem",
+                  fontFamily: "var(--font-body)",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+
+            {error && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: "0.5rem",
+                padding: "0.6rem 0.9rem",
+                background: "rgba(244,63,94,0.08)",
+                border: "1px solid rgba(244,63,94,0.25)",
+                borderRadius: "var(--radius-xl)",
+                color: "#fda4af",
+                fontSize: "0.82rem",
+              }}>
+                <AlertCircle size={14} style={{ flexShrink: 0 }} />
+                {error}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button
+                onClick={onClose}
+                disabled={loading}
+                className="btn-secondary"
+                style={{ flex: 1, padding: "0.65rem", fontSize: "0.88rem", textAlign: "center" }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void handleSubmit()}
+                disabled={loading || !recipientEmail.trim()}
+                style={{
+                  flex: 1, padding: "0.65rem",
+                  background: loading || !recipientEmail.trim() ? "rgba(124,58,237,0.3)" : "var(--accent-primary)",
+                  border: "none",
+                  borderRadius: "var(--radius-xl)",
+                  color: "#fff",
+                  fontSize: "0.88rem",
+                  fontWeight: 700,
+                  fontFamily: "var(--font-body)",
+                  cursor: loading || !recipientEmail.trim() ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
+                  transition: "all 0.2s",
+                }}
+              >
+                {loading ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={15} />}
+                {loading ? "Transfiriendo…" : "Transferir"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Ticket Card ──────────────────────────────────────────────────────────────
+
+function TicketCard({
+  ticket,
+  onCancelled,
+  onTransferred,
+}: {
+  ticket: BackendTicket;
+  onCancelled: (id: string) => void;
+  onTransferred: (id: string) => void;
+}) {
   const { event } = ticket.ticketType;
   const [qrExpanded, setQrExpanded] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   async function handleCancel() {
     if (!confirm("¿Solicitar cancelación de este ticket?")) return;
@@ -226,6 +418,27 @@ function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelle
             )}
             {ticket.status === "VALID" && (
               <button
+                onClick={() => setShowTransferModal(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.45rem 0.9rem",
+                  background: "rgba(124,58,237,0.08)",
+                  border: "1px solid rgba(124,58,237,0.25)",
+                  borderRadius: "var(--radius-pill)",
+                  cursor: "pointer",
+                  color: "#c4b5fd",
+                  fontSize: "0.78rem",
+                  fontWeight: 600,
+                  fontFamily: "var(--font-body)",
+                  transition: "all 0.2s",
+                }}
+              >
+                <Send size={14} />
+                Transferir
+              </button>
+            )}
+            {ticket.status === "VALID" && (
+              <button
                 onClick={() => void handleCancel()}
                 disabled={cancelling}
                 style={{
@@ -281,6 +494,17 @@ function TicketCard({ ticket, onCancelled }: { ticket: BackendTicket; onCancelle
           ID: {ticket.id.slice(0, 18)}…
         </p>
       </div>
+
+      {showTransferModal && (
+        <TransferModal
+          ticket={ticket}
+          onClose={() => setShowTransferModal(false)}
+          onTransferred={(id) => {
+            setShowTransferModal(false);
+            onTransferred(id);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -348,6 +572,10 @@ export default function MyTicketsPage() {
 
   function handleCancelled(id: string) {
     setTickets((prev) => prev.map((t) => t.id === id ? { ...t, status: "CANCELLED" as TicketStatus } : t));
+  }
+
+  function handleTransferred(_id: string) {
+    void loadTickets();
   }
 
   const loadTickets = useCallback(async () => {
@@ -466,7 +694,7 @@ export default function MyTicketsPage() {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem" }}>
             {filtered.map((ticket) => (
-              <TicketCard key={ticket.id} ticket={ticket} onCancelled={handleCancelled} />
+              <TicketCard key={ticket.id} ticket={ticket} onCancelled={handleCancelled} onTransferred={handleTransferred} />
             ))}
           </div>
         )}
