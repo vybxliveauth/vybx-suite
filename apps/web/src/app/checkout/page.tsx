@@ -69,6 +69,8 @@ const loginSchema = z.object({
 type BuyerFields = z.infer<typeof buyerSchema>;
 type LoginFields = z.infer<typeof loginSchema>;
 const DEVICE_ID_STORAGE_KEY = "vybx_device_id";
+const QUEUE_TOKEN_STORAGE_KEY = "vybx_queue_token";
+const QUEUE_TOKEN_DEVICE_STORAGE_KEY = "vybx_queue_token_device_id";
 
 function getOrCreateCheckoutDeviceId(): string {
   if (typeof window === "undefined") return "";
@@ -695,6 +697,8 @@ export default function CheckoutPage() {
     if (submitState.status !== "success" || !submitState.checkoutUrl) return;
     sessionStorage.removeItem("vybx_checkout_queue");
     sessionStorage.removeItem("vybx_checkout_total");
+    sessionStorage.removeItem(QUEUE_TOKEN_STORAGE_KEY);
+    sessionStorage.removeItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY);
     window.location.href = submitState.checkoutUrl;
   }, [submitState]);
 
@@ -751,9 +755,19 @@ export default function CheckoutPage() {
       setTurnstileError("No se pudo identificar el evento para iniciar el pago.");
       return;
     }
-    const queueToken = (sessionStorage.getItem("vybx_queue_token") ?? "").trim();
-    let resolvedQueueToken = queueToken;
     const deviceId = getOrCreateCheckoutDeviceId();
+    const storedQueueToken = (sessionStorage.getItem(QUEUE_TOKEN_STORAGE_KEY) ?? "").trim();
+    const storedQueueTokenDeviceId = (
+      sessionStorage.getItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY) ?? ""
+    ).trim();
+    const queueToken =
+      storedQueueToken && storedQueueTokenDeviceId === deviceId ? storedQueueToken : "";
+    let resolvedQueueToken = queueToken;
+
+    if (storedQueueToken && storedQueueTokenDeviceId !== deviceId) {
+      sessionStorage.removeItem(QUEUE_TOKEN_STORAGE_KEY);
+      sessionStorage.removeItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY);
+    }
 
     let turnstileToken = "";
     try {
@@ -780,7 +794,8 @@ export default function CheckoutPage() {
           turnstileToken || undefined,
         );
         if (resolvedQueueToken) {
-          sessionStorage.setItem("vybx_queue_token", resolvedQueueToken);
+          sessionStorage.setItem(QUEUE_TOKEN_STORAGE_KEY, resolvedQueueToken);
+          sessionStorage.setItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY, deviceId);
         }
       } catch (e) {
         setTurnstileError(
