@@ -450,6 +450,7 @@ export async function apiMyTickets() {
 export interface JoinQueuePayload {
   eventId: string;
   turnstileToken?: string;
+  deviceId?: string;
 }
 
 export interface QueueJoinResponse {
@@ -466,14 +467,21 @@ export interface QueueJoinResponse {
 }
 
 export async function apiPaymentsJoinQueue(payload: JoinQueuePayload) {
+  const deviceId = payload.deviceId?.trim();
+  const bodyPayload: JoinQueuePayload = {
+    eventId: payload.eventId,
+    ...(payload.turnstileToken ? { turnstileToken: payload.turnstileToken } : {}),
+  };
   return request<QueueJoinResponse>("/payments/queue/join", {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: deviceId ? { "x-device-id": deviceId } : undefined,
+    body: JSON.stringify(bodyPayload),
   });
 }
 
 export interface IssueQueueTokenPayload {
   eventId: string;
+  deviceId?: string;
 }
 
 export interface IssueQueueTokenResponse {
@@ -486,9 +494,12 @@ export interface IssueQueueTokenResponse {
 }
 
 export async function apiPaymentsIssueQueueToken(payload: IssueQueueTokenPayload) {
+  const deviceId = payload.deviceId?.trim();
+  const bodyPayload: IssueQueueTokenPayload = { eventId: payload.eventId };
   return request<IssueQueueTokenResponse>("/payments/queue/token", {
     method: "POST",
-    body: JSON.stringify(payload),
+    headers: deviceId ? { "x-device-id": deviceId } : undefined,
+    body: JSON.stringify(bodyPayload),
   });
 }
 

@@ -68,6 +68,25 @@ const loginSchema = z.object({
 
 type BuyerFields = z.infer<typeof buyerSchema>;
 type LoginFields = z.infer<typeof loginSchema>;
+const DEVICE_ID_STORAGE_KEY = "vybx_device_id";
+
+function getOrCreateCheckoutDeviceId(): string {
+  if (typeof window === "undefined") return "";
+
+  try {
+    const existing = window.localStorage.getItem(DEVICE_ID_STORAGE_KEY)?.trim();
+    if (existing) return existing;
+
+    const generated =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem(DEVICE_ID_STORAGE_KEY, generated);
+    return generated;
+  } catch {
+    return "";
+  }
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -681,10 +700,11 @@ export default function CheckoutPage() {
 
   const getQueueTokenForCheckout = async (
     eventId: string,
+    deviceId: string,
     turnstileToken?: string,
   ): Promise<string> => {
     const issueToken = async () => {
-      const issued = await apiPaymentsIssueQueueToken({ eventId });
+      const issued = await apiPaymentsIssueQueueToken({ eventId, deviceId });
       if (issued.queueEnabled === false) return "";
       return issued.queueToken?.trim() ?? "";
     };
@@ -702,10 +722,13 @@ export default function CheckoutPage() {
       );
     }
 
-    const joined = await apiPaymentsJoinQueue({ eventId, turnstileToken });
+    const joined = await apiPaymentsJoinQueue({ eventId, turnstileToken, deviceId });
     if (joined.queueEnabled === false) return "";
     const joinedToken = joined.queueToken?.trim() ?? "";
     if (joinedToken.length > 0) return joinedToken;
+
+    const token = await issueToken();
+    if (token.length > 0) return token;
 
     if (joined.status === "QUEUED") {
       const wait = Math.max(0, Math.ceil(joined.estimatedWaitSeconds ?? 0));
@@ -716,9 +739,6 @@ export default function CheckoutPage() {
           : `Aún estás en cola (posición ${position}). Intenta de nuevo en unos segundos.`,
       );
     }
-
-    const token = await issueToken();
-    if (token.length > 0) return token;
 
     throw new Error("No se pudo obtener el token de cola para iniciar el pago.");
   };
@@ -733,6 +753,7 @@ export default function CheckoutPage() {
     }
     const queueToken = (sessionStorage.getItem("vybx_queue_token") ?? "").trim();
     let resolvedQueueToken = queueToken;
+    const deviceId = getOrCreateCheckoutDeviceId();
 
     let turnstileToken = "";
     try {
@@ -755,6 +776,7 @@ export default function CheckoutPage() {
       try {
         resolvedQueueToken = await getQueueTokenForCheckout(
           eventId,
+          deviceId,
           turnstileToken || undefined,
         );
         if (resolvedQueueToken) {
@@ -795,6 +817,7 @@ export default function CheckoutPage() {
     );
     if (turnstileToken) formData.set("turnstileToken", turnstileToken);
     if (resolvedQueueToken) formData.set("queueToken", resolvedQueueToken);
+    if (deviceId) formData.set("deviceId", deviceId);
 
     submitAction(formData);
   };

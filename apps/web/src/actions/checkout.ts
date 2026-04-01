@@ -71,11 +71,13 @@ export async function submitCheckoutAction(
     const validated = checkoutActionSchema.parse(raw);
     const turnstileToken = String(formData.get("turnstileToken") ?? "").trim();
     const queueToken = String(formData.get("queueToken") ?? "").trim();
+    const deviceId = String(formData.get("deviceId") ?? "").trim();
 
     // 3. Process through backend checkout endpoint (persists reservations in DB)
     const checkout = await processOrder(validated, {
       turnstileToken: turnstileToken.length > 0 ? turnstileToken : undefined,
       queueToken: queueToken.length > 0 ? queueToken : undefined,
+      deviceId: deviceId.length > 0 ? deviceId : undefined,
     });
 
     return {
@@ -112,6 +114,7 @@ export async function submitCheckoutAction(
 type ProcessOrderOptions = {
   turnstileToken?: string;
   queueToken?: string;
+  deviceId?: string;
 };
 
 type CheckoutIntentResponse = {
@@ -161,6 +164,7 @@ async function processOrder(
         "x-csrf-token": csrfToken,
         "idempotency-key": idempotencyKey,
         ...(options.queueToken ? { "x-queue-token": options.queueToken } : {}),
+        ...(options.deviceId ? { "x-device-id": options.deviceId } : {}),
         ...(backendCookieHeader ? { cookie: backendCookieHeader } : {}),
       },
       body: JSON.stringify({
