@@ -9,7 +9,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCartStore } from "@/store/useCartStore";
 import { formatPrice, formatEventDate } from "@/lib/utils";
-import { login, verifyLoginTwoFactor, fetchProfile, type AuthUser } from "@/lib/api";
+import {
+  login,
+  verifyLoginTwoFactor,
+  fetchProfile,
+  apiPaymentsIssueQueueToken,
+  apiPaymentsJoinQueue,
+  type AuthUser,
+} from "@/lib/api";
 import {
   actionErrorState,
   actionSuccessState,
@@ -690,10 +697,60 @@ export default function CheckoutPage() {
     window.location.href = submitState.checkoutUrl;
   }, [submitState]);
 
-  const submitCheckout = (data: BuyerFields) => {
+  const getQueueTokenForCheckout = async (
+    eventId: string,
+    turnstileToken?: string,
+  ): Promise<string> => {
+    const issueToken = async () => {
+      const issued = await apiPaymentsIssueQueueToken({ eventId });
+      if (issued.queueEnabled === false) return "";
+      return issued.queueToken?.trim() ?? "";
+    };
+
+    try {
+      const token = await issueToken();
+      if (token.length > 0) return token;
+    } catch {
+      // Fallback to queue join flow below.
+    }
+
+    if (!turnstileToken) {
+      throw new Error(
+        "Necesitas completar la verificación anti-bot para entrar en cola y pagar.",
+      );
+    }
+
+    const joined = await apiPaymentsJoinQueue({ eventId, turnstileToken });
+    if (joined.queueEnabled === false) return "";
+    const joinedToken = joined.queueToken?.trim() ?? "";
+    if (joinedToken.length > 0) return joinedToken;
+
+    if (joined.status === "QUEUED") {
+      const wait = Math.max(0, Math.ceil(joined.estimatedWaitSeconds ?? 0));
+      const position = joined.position ?? joined.aheadOfYou ?? 0;
+      throw new Error(
+        wait > 0
+          ? `Aún estás en cola (posición ${position}). Intenta de nuevo en ${wait}s.`
+          : `Aún estás en cola (posición ${position}). Intenta de nuevo en unos segundos.`,
+      );
+    }
+
+    const token = await issueToken();
+    if (token.length > 0) return token;
+
+    throw new Error("No se pudo obtener el token de cola para iniciar el pago.");
+  };
+
+  const submitCheckout = async (data: BuyerFields) => {
     const items = session?.items ?? [];
     if (items.length === 0) return;
+    const eventId = items[0]?.eventId;
+    if (!eventId) {
+      setTurnstileError("No se pudo identificar el evento para iniciar el pago.");
+      return;
+    }
     const queueToken = (sessionStorage.getItem("vybx_queue_token") ?? "").trim();
+    let resolvedQueueToken = queueToken;
 
     let turnstileToken = "";
     try {
@@ -710,6 +767,25 @@ export default function CheckoutPage() {
       }
       // If queue token already exists, continue checkout and let backend validate it.
       setTurnstileError(null);
+    }
+
+    if (!resolvedQueueToken) {
+      try {
+        resolvedQueueToken = await getQueueTokenForCheckout(
+          eventId,
+          turnstileToken || undefined,
+        );
+        if (resolvedQueueToken) {
+          sessionStorage.setItem("vybx_queue_token", resolvedQueueToken);
+        }
+      } catch (e) {
+        setTurnstileError(
+          e instanceof Error
+            ? e.message
+            : "No se pudo validar la cola para el checkout.",
+        );
+        return;
+      }
     }
 
     const formData = new FormData();
@@ -736,7 +812,7 @@ export default function CheckoutPage() {
       ),
     );
     if (turnstileToken) formData.set("turnstileToken", turnstileToken);
-    if (queueToken) formData.set("queueToken", queueToken);
+    if (resolvedQueueToken) formData.set("queueToken", resolvedQueueToken);
 
     submitAction(formData);
   };
