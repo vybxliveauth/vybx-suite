@@ -399,8 +399,6 @@ export default function ProfilePage() {
 
   return (
     <>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-
       {/* Navbar */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
@@ -477,25 +475,11 @@ export default function ProfilePage() {
 
             {/* Nav links */}
             <nav style={{ background: "var(--card-bg)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-2xl)", overflow: "hidden" }}>
-              {NAV_TABS.map(({ id, label, icon: Icon }, idx) => (
+              {NAV_TABS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "0.65rem",
-                    width: "100%", padding: "0.85rem 1.25rem",
-                    background: activeTab === id ? "rgba(124,58,237,0.12)" : "transparent",
-                    border: "none",
-                    borderTop: idx > 0 ? "1px solid var(--glass-border)" : "none",
-                    borderLeft: activeTab === id ? "3px solid var(--accent-primary)" : "3px solid transparent",
-                    cursor: "pointer", textAlign: "left",
-                    color: activeTab === id ? "var(--text-light)" : "var(--text-muted)",
-                    fontSize: "0.88rem", fontWeight: activeTab === id ? 700 : 500,
-                    fontFamily: "var(--font-body)",
-                    transition: "all 0.2s",
-                  }}
-                  onMouseEnter={e => { if (activeTab !== id) e.currentTarget.style.background = "rgba(255,255,255,0.04)"; }}
-                  onMouseLeave={e => { if (activeTab !== id) e.currentTarget.style.background = "transparent"; }}
+                  className={`profile-nav-btn${activeTab === id ? " active" : ""}`}
                 >
                   <Icon size={15} color={activeTab === id ? "var(--accent-primary)" : "var(--text-muted)"} />
                   {label}

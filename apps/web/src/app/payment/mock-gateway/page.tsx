@@ -32,7 +32,7 @@ function MockGatewayInner() {
     const transactionId = status === "APPROVED" ? mockTxApproved : mockTxCancelled;
     const signature     = status === "APPROVED" ? mockSigApproved : mockSigCancelled;
 
-    await fetch(`${API}/payments/rd/callback`, {
+    await fetch(`${API}/payments/mock/callback`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reference, status, transactionId, signature }),

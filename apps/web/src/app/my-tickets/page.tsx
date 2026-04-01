@@ -300,23 +300,7 @@ function TicketCard({
   }
 
   return (
-    <div style={{
-      background: "var(--card-bg)",
-      border: "1px solid var(--glass-border)",
-      borderRadius: "var(--radius-2xl)",
-      overflow: "hidden",
-      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-      position: "relative",
-    }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 16px 40px rgba(0,0,0,0.3)";
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
-      }}
-    >
+    <div className="ticket-card">
       {/* Event image strip */}
       <div style={{ position: "relative", height: 130, overflow: "hidden" }}>
         {event.image ? (
@@ -349,17 +333,7 @@ function TicketCard({
           <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.25rem", lineHeight: 1.2 }}>
             {event.title}
           </h3>
-          <span style={{
-            fontSize: "0.72rem",
-            background: "rgba(124,58,237,0.15)",
-            border: "1px solid rgba(124,58,237,0.3)",
-            color: "#c4b5fd",
-            borderRadius: "var(--radius-pill)",
-            padding: "0.12rem 0.55rem",
-            fontWeight: 600,
-          }}>
-            {ticket.ticketType.name}
-          </span>
+          <span className="ticket-type-badge">{ticket.ticketType.name}</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginBottom: "1rem" }}>
@@ -398,19 +372,7 @@ function TicketCard({
             {ticket.qrCode && ticket.status === "VALID" && (
               <button
                 onClick={() => setQrExpanded(!qrExpanded)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  padding: "0.45rem 0.9rem",
-                  background: qrExpanded ? "rgba(124,58,237,0.2)" : "rgba(255,255,255,0.05)",
-                  border: `1px solid ${qrExpanded ? "rgba(124,58,237,0.5)" : "var(--glass-border)"}`,
-                  borderRadius: "var(--radius-pill)",
-                  cursor: "pointer",
-                  color: qrExpanded ? "#c4b5fd" : "var(--text-muted)",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  fontFamily: "var(--font-body)",
-                  transition: "all 0.2s",
-                }}
+                className={`ticket-btn ticket-btn-violet${qrExpanded ? " active" : ""}`}
               >
                 <QrCode size={14} />
                 {qrExpanded ? "Ocultar" : "Ver QR"}
@@ -419,19 +381,7 @@ function TicketCard({
             {ticket.status === "VALID" && (
               <button
                 onClick={() => setShowTransferModal(true)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  padding: "0.45rem 0.9rem",
-                  background: "rgba(124,58,237,0.08)",
-                  border: "1px solid rgba(124,58,237,0.25)",
-                  borderRadius: "var(--radius-pill)",
-                  cursor: "pointer",
-                  color: "#c4b5fd",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  fontFamily: "var(--font-body)",
-                  transition: "all 0.2s",
-                }}
+                className="ticket-btn ticket-btn-violet"
               >
                 <Send size={14} />
                 Transferir
@@ -441,20 +391,7 @@ function TicketCard({
               <button
                 onClick={() => void handleCancel()}
                 disabled={cancelling}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  padding: "0.45rem 0.9rem",
-                  background: "rgba(244,63,94,0.08)",
-                  border: "1px solid rgba(244,63,94,0.25)",
-                  borderRadius: "var(--radius-pill)",
-                  cursor: cancelling ? "not-allowed" : "pointer",
-                  color: "#fda4af",
-                  fontSize: "0.78rem",
-                  fontWeight: 600,
-                  fontFamily: "var(--font-body)",
-                  opacity: cancelling ? 0.6 : 1,
-                  transition: "all 0.2s",
-                }}
+                className="ticket-btn ticket-btn-danger"
               >
                 <XCircle size={14} />
                 {cancelling ? "…" : "Cancelar"}
@@ -646,23 +583,10 @@ export default function MyTicketsPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                style={{
-                  padding: "0.45rem 1rem",
-                  borderRadius: "var(--radius-pill)",
-                  border: "1px solid",
-                  borderColor: filter === f ? "rgba(124,58,237,0.5)" : "var(--glass-border)",
-                  background: filter === f ? "rgba(124,58,237,0.15)" : "transparent",
-                  color: filter === f ? "#c4b5fd" : "var(--text-muted)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: "var(--font-body)",
-                  transition: "all 0.2s",
-                }}
+                className={`chip${filter === f ? " active" : ""}`}
               >
                 {{ ALL: "Todos", VALID: "Válidos", USED: "Usados", CANCELLED: "Cancelados" }[f]}
-                {" "}
-                <span style={{ opacity: 0.7 }}>({counts[f]})</span>
+                <span style={{ opacity: 0.65, fontSize: "0.75em" }}>({counts[f]})</span>
               </button>
             ))}
           </div>
@@ -692,7 +616,7 @@ export default function MyTicketsPage() {
             ? <EmptyState />
             : <FilterEmptyState filter={filter} onReset={() => setFilter("ALL")} />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem" }}>
+          <div className="tickets-grid">
             {filtered.map((ticket) => (
               <TicketCard key={ticket.id} ticket={ticket} onCancelled={handleCancelled} onTransferred={handleTransferred} />
             ))}
@@ -700,7 +624,6 @@ export default function MyTicketsPage() {
         )}
       </main>
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
   );
 }

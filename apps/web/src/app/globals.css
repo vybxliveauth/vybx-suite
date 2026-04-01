@@ -1780,3 +1780,138 @@ a:focus-visible {
 .text-balance {
   text-wrap: balance;
 }
+
+/* ─── Spin keyframe (used by Loader2 components across pages) ────────────────── */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Ticket card ────────────────────────────────────────────────────────────── */
+.ticket-card {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  position: relative;
+}
+
+.ticket-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+}
+
+.tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+/* ─── Ticket action buttons ──────────────────────────────────────────────────── */
+.ticket-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.ticket-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-light);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.ticket-btn-violet {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.25);
+  color: #c4b5fd;
+}
+
+.ticket-btn-violet:hover,
+.ticket-btn-violet.active {
+  background: rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.55);
+  color: #ddd6fe;
+}
+
+.ticket-btn-danger {
+  background: rgba(244, 63, 94, 0.08);
+  border-color: rgba(244, 63, 94, 0.25);
+  color: #fda4af;
+}
+
+.ticket-btn-danger:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.16);
+  border-color: rgba(244, 63, 94, 0.5);
+}
+
+.ticket-btn:disabled,
+.ticket-btn-danger:disabled,
+.ticket-btn-violet:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Ticket type badge (tier name pill) ─────────────────────────────────────── */
+.ticket-type-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  background: rgba(124, 58, 237, 0.15);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #c4b5fd;
+  border-radius: var(--radius-pill);
+  padding: 0.12rem 0.55rem;
+  font-weight: 600;
+}
+
+/* ─── Profile sidebar nav ────────────────────────────────────────────────────── */
+.profile-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.85rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--text-muted);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.profile-nav-btn:first-child {
+  border-top: none;
+}
+
+.profile-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-light);
+}
+
+.profile-nav-btn.active {
+  background: rgba(124, 58, 237, 0.12);
+  border-left-color: var(--accent-primary);
+  color: var(--text-light);
+  font-weight: 700;
+  padding-left: calc(1.25rem - 3px);
+}
