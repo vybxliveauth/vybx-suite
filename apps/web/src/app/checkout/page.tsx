@@ -693,16 +693,25 @@ export default function CheckoutPage() {
   const submitCheckout = (data: BuyerFields) => {
     const items = session?.items ?? [];
     if (items.length === 0) return;
+    const queueToken = (sessionStorage.getItem("vybx_queue_token") ?? "").trim();
 
-    let turnstileToken: string;
+    let turnstileToken = "";
     try {
       turnstileToken = getClientTurnstileToken("checkout");
       setTurnstileError(null);
     } catch (e) {
-      setTurnstileError(e instanceof Error ? e.message : "Error de verificación anti-bot.");
-      return;
+      if (!queueToken) {
+        setTurnstileError(
+          e instanceof Error
+            ? e.message
+            : "Error de verificación anti-bot.",
+        );
+        return;
+      }
+      // If queue token already exists, continue checkout and let backend validate it.
+      setTurnstileError(null);
     }
-    const queueToken = sessionStorage.getItem("vybx_queue_token") ?? "";
+
     const formData = new FormData();
 
     formData.set("sessionId", session?.id ?? "");

@@ -145,29 +145,40 @@ async function processOrder(
     .join("; ");
 
   const baseUrl = resolveApiBaseUrl(
-    process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
+    process.env.API_URL ??
+      process.env.NEXT_PUBLIC_API_URL ??
+      "https://api.vybxlive.com/api/v1",
   );
   const idempotencyKey = crypto.randomUUID();
 
-  const response = await fetch(`${baseUrl}/payments/create-cart-intent`, {
-    method: "POST",
-    cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      "x-csrf-token": csrfToken,
-      "idempotency-key": idempotencyKey,
-      ...(options.queueToken ? { "x-queue-token": options.queueToken } : {}),
-      ...(backendCookieHeader ? { cookie: backendCookieHeader } : {}),
-    },
-    body: JSON.stringify({
-      eventId: uniqueEventIds[0],
-      items: data.items.map((item) => ({
-        ticketTypeId: item.tierId,
-        quantity: item.quantity,
-      })),
-      ...(options.turnstileToken ? { turnstileToken: options.turnstileToken } : {}),
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}/payments/create-cart-intent`, {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf-token": csrfToken,
+        "idempotency-key": idempotencyKey,
+        ...(options.queueToken ? { "x-queue-token": options.queueToken } : {}),
+        ...(backendCookieHeader ? { cookie: backendCookieHeader } : {}),
+      },
+      body: JSON.stringify({
+        eventId: uniqueEventIds[0],
+        items: data.items.map((item) => ({
+          ticketTypeId: item.tierId,
+          quantity: item.quantity,
+        })),
+        ...(options.turnstileToken
+          ? { turnstileToken: options.turnstileToken }
+          : {}),
+      }),
+    });
+  } catch {
+    throw new Error(
+      "No se pudo conectar con el servicio de pagos. Intenta nuevamente.",
+    );
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
