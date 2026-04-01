@@ -135,7 +135,7 @@ export function adaptEvent(raw: BackendEvent): Event {
     name: normalizeTierName(tt.name),
     description: tt.name,
     price: priceToCents(tt.price),
-    currency: "DOP",
+    currency: "USD",
     stock: tt.quantity - tt.sold,
     maxPerOrder: 6,
     benefits: [],

@@ -395,7 +395,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
   const href = `/events/${event.slug}`;
   const date = new Date(event.startDate);
   const day = date.getDate().toString().padStart(2, "0");
-  const month = date.toLocaleString("es-DO", { month: "short" }).toUpperCase();
+  const month = date.toLocaleString("en-US", { month: "short" }).toUpperCase();
   const minPrice = event.tiers.length > 0 ? Math.min(...event.tiers.map((t) => t.price)) : null;
   const totalStock = event.tiers.reduce((acc, t) => acc + t.stock, 0);
   const isLowStock = totalStock > 0 && totalStock <= 50;

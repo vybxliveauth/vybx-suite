@@ -450,7 +450,7 @@ function RegisterStep({
           label="País (opcional)"
           icon={Globe}
           {...register("country")}
-          placeholder="República Dominicana"
+          placeholder="United States"
           autoComplete="country-name"
         />
 

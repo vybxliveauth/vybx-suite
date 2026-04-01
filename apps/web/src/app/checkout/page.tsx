@@ -526,32 +526,31 @@ function CheckoutSteps({ currentStep }: { currentStep: number }) {
 
 // ─── Payment Method Card ──────────────────────────────────────────────────────
 // Provider-aware: reads NEXT_PUBLIC_PAYMENT_PROVIDER to show the right badge.
-// Both RD Redirect and Stripe Checkout are hosted redirect flows — the user
-// fills buyer info here, then gets redirected to the provider's secure page.
+// Stripe Checkout is the primary provider for the US market.
 
 const PAYMENT_PROVIDER =
-  (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "RD_REDIRECT") as
+  (process.env.NEXT_PUBLIC_PAYMENT_PROVIDER ?? "STRIPE") as
     | "RD_REDIRECT"
     | "STRIPE"
     | "AZUL";
 
 const PROVIDER_LABELS: Record<typeof PAYMENT_PROVIDER, { name: string; detail: string }> = {
   RD_REDIRECT: {
-    name: "Tarjeta de crédito / débito",
-    detail: "Pago seguro procesado por RD Commerce · Visa, Mastercard y más.",
+    name: "Credit / Debit Card",
+    detail: "Secure payment · Visa, Mastercard and more.",
   },
   STRIPE: {
-    name: "Tarjeta de crédito / débito",
-    detail: "Pago seguro procesado por Stripe · Visa, Mastercard, Amex y más.",
+    name: "Credit / Debit Card",
+    detail: "Secure payment via Stripe · Visa, Mastercard, Amex and more.",
   },
   AZUL: {
-    name: "Tarjeta de crédito / débito",
-    detail: "Pago seguro procesado por Azul · Visa y Mastercard.",
+    name: "Credit / Debit Card",
+    detail: "Secure payment · Visa and Mastercard.",
   },
 };
 
 function PaymentMethodCard() {
-  const provider = PROVIDER_LABELS[PAYMENT_PROVIDER] ?? PROVIDER_LABELS.RD_REDIRECT;
+  const provider = PROVIDER_LABELS[PAYMENT_PROVIDER] ?? PROVIDER_LABELS.STRIPE;
   return (
     <div style={{
       background: "var(--card-bg)",
@@ -838,7 +837,7 @@ export default function CheckoutPage() {
             Ver resumen
           </span>
           <strong style={{ fontFamily: "var(--font-heading)", fontWeight: 800 }}>
-            {session ? formatPrice(session.total, session.currency) : "RD$0.00"}
+            {session ? formatPrice(session.total, session.currency) : "$0.00"}
           </strong>
         </button>
       </div>

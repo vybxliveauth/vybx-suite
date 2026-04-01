@@ -143,7 +143,7 @@ function ProfileSection() {
       <div style={{ marginTop: "0.5rem", paddingTop: "1.25rem", borderTop: "1px solid var(--glass-border)" }}>
         <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.85rem" }}>Ubicación</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem" }}>
-          <Field label="País" icon={Globe} {...register("country")} placeholder="República Dominicana" />
+          <Field label="País" icon={Globe} {...register("country")} placeholder="United States" />
           <Field label="Ciudad" icon={MapPin} {...register("city")} placeholder="Santo Domingo" />
         </div>
       </div>

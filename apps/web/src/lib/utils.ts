@@ -5,13 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/** Format price to currency string (e.g. 1200 → "RD$1,200") */
-export function formatPrice(amount: number, currency = "DOP"): string {
-  return new Intl.NumberFormat("es-DO", {
+/** Format price to currency string (e.g. 15.00 → "$15.00") */
+export function formatPrice(amount: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 

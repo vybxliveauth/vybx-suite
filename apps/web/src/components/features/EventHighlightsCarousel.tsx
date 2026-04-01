@@ -8,7 +8,7 @@ import { Event } from "@/types";
 
 function formatEventDate(value: string) {
   const date = new Date(value);
-  return date.toLocaleDateString("es-DO", {
+  return date.toLocaleDateString("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",

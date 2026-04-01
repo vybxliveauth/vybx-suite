@@ -35,7 +35,7 @@ import {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDateLong(iso: string) {
-  return new Intl.DateTimeFormat("es-DO", {
+  return new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -44,7 +44,7 @@ function formatDateLong(iso: string) {
 }
 
 function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("es-DO", {
+  return new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -515,7 +515,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           }}>
             {formatPrice(
               Math.min(...event.tiers.filter(t => t.stock > 0).map(t => t.price)),
-              event.tiers[0]?.currency ?? "DOP",
+              event.tiers[0]?.currency ?? "USD",
             )}
           </p>
         </div>

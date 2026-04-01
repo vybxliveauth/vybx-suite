@@ -20,7 +20,7 @@ function MockGatewayInner() {
 
   const reference    = params.get("reference") ?? "";
   const amount       = params.get("amount") ?? "0";
-  const currency     = params.get("currency") ?? "DOP";
+  const currency     = params.get("currency") ?? "USD";
   const returnUrl    = params.get("return_url") ?? "/";
   const cancelUrl    = params.get("cancel_url") ?? "/";
   const mockTxApproved  = params.get("mock_tx_approved") ?? "";
@@ -51,7 +51,7 @@ function MockGatewayInner() {
     window.location.href = cancelUrl;
   }
 
-  const formatted = new Intl.NumberFormat("es-DO", {
+  const formatted = new Intl.NumberFormat("en-US", {
     style: "currency", currency, minimumFractionDigits: 0,
   }).format(Number(amount));
 
