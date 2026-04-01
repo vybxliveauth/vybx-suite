@@ -19,6 +19,7 @@ import {
 } from "@/hooks/useSeatSelection";
 import { formatPrice } from "@/lib/utils";
 import { VybxLogo } from "@/components/ui/VybxLogo";
+import { Footer } from "@/components/features/Footer";
 import {
   CalendarDays,
   Clock,
@@ -276,11 +277,6 @@ export function EventDetailClient({ event }: { event: Event }) {
   return (
     <>
       <style>{`
-        @keyframes slowDrift {
-          0% { transform: scale(1.05); }
-          100% { transform: scale(1.15); }
-        }
-
         .event-detail-grid {
           display: grid;
           grid-template-columns: minmax(0, 1.3fr) minmax(320px, 420px);
@@ -413,6 +409,8 @@ export function EventDetailClient({ event }: { event: Event }) {
 
       {/* ── Related Events ── */}
       <RelatedEvents currentEvent={event} />
+
+      <Footer />
 
       {/* ── Mobile sticky CTA bar ── */}
       <div
