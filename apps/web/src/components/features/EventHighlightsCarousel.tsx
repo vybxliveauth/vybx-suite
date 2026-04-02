@@ -79,7 +79,7 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
 
   return (
     <section
-      style={{ padding: "0 var(--page-inline) 0.5rem" }}
+      style={{ padding: "0 var(--page-inline) 0.5rem", borderTop: "none", borderBottom: "none", background: "transparent" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
