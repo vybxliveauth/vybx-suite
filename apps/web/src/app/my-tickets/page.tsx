@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VybxLogo } from "@/components/ui/VybxLogo";
@@ -15,6 +16,7 @@ import {
   Loader2,
   AlertCircle,
   Send,
+  X,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
@@ -54,7 +56,7 @@ interface TicketsResponse {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es", {
     weekday: "short", year: "numeric", month: "short", day: "numeric",
     hour: "2-digit", minute: "2-digit",
   }).format(new Date(iso));
@@ -69,29 +71,156 @@ function formatPrice(price: string) {
 
 function StatusBadge({ status }: { status: TicketStatus }) {
   const config = {
-    VALID:     { label: "Válido",    color: "#4ade80", bg: "rgba(34,197,94,0.12)",  border: "rgba(34,197,94,0.3)",  Icon: CheckCircle2 },
-    USED:      { label: "Usado",     color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.2)", Icon: Clock },
-    CANCELLED: { label: "Cancelado", color: "#f43f5e", bg: "rgba(244,63,94,0.1)",  border: "rgba(244,63,94,0.3)",  Icon: XCircle },
+    VALID:     { label: "Válido",    color: "#4ade80", bg: "rgba(34,197,94,0.14)",  border: "rgba(34,197,94,0.35)",  Icon: CheckCircle2 },
+    USED:      { label: "Usado",     color: "#94a3b8", bg: "rgba(148,163,184,0.12)", border: "rgba(148,163,184,0.25)", Icon: Clock },
+    CANCELLED: { label: "Cancelado", color: "#f43f5e", bg: "rgba(244,63,94,0.12)",  border: "rgba(244,63,94,0.35)",  Icon: XCircle },
   }[status];
 
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: "0.35rem",
-      padding: "0.25rem 0.75rem",
+      padding: "0.22rem 0.7rem",
       borderRadius: "var(--radius-pill)",
       background: config.bg,
       border: `1px solid ${config.border}`,
       color: config.color,
-      fontSize: "0.75rem",
+      fontSize: "0.7rem",
       fontWeight: 700,
+      letterSpacing: "0.02em",
+      backdropFilter: "blur(8px)",
     }}>
-      <config.Icon size={12} />
+      <config.Icon size={11} />
       {config.label}
     </span>
   );
 }
 
-// ─── Ticket Card ──────────────────────────────────────────────────────────────
+// ─── Portal overlay base ──────────────────────────────────────────────────────
+
+function ModalPortal({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
+
+// ─── QR Modal ─────────────────────────────────────────────────────────────────
+
+function QRModal({ ticket, onClose }: { ticket: BackendTicket; onClose: () => void }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [onClose]);
+
+  const { event } = ticket.ticketType;
+
+  return (
+    <ModalPortal>
+      <div
+        style={{
+          position: "fixed", inset: 0, zIndex: 500,
+          background: "rgba(0,0,0,0.85)",
+          backdropFilter: "blur(12px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "1.5rem",
+        }}
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <div style={{
+          width: "100%", maxWidth: 360,
+          background: "var(--card-bg)",
+          border: "1px solid var(--glass-border)",
+          borderRadius: "var(--radius-2xl)",
+          overflow: "hidden",
+          display: "flex", flexDirection: "column",
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: "1.25rem 1.5rem 1rem",
+            borderBottom: "1px dashed var(--glass-border)",
+            display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem",
+          }}>
+            <div>
+              <p style={{ fontSize: "0.7rem", fontWeight: 700, color: "var(--accent-primary)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: "0.3rem" }}>
+                Tu ticket
+              </p>
+              <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: 800, color: "var(--text-light)", lineHeight: 1.25 }}>
+                {event.title}
+              </h2>
+              <span className="ticket-type-badge" style={{ marginTop: "0.4rem", display: "inline-block" }}>
+                {ticket.ticketType.name}
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid var(--glass-border)",
+                borderRadius: "50%",
+                width: 32, height: 32,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", color: "var(--text-muted)", flexShrink: 0,
+              }}
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          {/* QR */}
+          <div style={{
+            padding: "2rem 1.5rem",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem",
+          }}>
+            <div style={{
+              padding: "1rem",
+              background: "#fff",
+              borderRadius: "var(--radius-xl)",
+              boxShadow: "0 0 0 6px rgba(124,58,237,0.08)",
+            }}>
+              <QRCodeSVG
+                value={ticket.qrCode ?? ticket.id}
+                size={200}
+                bgColor="#ffffff"
+                fgColor="#0f172a"
+                level="M"
+              />
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "0.2rem" }}>ID del ticket</p>
+              <code style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontFamily: "monospace", wordBreak: "break-all" }}>
+                {ticket.id}
+              </code>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            borderTop: "1px dashed var(--glass-border)",
+            padding: "1rem 1.5rem",
+            display: "flex", flexDirection: "column", gap: "0.4rem",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              <CalendarDays size={13} color="var(--accent-primary)" />
+              {formatDate(event.date)}
+            </div>
+            {event.location && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                <MapPin size={13} color="var(--accent-primary)" />
+                {event.location}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </ModalPortal>
+  );
+}
 
 // ─── Transfer Modal ───────────────────────────────────────────────────────────
 
@@ -108,6 +237,17 @@ function TransferModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !loading) onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.body.style.overflow = prev;
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [onClose, loading]);
 
   async function handleSubmit() {
     const email = recipientEmail.trim().toLowerCase();
@@ -134,142 +274,173 @@ function TransferModal({
   }
 
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, zIndex: 200,
-        background: "rgba(0,0,0,0.75)",
-        backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "1rem",
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div style={{
-        width: "100%", maxWidth: 420,
-        background: "var(--card-bg)",
-        border: "1px solid var(--glass-border)",
-        borderRadius: "var(--radius-2xl)",
-        padding: "2rem",
-        display: "flex", flexDirection: "column", gap: "1.25rem",
-      }}>
-        {success ? (
-          <>
-            <div style={{ textAlign: "center" }}>
-              <CheckCircle2 size={48} color="#4ade80" style={{ margin: "0 auto 1rem" }} />
-              <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.5rem" }}>
-                ¡Ticket transferido!
-              </h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.5 }}>
-                Tu ticket ha sido transferido a <strong style={{ color: "var(--text-light)" }}>{recipientEmail}</strong>.
-                El destinatario recibirá un correo de confirmación.
-              </p>
-            </div>
-            <button
-              onClick={() => { onTransferred(ticket.id); onClose(); }}
-              className="btn-primary"
-              style={{ width: "100%", padding: "0.7rem", fontSize: "0.9rem", textAlign: "center" }}
-            >
-              Cerrar
-            </button>
-          </>
-        ) : (
-          <>
-            <div>
-              <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.2rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.25rem" }}>
-                Transferir ticket
-              </h2>
-              <p style={{ color: "var(--text-muted)", fontSize: "0.82rem" }}>
-                {ticket.ticketType.event.title} — {ticket.ticketType.name}
-              </p>
-            </div>
-
-            <div style={{
-              padding: "0.75rem 1rem",
-              background: "rgba(251,191,36,0.06)",
-              border: "1px solid rgba(251,191,36,0.2)",
-              borderRadius: "var(--radius-xl)",
-              color: "#fbbf24",
-              fontSize: "0.8rem",
-              lineHeight: 1.5,
-            }}>
-              Esta acción es permanente. Una vez transferido, el ticket pasará al nuevo propietario y desaparecerá de tu lista.
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <label style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--text-muted)" }}>
-                Correo del destinatario
-              </label>
-              <input
-                type="email"
-                value={recipientEmail}
-                onChange={(e) => setRecipientEmail(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
-                placeholder="ejemplo@correo.com"
-                disabled={loading}
-                style={{
-                  width: "100%",
-                  padding: "0.65rem 0.9rem",
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid var(--glass-border)",
-                  borderRadius: "var(--radius-xl)",
-                  color: "var(--text-light)",
-                  fontSize: "0.9rem",
-                  fontFamily: "var(--font-body)",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-            </div>
-
-            {error && (
-              <div style={{
-                display: "flex", alignItems: "center", gap: "0.5rem",
-                padding: "0.6rem 0.9rem",
-                background: "rgba(244,63,94,0.08)",
-                border: "1px solid rgba(244,63,94,0.25)",
-                borderRadius: "var(--radius-xl)",
-                color: "#fda4af",
-                fontSize: "0.82rem",
-              }}>
-                <AlertCircle size={14} style={{ flexShrink: 0 }} />
-                {error}
+    <ModalPortal>
+      <div
+        style={{
+          position: "fixed", inset: 0, zIndex: 500,
+          background: "rgba(0,0,0,0.8)",
+          backdropFilter: "blur(8px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "1rem",
+        }}
+        onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
+      >
+        <div style={{
+          width: "100%", maxWidth: 420,
+          background: "var(--card-bg)",
+          border: "1px solid var(--glass-border)",
+          borderRadius: "var(--radius-2xl)",
+          padding: "1.75rem",
+          display: "flex", flexDirection: "column", gap: "1.25rem",
+        }}>
+          {success ? (
+            <>
+              <div style={{ textAlign: "center", padding: "0.5rem 0" }}>
+                <div style={{
+                  width: 64, height: 64, borderRadius: "50%",
+                  background: "rgba(34,197,94,0.12)",
+                  border: "1px solid rgba(34,197,94,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  margin: "0 auto 1rem",
+                }}>
+                  <CheckCircle2 size={30} color="#4ade80" />
+                </div>
+                <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.5rem" }}>
+                  ¡Ticket transferido!
+                </h2>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", lineHeight: 1.6 }}>
+                  Tu ticket fue enviado a{" "}
+                  <strong style={{ color: "var(--text-light)" }}>{recipientEmail}</strong>.
+                  Recibirá un correo de confirmación.
+                </p>
               </div>
-            )}
+              <button
+                onClick={() => { onTransferred(ticket.id); onClose(); }}
+                className="btn-primary"
+                style={{ width: "100%", padding: "0.7rem", fontSize: "0.9rem", textAlign: "center" }}
+              >
+                Listo
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+                <div>
+                  <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.15rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.2rem" }}>
+                    Transferir ticket
+                  </h2>
+                  <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>
+                    {ticket.ticketType.event.title} · <span className="ticket-type-badge" style={{ fontSize: "0.7rem" }}>{ticket.ticketType.name}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={onClose}
+                  disabled={loading}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: "50%",
+                    width: 30, height: 30,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", color: "var(--text-muted)", flexShrink: 0,
+                  }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
 
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button
-                onClick={onClose}
-                disabled={loading}
-                className="btn-secondary"
-                style={{ flex: 1, padding: "0.65rem", fontSize: "0.88rem", textAlign: "center" }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => void handleSubmit()}
-                disabled={loading || !recipientEmail.trim()}
-                style={{
-                  flex: 1, padding: "0.65rem",
-                  background: loading || !recipientEmail.trim() ? "rgba(124,58,237,0.3)" : "var(--accent-primary)",
-                  border: "none",
+              <div style={{
+                padding: "0.7rem 1rem",
+                background: "rgba(251,191,36,0.06)",
+                border: "1px solid rgba(251,191,36,0.18)",
+                borderRadius: "var(--radius-xl)",
+                color: "#fbbf24",
+                fontSize: "0.78rem",
+                lineHeight: 1.55,
+              }}>
+                Esta acción es permanente — el ticket pasará al nuevo propietario y desaparecerá de tu lista.
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-muted)" }}>
+                  Correo del destinatario
+                </label>
+                <input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") void handleSubmit(); }}
+                  placeholder="ejemplo@correo.com"
+                  disabled={loading}
+                  autoFocus
+                  style={{
+                    width: "100%",
+                    padding: "0.65rem 0.9rem",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid var(--glass-border)",
+                    borderRadius: "var(--radius-xl)",
+                    color: "var(--text-light)",
+                    fontSize: "0.9rem",
+                    fontFamily: "var(--font-body)",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </div>
+
+              {error && (
+                <div style={{
+                  display: "flex", alignItems: "flex-start", gap: "0.5rem",
+                  padding: "0.65rem 0.9rem",
+                  background: "rgba(244,63,94,0.08)",
+                  border: "1px solid rgba(244,63,94,0.22)",
                   borderRadius: "var(--radius-xl)",
-                  color: "#fff",
-                  fontSize: "0.88rem",
-                  fontWeight: 700,
-                  fontFamily: "var(--font-body)",
-                  cursor: loading || !recipientEmail.trim() ? "not-allowed" : "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
-                  transition: "all 0.2s",
-                }}
-              >
-                {loading ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> : <Send size={15} />}
-                {loading ? "Transfiriendo…" : "Transferir"}
-              </button>
-            </div>
-          </>
-        )}
+                  color: "#fda4af",
+                  fontSize: "0.8rem",
+                  lineHeight: 1.5,
+                }}>
+                  <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 2 }} />
+                  {error}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button
+                  onClick={onClose}
+                  disabled={loading}
+                  className="btn-secondary"
+                  style={{ flex: 1, padding: "0.65rem", fontSize: "0.875rem", textAlign: "center" }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => void handleSubmit()}
+                  disabled={loading || !recipientEmail.trim()}
+                  style={{
+                    flex: 1, padding: "0.65rem",
+                    background: loading || !recipientEmail.trim() ? "rgba(124,58,237,0.25)" : "var(--accent-primary)",
+                    border: "none",
+                    borderRadius: "var(--radius-xl)",
+                    color: loading || !recipientEmail.trim() ? "rgba(255,255,255,0.4)" : "#fff",
+                    fontSize: "0.875rem",
+                    fontWeight: 700,
+                    fontFamily: "var(--font-body)",
+                    cursor: loading || !recipientEmail.trim() ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.4rem",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {loading
+                    ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
+                    : <Send size={15} />}
+                  {loading ? "Transfiriendo…" : "Transferir"}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }
 
@@ -285,9 +456,11 @@ function TicketCard({
   onTransferred: (id: string) => void;
 }) {
   const { event } = ticket.ticketType;
-  const [qrExpanded, setQrExpanded] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const isValid = ticket.status === "VALID";
+  const isUsed = ticket.status === "USED";
 
   async function handleCancel() {
     if (!confirm("¿Solicitar cancelación de este ticket?")) return;
@@ -300,149 +473,172 @@ function TicketCard({
   }
 
   return (
-    <div className="ticket-card">
-      {/* Event image strip */}
-      <div style={{ position: "relative", height: 130, overflow: "hidden" }}>
-        {event.image ? (
-          <SafeEventImage
-            src={event.image}
-            alt={event.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
-        ) : (
-          <div style={{ width: "100%", height: "100%", background: "linear-gradient(135deg, rgba(124,58,237,0.3), rgba(255,42,95,0.2))" }} />
-        )}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, var(--bg-dark) 0%, transparent 60%)" }} />
+    <>
+      <div className="ticket-card">
+        {/* ── Image header with overlaid title ── */}
+        <div style={{ position: "relative", height: 165, overflow: "hidden", flexShrink: 0 }}>
+          {event.image ? (
+            <SafeEventImage
+              src={event.image}
+              alt={event.title}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div style={{
+              width: "100%", height: "100%",
+              background: "linear-gradient(135deg, rgba(124,58,237,0.45) 0%, rgba(255,42,95,0.25) 100%)",
+            }} />
+          )}
 
-        {/* Status badge */}
-        <div style={{ position: "absolute", top: "0.75rem", right: "0.75rem" }}>
-          <StatusBadge status={ticket.status} />
-        </div>
+          {/* Gradient overlay — stronger at bottom for title readability */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to top, rgba(10,8,20,0.96) 0%, rgba(10,8,20,0.4) 55%, transparent 100%)",
+          }} />
 
-        {/* Punch holes */}
-        <div style={{ position: "absolute", bottom: -8, left: -8, width: 16, height: 16, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid var(--glass-border)" }} />
-        <div style={{ position: "absolute", bottom: -8, right: -8, width: 16, height: 16, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid var(--glass-border)" }} />
-      </div>
-
-      {/* Dashed divider */}
-      <div style={{ borderTop: "1px dashed var(--glass-border)", margin: "0 1.25rem" }} />
-
-      {/* Content */}
-      <div style={{ padding: "1.1rem 1.25rem 1.25rem" }}>
-        <div style={{ marginBottom: "0.75rem" }}>
-          <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.25rem", lineHeight: 1.2 }}>
-            {event.title}
-          </h3>
-          <span className="ticket-type-badge">{ticket.ticketType.name}</span>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginBottom: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-            <CalendarDays size={13} color="var(--accent-primary)" />
-            {formatDate(event.date)}
-          </div>
-          {event.location && (
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-              <MapPin size={13} color="var(--accent-primary)" />
-              {event.location}
+          {/* USED/CANCELLED stamp */}
+          {!isValid && (
+            <div style={{
+              position: "absolute", inset: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{
+                fontFamily: "var(--font-heading)",
+                fontSize: "1.6rem",
+                fontWeight: 900,
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                color: isUsed ? "rgba(148,163,184,0.45)" : "rgba(244,63,94,0.45)",
+                border: `3px solid ${isUsed ? "rgba(148,163,184,0.3)" : "rgba(244,63,94,0.3)"}`,
+                borderRadius: 6,
+                padding: "0.15rem 0.6rem",
+                transform: "rotate(-18deg)",
+                pointerEvents: "none",
+                userSelect: "none",
+              }}>
+                {isUsed ? "Usado" : "Cancelado"}
+              </span>
             </div>
           )}
+
+          {/* Status badge — top right */}
+          <div style={{ position: "absolute", top: "0.7rem", right: "0.7rem" }}>
+            <StatusBadge status={ticket.status} />
+          </div>
+
+          {/* Title overlay — bottom of image */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 1.1rem 0.9rem" }}>
+            <h3 style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "0.95rem",
+              fontWeight: 800,
+              color: "#fff",
+              lineHeight: 1.25,
+              marginBottom: "0.35rem",
+              textShadow: "0 1px 4px rgba(0,0,0,0.6)",
+            }}>
+              {event.title}
+            </h3>
+            <span className="ticket-type-badge">{ticket.ticketType.name}</span>
+          </div>
+
+          {/* Punch holes at bottom edge */}
+          <div style={{ position: "absolute", bottom: -7, left: -7, width: 14, height: 14, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid var(--glass-border)", zIndex: 1 }} />
+          <div style={{ position: "absolute", bottom: -7, right: -7, width: 14, height: 14, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid var(--glass-border)", zIndex: 1 }} />
         </div>
 
-        {/* Footer row */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginBottom: "0.1rem" }}>Precio</p>
-            <p style={{ fontFamily: "var(--font-heading)", fontSize: "1rem", fontWeight: 800, color: "var(--text-light)" }}>
-              {formatPrice(ticket.ticketType.price)}
-            </p>
+        {/* Dashed perforation */}
+        <div style={{ borderTop: "1.5px dashed rgba(255,255,255,0.08)", margin: "0 0.75rem" }} />
+
+        {/* ── Info section ── */}
+        <div style={{ padding: "1rem 1.1rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+          {/* Date & location */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+              <CalendarDays size={12} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+              {formatDate(event.date)}
+            </div>
+            {event.location && (
+              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                <MapPin size={12} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+                {event.location}
+              </div>
+            )}
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {ticket.status === "VALID" && (
-              <AddToCalendarButton
-                compact
-                event={{
-                  title: event.title,
-                  startDate: event.date,
-                  location: event.location ?? undefined,
-                }}
-              />
-            )}
-            {ticket.qrCode && ticket.status === "VALID" && (
-              <button
-                onClick={() => setQrExpanded(!qrExpanded)}
-                className={`ticket-btn ticket-btn-violet${qrExpanded ? " active" : ""}`}
-              >
-                <QrCode size={14} />
-                {qrExpanded ? "Ocultar" : "Ver QR"}
-              </button>
-            )}
-            {ticket.status === "VALID" && (
-              <button
-                onClick={() => setShowTransferModal(true)}
-                className="ticket-btn ticket-btn-violet"
-              >
-                <Send size={14} />
-                Transferir
-              </button>
-            )}
-            {ticket.status === "VALID" && (
-              <button
-                onClick={() => void handleCancel()}
-                disabled={cancelling}
-                className="ticket-btn ticket-btn-danger"
-              >
-                <XCircle size={14} />
-                {cancelling ? "…" : "Cancelar"}
-              </button>
-            )}
+          {/* Price + actions row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+            <div>
+              <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.1rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Precio</p>
+              <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.05rem", fontWeight: 800, color: "var(--text-light)" }}>
+                {formatPrice(ticket.ticketType.price)}
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {isValid && (
+                <AddToCalendarButton
+                  compact
+                  event={{
+                    title: event.title,
+                    startDate: event.date,
+                    location: event.location ?? undefined,
+                  }}
+                />
+              )}
+              {ticket.qrCode && isValid && (
+                <button
+                  onClick={() => setShowQR(true)}
+                  className="ticket-btn ticket-btn-violet"
+                >
+                  <QrCode size={13} />
+                  Ver QR
+                </button>
+              )}
+              {isValid && (
+                <button
+                  onClick={() => setShowTransfer(true)}
+                  className="ticket-btn ticket-btn-violet"
+                >
+                  <Send size={13} />
+                  Transferir
+                </button>
+              )}
+              {isValid && (
+                <button
+                  onClick={() => void handleCancel()}
+                  disabled={cancelling}
+                  className="ticket-btn ticket-btn-danger"
+                >
+                  <XCircle size={13} />
+                  {cancelling ? "…" : "Cancelar"}
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Ticket ID */}
+          <p style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.2)", fontFamily: "monospace", letterSpacing: "0.02em" }}>
+            {ticket.id.slice(0, 24)}…
+          </p>
         </div>
-
-        {/* QR code expanded */}
-        {qrExpanded && ticket.qrCode && (
-          <div style={{
-            marginTop: "1rem",
-            padding: "1rem",
-            background: "#fff",
-            borderRadius: "var(--radius-xl)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "0.5rem",
-          }}>
-            <QRCodeSVG
-              value={ticket.qrCode}
-              size={140}
-              bgColor="#ffffff"
-              fgColor="#0f172a"
-              level="M"
-              style={{ borderRadius: 4 }}
-            />
-            <p style={{ fontSize: "0.65rem", color: "#64748b", fontFamily: "monospace", wordBreak: "break-all", textAlign: "center", maxWidth: 160 }}>
-              {ticket.qrCode.slice(0, 24)}…
-            </p>
-          </div>
-        )}
-
-        {/* Ticket ID */}
-        <p style={{ marginTop: "0.75rem", fontSize: "0.65rem", color: "var(--text-muted)", fontFamily: "monospace" }}>
-          ID: {ticket.id.slice(0, 18)}…
-        </p>
       </div>
 
-      {showTransferModal && (
+      {/* Modals — rendered via portal to avoid stacking context issues */}
+      {showQR && ticket.qrCode && (
+        <QRModal ticket={ticket} onClose={() => setShowQR(false)} />
+      )}
+      {showTransfer && (
         <TransferModal
           ticket={ticket}
-          onClose={() => setShowTransferModal(false)}
+          onClose={() => setShowTransfer(false)}
           onTransferred={(id) => {
-            setShowTransferModal(false);
+            setShowTransfer(false);
             onTransferred(id);
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -485,7 +681,7 @@ function FilterEmptyState({
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 240, gap: "1rem", textAlign: "center" }}>
       <div>
         <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.05rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.4rem" }}>
-          No hay tickets en “{labelMap[filter]}”
+          No hay tickets en &ldquo;{labelMap[filter]}&rdquo;
         </p>
         <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
           Cambia de filtro para ver el resto de tus compras.
@@ -548,6 +744,8 @@ export default function MyTicketsPage() {
 
   return (
     <>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       {/* Navbar */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
@@ -623,7 +821,6 @@ export default function MyTicketsPage() {
           </div>
         )}
       </main>
-
     </>
   );
 }
