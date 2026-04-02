@@ -1073,7 +1073,7 @@ h6 {
 }
 
 .event-carousel-track {
-  --carousel-gap: 0.72rem;
+  --carousel-gap: 0.85rem;
   display: flex;
   margin-left: calc(var(--carousel-gap) * -1);
   isolation: isolate;
@@ -1091,16 +1091,32 @@ h6 {
   min-height: 0;
   position: relative;
   overflow: hidden;
-  border-radius: var(--radius-2xl);
-  border: none;
-  box-shadow: none;
-  background: transparent;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  background: #111118;
+  cursor: pointer;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.3s ease;
+}
+
+.event-carousel-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .event-carousel-card img {
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.event-carousel-card:hover img {
+  transform: scale(1.05) translateZ(0);
 }
 
 .page-transition-shell {
@@ -1369,7 +1385,7 @@ h6 {
 
 @media (min-width: 700px) {
   .event-carousel-track {
-    --carousel-gap: 0.76rem;
+    --carousel-gap: 0.9rem;
   }
 
   .event-carousel-slide {
@@ -1379,7 +1395,7 @@ h6 {
 
 @media (min-width: 1100px) {
   .event-carousel-track {
-    --carousel-gap: 0.72rem;
+    --carousel-gap: 0.85rem;
   }
 
   .event-carousel-slide {
@@ -1528,110 +1544,6 @@ a:focus-visible {
   border-color: rgba(109, 40, 217, 0.28);
   background: rgba(109, 40, 217, 0.07);
   color: var(--text-secondary);
-}
-
-/* ─── Hero marquee banner ────────────────────────────────────────────────────── */
-.hero-banner {
-  /* width:100% + align-self:stretch fills the full section without vw tricks.
-     The parent section has overflow:hidden so the marquee is clipped correctly. */
-  width: 100%;
-  align-self: stretch;
-  margin-top: 3rem;
-  margin-bottom: 4rem;
-  overflow: hidden;
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 10%,
-    black 90%,
-    transparent 100%
-  );
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 10%,
-    black 90%,
-    transparent 100%
-  );
-}
-
-.hero-marquee-track {
-  display: flex;
-  gap: 0.65rem;
-  width: max-content;
-  animation: marquee-scroll 34s linear infinite;
-}
-
-.hero-marquee-track:hover {
-  animation-play-state: paused;
-}
-
-@keyframes marquee-scroll {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-.hero-marquee-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  padding: 0.48rem 1.05rem;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  white-space: nowrap;
-  flex-shrink: 0;
-  letter-spacing: 0.01em;
-  transition: none;
-}
-
-.hero-marquee-tag.tag-violet {
-  background: rgba(124, 58, 237, 0.1);
-  border-color: rgba(124, 58, 237, 0.22);
-  color: #c4b5fd;
-}
-
-.hero-marquee-tag.tag-pink {
-  background: rgba(255, 42, 95, 0.08);
-  border-color: rgba(255, 42, 95, 0.2);
-  color: #fda4af;
-}
-
-.hero-marquee-tag.tag-amber {
-  background: rgba(251, 191, 36, 0.07);
-  border-color: rgba(251, 191, 36, 0.18);
-  color: #fcd34d;
-}
-
-[data-theme='light'] .hero-marquee-tag {
-  background: rgba(0, 0, 0, 0.04);
-  border-color: rgba(0, 0, 0, 0.1);
-  color: var(--text-secondary);
-}
-
-[data-theme='light'] .hero-marquee-tag.tag-violet {
-  background: rgba(109, 40, 217, 0.07);
-  border-color: rgba(109, 40, 217, 0.18);
-  color: #6d28d9;
-}
-
-[data-theme='light'] .hero-marquee-tag.tag-pink {
-  background: rgba(220, 38, 38, 0.06);
-  border-color: rgba(220, 38, 38, 0.15);
-  color: #dc2626;
-}
-
-[data-theme='light'] .hero-marquee-tag.tag-amber {
-  background: rgba(180, 130, 0, 0.07);
-  border-color: rgba(180, 130, 0, 0.16);
-  color: #92660a;
 }
 
 /* ─── Event card badges ──────────────────────────────────────────────────────── */

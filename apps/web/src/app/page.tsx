@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { Drawer } from "vaul";
 import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X, Menu } from "lucide-react";
@@ -21,26 +21,6 @@ import { SearchIllustration, EventsIllustration } from "@/components/features/Em
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Footer } from "@/components/features/Footer";
-
-// ─── Marquee data ─────────────────────────────────────────────────────────────
-
-const MARQUEE_TAGS: { Icon: React.ElementType; label: string; accent?: "violet" | "pink" | "amber" }[] = [
-  { Icon: Zap,    label: "Electrónica",      accent: "violet" },
-  { Icon: Music,  label: "Conciertos en Vivo" },
-  { Icon: Flame,  label: "Reggaeton",         accent: "pink" },
-  { Icon: Star,   label: "Jazz & Soul" },
-  { Icon: Ticket, label: "Festivales",        accent: "amber" },
-  { Icon: Music,  label: "Indie & Rock" },
-  { Icon: Zap,    label: "Club Nights",       accent: "violet" },
-  { Icon: Flame,  label: "Hip-Hop & Trap",    accent: "pink" },
-  { Icon: Star,   label: "Salsa & Bachata" },
-  { Icon: Ticket, label: "Open Air" },
-  { Icon: Music,  label: "Pop",               accent: "pink" },
-  { Icon: Zap,    label: "House & Techno",    accent: "violet" },
-  { Icon: Flame,  label: "R&B" },
-  { Icon: Star,   label: "After Party",       accent: "amber" },
-  { Icon: Ticket, label: "Shows & Eventos" },
-];
 
 function normalizeCategory(value: string): string {
   return value.trim().toLowerCase();
@@ -257,7 +237,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "6rem 0 0",
+      padding: "6rem 5% 4rem",
       overflow: "hidden",
       textAlign: "center",
     }}>
@@ -277,7 +257,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ position: "relative", zIndex: 2, maxWidth: 820, width: "100%", padding: "0 5%", paddingBottom: "4rem" }}>
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 820, width: "100%" }}>
 
         {/* Announcement pill */}
         <div className="hero-pill fade-in-up" style={{ animationDelay: "-0.1s" }}>
@@ -346,24 +326,6 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
             Buscar
           </button>
         </form>
-      </div>
-
-      {/* ── Genre marquee — full width sibling, clipped by section overflow:hidden ── */}
-      <div className="hero-banner fade-in-up" style={{ position: "relative", zIndex: 2, animationDelay: "0.3s" }}>
-        <div className="hero-marquee-track">
-          {MARQUEE_TAGS.map((tag, i) => (
-            <span key={i} className={`hero-marquee-tag${tag.accent ? ` tag-${tag.accent}` : ""}`}>
-              <tag.Icon size={13} />
-              {tag.label}
-            </span>
-          ))}
-          {MARQUEE_TAGS.map((tag, i) => (
-            <span key={`b${i}`} className={`hero-marquee-tag${tag.accent ? ` tag-${tag.accent}` : ""}`}>
-              <tag.Icon size={13} />
-              {tag.label}
-            </span>
-          ))}
-        </div>
       </div>
 
     </section>
