@@ -26,7 +26,7 @@
   --bg-fade: #050508;
   --card-bg: rgba(30, 30, 40, 0.4);
   --text-light: #ffffff;
-  --text-muted: #b1b8c8;
+  --text-muted: #c2c9da;
   --text-secondary: #d4daea;
 
   /* Accents */
@@ -1634,6 +1634,15 @@ select:focus-visible {
   outline-offset: 1px;
 }
 
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.chip:focus-visible,
+.pagination-btn:focus-visible,
+.profile-nav-btn:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
 /* ─── Shared auth / state shells ───────────────────────────────────────────── */
 .auth-shell {
   min-height: 100dvh;
@@ -1673,7 +1682,7 @@ select:focus-visible {
 }
 
 .auth-subtitle {
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.6;
   margin: 0;

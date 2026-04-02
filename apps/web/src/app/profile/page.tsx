@@ -286,25 +286,41 @@ function PrivacySection() {
             <p style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>Novedades de eventos y campañas exclusivas</p>
           </div>
         </div>
-        <label style={{ display: "flex", alignItems: "center", gap: "0.6rem", cursor: "pointer" }}>
-          <div
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <button
+            type="button"
+            aria-label="Cambiar suscripción a correos promocionales"
+            aria-pressed={marketingEnabled}
             onClick={() => setMarketingEnabled(!marketingEnabled)}
             style={{
-              width: 44, height: 24, borderRadius: 999, cursor: "pointer",
-              background: marketingEnabled ? "linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))" : "rgba(255,255,255,0.1)",
-              position: "relative", transition: "background 0.25s",
+              width: 44,
+              height: 24,
+              borderRadius: 999,
+              cursor: "pointer",
+              border: "1px solid transparent",
+              background: marketingEnabled
+                ? "linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))"
+                : "rgba(255,255,255,0.1)",
+              position: "relative",
+              transition: "background 0.25s, box-shadow 0.2s, border-color 0.2s",
             }}
           >
-            <div style={{
-              position: "absolute", top: 3, left: marketingEnabled ? 23 : 3,
-              width: 18, height: 18, borderRadius: "50%", background: "#fff",
-              transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+            <span style={{
+              position: "absolute",
+              top: 3,
+              left: marketingEnabled ? 23 : 3,
+              width: 18,
+              height: 18,
+              borderRadius: "50%",
+              background: "#fff",
+              transition: "left 0.25s",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
             }} />
-          </div>
+          </button>
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", minWidth: 60 }}>
             {marketingEnabled ? "Activado" : "Desactivado"}
           </span>
-        </label>
+        </div>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button type="button" disabled={savingPreferences} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.25rem", fontSize: "0.85rem" }} onClick={() => void handleSavePreferences()}>
