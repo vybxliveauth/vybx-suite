@@ -1530,56 +1530,109 @@ a:focus-visible {
   color: var(--text-secondary);
 }
 
-/* ─── Hero stats row ─────────────────────────────────────────────────────────── */
-.hero-stats {
+/* ─── Hero marquee banner ────────────────────────────────────────────────────── */
+.hero-banner {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  margin-top: 3rem;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 12%,
+    black 88%,
+    transparent 100%
+  );
+}
+
+.hero-marquee-track {
   display: flex;
+  gap: 0.65rem;
+  width: max-content;
+  animation: marquee-scroll 34s linear infinite;
+}
+
+.hero-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hero-marquee-tag {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
-  margin-top: 2.75rem;
-}
-
-.hero-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.18rem;
-}
-
-.hero-stat-value {
-  font-family: var(--font-heading);
-  font-size: 1.55rem;
-  font-weight: 900;
-  color: var(--text-light);
-  letter-spacing: -0.5px;
-  line-height: 1;
-}
-
-.hero-stat-label {
-  font-size: 0.7rem;
-  font-weight: 700;
+  gap: 0.42rem;
+  padding: 0.48rem 1.05rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.9px;
-}
-
-.hero-stat-divider {
-  width: 1px;
-  height: 34px;
-  background: var(--glass-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
   flex-shrink: 0;
+  letter-spacing: 0.01em;
+  transition: none;
 }
 
-@media (max-width: 540px) {
-  .hero-stats {
-    gap: 1.5rem;
-  }
-  .hero-stat-value {
-    font-size: 1.25rem;
-  }
-  .hero-stat-label {
-    font-size: 0.65rem;
-  }
+.hero-marquee-tag.tag-violet {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(124, 58, 237, 0.22);
+  color: #c4b5fd;
+}
+
+.hero-marquee-tag.tag-pink {
+  background: rgba(255, 42, 95, 0.08);
+  border-color: rgba(255, 42, 95, 0.2);
+  color: #fda4af;
+}
+
+.hero-marquee-tag.tag-amber {
+  background: rgba(251, 191, 36, 0.07);
+  border-color: rgba(251, 191, 36, 0.18);
+  color: #fcd34d;
+}
+
+[data-theme='light'] .hero-marquee-tag {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+}
+
+[data-theme='light'] .hero-marquee-tag.tag-violet {
+  background: rgba(109, 40, 217, 0.07);
+  border-color: rgba(109, 40, 217, 0.18);
+  color: #6d28d9;
+}
+
+[data-theme='light'] .hero-marquee-tag.tag-pink {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+[data-theme='light'] .hero-marquee-tag.tag-amber {
+  background: rgba(180, 130, 0, 0.07);
+  border-color: rgba(180, 130, 0, 0.16);
+  color: #92660a;
 }
 
 /* ─── Event card badges ──────────────────────────────────────────────────────── */
