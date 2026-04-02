@@ -79,11 +79,17 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
 
   return (
     <section
-      style={{ padding: "0 var(--page-inline) 0.5rem", borderTop: "none", borderBottom: "none", background: "transparent" }}
+      style={{
+        padding: "0 var(--page-inline) 0.45rem",
+        marginTop: "-0.9rem",
+        borderTop: "none",
+        borderBottom: "none",
+        background: "transparent",
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="section-shell" style={{ position: "relative" }}>
+      <div className="section-shell" style={{ position: "relative", overflow: "clip" }}>
       {/* Carousel viewport */}
       <div ref={emblaRef} style={{ overflow: "hidden" }}>
         <div className="event-carousel-track">
@@ -233,21 +239,21 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
             style={{
               position: "absolute",
               top: "50%",
-              left: -14,
+              left: 6,
               transform: "translateY(-50%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               borderRadius: "50%",
-              background: "rgba(15,15,22,0.82)",
-              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(12,12,20,0.76)",
+              border: "1px solid rgba(255,255,255,0.16)",
               color: canPrev ? "#fff" : "rgba(255,255,255,0.25)",
               cursor: canPrev ? "pointer" : "default",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.34)",
               transition: "opacity 0.2s, background 0.2s",
               opacity: canPrev ? 1 : 0.4,
               zIndex: 10,
@@ -262,21 +268,21 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
             style={{
               position: "absolute",
               top: "50%",
-              right: -14,
+              right: 6,
               transform: "translateY(-50%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               borderRadius: "50%",
-              background: "rgba(15,15,22,0.82)",
-              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(12,12,20,0.76)",
+              border: "1px solid rgba(255,255,255,0.16)",
               color: canNext ? "#fff" : "rgba(255,255,255,0.25)",
               cursor: canNext ? "pointer" : "default",
               backdropFilter: "blur(8px)",
               WebkitBackdropFilter: "blur(8px)",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+              boxShadow: "0 8px 24px rgba(0,0,0,0.34)",
               transition: "opacity 0.2s, background 0.2s",
               opacity: canNext ? 1 : 0.4,
               zIndex: 10,

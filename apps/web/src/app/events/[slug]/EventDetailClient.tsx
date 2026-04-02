@@ -132,7 +132,7 @@ function EventHero({ event }: { event: Event }) {
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(5,5,8,0.92) 0%, transparent 50%)" }} />
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, padding: "0 5%", width: "100%", maxWidth: 800 }}>
+      <div style={{ position: "relative", zIndex: 2, padding: "0 var(--page-inline)", width: "100%", maxWidth: 800 }}>
         <div className="badge-featured" style={{ marginBottom: "1.2rem" }}>
           <Zap size={11} />
           {event.isFeatured ? "Destacado" : event.tags[0]}
@@ -289,7 +289,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           grid-template-columns: minmax(0, 1.3fr) minmax(320px, 420px);
           gap: 3rem;
           align-items: start;
-          padding: 0 5% 6rem;
+          padding: 0 var(--page-inline) 6rem;
           margin-top: -3rem;
           position: relative;
           z-index: 10;
@@ -302,7 +302,7 @@ export function EventDetailClient({ event }: { event: Event }) {
         @media (max-width: 900px) {
           .event-detail-grid {
             grid-template-columns: 1fr;
-            padding: 0 5% calc(5rem + env(safe-area-inset-bottom));
+            padding: 0 var(--page-inline) calc(5rem + env(safe-area-inset-bottom));
           }
           .sidebar-sticky {
             display: none;
@@ -313,7 +313,7 @@ export function EventDetailClient({ event }: { event: Event }) {
         }
         @media (max-width: 540px) {
           .event-detail-grid {
-            padding: 0 4% 3rem;
+            padding: 0 var(--page-inline) 3rem;
           }
           .event-detail-nav-btn {
             min-width: 38px;
@@ -341,7 +341,7 @@ export function EventDetailClient({ event }: { event: Event }) {
 
       <Navbar onCartOpen={() => setCartOpen(true)} eventTitle={event.title} />
       {seatFeedback && (
-        <div style={{ padding: "1rem 5% 0", position: "relative", zIndex: 12 }}>
+        <div style={{ padding: "1rem var(--page-inline) 0", position: "relative", zIndex: 12 }}>
           <ActionFeedback
             status={seatFeedback.status}
             message={seatFeedback.message}

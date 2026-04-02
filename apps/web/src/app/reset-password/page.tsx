@@ -6,7 +6,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Zap, Lock, Eye, EyeOff, CheckCircle2,
+  Lock, Eye, EyeOff, CheckCircle2,
   AlertCircle, Loader2, ShieldCheck, ArrowLeft,
 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/action-state";
 import { ActionFeedback } from "@vybx/ui";
 import { resolveApiBaseUrl } from "@vybx/api-client";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 
 const API_BASE_URL = resolveApiBaseUrl(
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
@@ -118,27 +119,14 @@ export default function ResetPasswordPage() {
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-      }}>
-        <div style={{ width: "100%", maxWidth: 440 }}>
+      <main id="main-content" className="auth-shell">
+        <div className="auth-shell-inner">
           {/* Logo */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none", marginBottom: "2.5rem", justifyContent: "center" }}>
-            <Zap size={22} color="var(--accent-primary)" />
-            <span style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 900, color: "var(--text-light)" }}>vybx</span>
+          <Link href="/" className="auth-brand" aria-label="Volver al inicio">
+            <VybxLogo size={28} textSize="1.5rem" />
           </Link>
 
-          <div style={{
-            background: "var(--card-bg)",
-            border: "1px solid var(--glass-border)",
-            borderRadius: "var(--radius-2xl)",
-            padding: "2rem",
-          }}>
+          <section className="auth-card">
             {state.status === "success" ? (
               /* ── Success ── */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", textAlign: "center" }}>
@@ -242,7 +230,7 @@ export default function ResetPasswordPage() {
                           style={{
                             width: "100%",
                             padding: "0.7rem 2.5rem 0.7rem 2.4rem",
-                            background: "rgba(255,255,255,0.04)",
+                            background: "var(--input-surface)",
                             border: `1px solid ${errors[field] ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
                             borderRadius: "var(--radius-lg)",
                             color: "var(--text-light)",
@@ -295,9 +283,9 @@ export default function ResetPasswordPage() {
                 </div>
               </>
             )}
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </>
   );
 }

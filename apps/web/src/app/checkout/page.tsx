@@ -29,6 +29,7 @@ import { getClientTurnstileToken } from "@/lib/turnstile";
 import { FlipCountdown } from "@/components/features/FlipCountdown";
 import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 import { VybxLogo } from "@/components/ui/VybxLogo";
+import { InlineLoadingState, InlineErrorState } from "@/components/features/StateSurface";
 import {
   ChevronLeft,
   Lock,
@@ -148,7 +149,7 @@ function InputField({
                   : rightAdornment
                     ? "0.7rem 2.8rem 0.7rem 0.9rem"
                     : "0.7rem 0.9rem",
-            background: "rgba(255,255,255,0.04)",
+            background: "var(--input-surface)",
             border: `1px solid ${error ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
             borderRadius: "var(--radius-lg)",
             color: "var(--text-light)",
@@ -909,18 +910,7 @@ export default function CheckoutPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Navbar */}
-      <nav style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "1rem 5%",
-        background: "var(--nav-bg)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--glass-border)",
-      }}>
+      <nav className="page-top-nav">
         <Link href="/" style={{ textDecoration: "none" }}>
           <VybxLogo size={24} textSize="1.4rem" />
         </Link>
@@ -929,8 +919,8 @@ export default function CheckoutPage() {
         </Link>
       </nav>
 
-      <main id="main-content" style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 7.25rem" }}>
-        <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, letterSpacing: "-1px", marginBottom: "1.75rem", color: "var(--text-light)" }}>
+      <main id="main-content" className="page-main-shell page-main-shell-roomy">
+        <h1 className="page-title" style={{ marginBottom: "1.75rem" }}>
           Checkout
         </h1>
 
@@ -942,9 +932,7 @@ export default function CheckoutPage() {
           {/* Left: forms */}
           <div>
             {loadingUser ? (
-              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Loader2 size={28} color="var(--accent-secondary)" style={{ animation: "spin 1s linear infinite" }} />
-              </div>
+              <InlineLoadingState message="Cargando sesión..." />
             ) : !user ? (
               <LoginForm onSuccess={setUser} />
             ) : (
@@ -966,13 +954,13 @@ export default function CheckoutPage() {
 
             {turnstileError && (
               <div style={{ marginTop: "1rem" }}>
-                <ActionFeedback status="error" message={turnstileError} />
+                <InlineErrorState message={turnstileError} />
               </div>
             )}
 
             {checkoutError && (
               <div style={{ marginTop: "1rem" }}>
-                <ActionFeedback status="error" message={checkoutError} />
+                <InlineErrorState message={checkoutError} />
               </div>
             )}
           </div>

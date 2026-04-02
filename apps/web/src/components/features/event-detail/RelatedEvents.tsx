@@ -108,7 +108,8 @@ export function RelatedEvents({ currentEvent }: { currentEvent: Event }) {
   if (related.length === 0) return null;
 
   return (
-    <section style={{ padding: "0 5% 4rem", position: "relative", zIndex: 10 }}>
+    <section style={{ padding: "0 var(--page-inline) 4rem", position: "relative", zIndex: 10 }}>
+      <div className="section-shell">
       <h2 style={{
         fontFamily: "var(--font-heading)",
         fontSize: "1.25rem",
@@ -135,6 +136,7 @@ export function RelatedEvents({ currentEvent }: { currentEvent: Event }) {
         {related.map((event) => (
           <RelatedCard key={event.id} event={event} />
         ))}
+      </div>
       </div>
     </section>
   );

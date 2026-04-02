@@ -766,10 +766,10 @@ export function AuthModal({
             ? `translate(-50%, ${open ? "0" : "10px"})`
             : `translate(-50%, ${open ? "-50%" : "-46%"})`,
           zIndex: 1400,
-          width: "min(460px, 96vw)",
+          width: isMobileViewport ? "min(460px, 96vw)" : "min(560px, 94vw)",
           maxHeight: isMobileViewport
             ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
-            : "min(820px, 94dvh)",
+            : "min(860px, 93dvh)",
           background: "var(--bg-dark)",
           border: "1px solid var(--glass-border)",
           borderRadius: "var(--radius-2xl)",
@@ -786,7 +786,7 @@ export function AuthModal({
       >
         {/* Modal Header */}
         <div style={{
-          padding: "1.25rem 1.75rem 1rem",
+          padding: isMobileViewport ? "1.2rem 1.3rem 0.95rem" : "1.4rem 2rem 1.05rem",
           borderBottom: step !== "email" && step !== "verify" && step !== "2fa" ? "1px solid var(--glass-border)" : "none",
           display: "flex",
           alignItems: "center",
@@ -816,7 +816,7 @@ export function AuthModal({
         </div>
 
         {/* Modal Content */}
-        <div style={{ padding: "1.75rem", flex: 1 }}>
+        <div style={{ padding: isMobileViewport ? "1.25rem 1.3rem 1.35rem" : "1.9rem 2rem 2rem", flex: 1 }}>
           {step === "email" && (
             <EmailStep
               onLogin={(e) => { setEmail(e); setStep("login"); }}

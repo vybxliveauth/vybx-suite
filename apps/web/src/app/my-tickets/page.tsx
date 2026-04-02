@@ -22,6 +22,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { AddToCalendarButton } from "@/components/features/AddToCalendarButton";
 import { TicketsIllustration } from "@/components/features/EmptyStateIllustration";
+import { InlineLoadingState, InlineErrorState } from "@/components/features/StateSurface";
 import { api } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -748,14 +749,7 @@ export default function MyTicketsPage() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Navbar */}
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "1rem 5%",
-        background: "var(--nav-bg)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--glass-border)",
-      }}>
+      <nav className="page-top-nav">
         <Link href="/" style={{ textDecoration: "none" }}>
           <VybxLogo size={24} textSize="1.4rem" />
         </Link>
@@ -764,13 +758,13 @@ export default function MyTicketsPage() {
         </Link>
       </nav>
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 6rem" }}>
+      <main className="page-main-shell">
         {/* Header */}
         <div style={{ marginBottom: "2.5rem" }}>
-          <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, letterSpacing: "-1px", color: "var(--text-light)", marginBottom: "0.5rem" }}>
+          <h1 className="page-title" style={{ marginBottom: "0.5rem" }}>
             Mis tickets
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
+          <p className="page-subtitle">
             {loading ? "Cargando tus compras..." : `${counts.ALL} ticket${counts.ALL !== 1 ? "s" : ""} en total`}
           </p>
         </div>
@@ -793,23 +787,20 @@ export default function MyTicketsPage() {
 
         {/* Content */}
         {loading ? (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300, gap: "0.75rem", color: "var(--text-muted)" }}>
-            <Loader2 size={24} style={{ animation: "spin 1s linear infinite" }} />
-            Cargando tickets...
-          </div>
+          <InlineLoadingState message="Cargando tickets..." />
         ) : error ? (
-          <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "#fda4af", display: "flex", gap: "0.75rem", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
-            <span style={{ display: "inline-flex", gap: "0.5rem", alignItems: "center" }}>
-              <AlertCircle size={16} /> {error}
-            </span>
-            <button
-              onClick={() => void loadTickets()}
-              className="btn-secondary"
-              style={{ padding: "0.35rem 0.9rem", fontSize: "0.8rem" }}
-            >
-              Reintentar
-            </button>
-          </div>
+          <InlineErrorState
+            message={error}
+            action={
+              <button
+                onClick={() => void loadTickets()}
+                className="btn-secondary"
+                style={{ padding: "0.35rem 0.9rem", fontSize: "0.8rem" }}
+              >
+                Reintentar
+              </button>
+            }
+          />
         ) : filtered.length === 0 ? (
           counts.ALL === 0
             ? <EmptyState />

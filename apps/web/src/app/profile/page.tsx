@@ -23,6 +23,7 @@ import {
 } from "@/lib/action-state";
 import { ActionFeedback } from "@vybx/ui";
 import { VybxLogo } from "@/components/ui/VybxLogo";
+import { PageLoadingState } from "@/components/features/StateSurface";
 import {
   ChevronLeft, User, Mail, Lock,
   Eye, EyeOff, AlertCircle, Loader2,
@@ -77,7 +78,7 @@ function Field({
           style={{
             width: "100%",
             padding: `0.7rem ${suffix ? "2.5rem" : "0.9rem"} 0.7rem ${Icon ? "2.4rem" : "0.9rem"}`,
-            background: "rgba(255,255,255,0.04)",
+            background: "var(--input-surface)",
             border: `1px solid ${error ? "rgba(244,63,94,0.5)" : "var(--glass-border)"}`,
             borderRadius: "var(--radius-lg)",
             color: "var(--text-light)",
@@ -390,24 +391,13 @@ export default function ProfilePage() {
     : "?";
 
   if (loading) {
-    return (
-      <main id="main-content" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Loader2 size={28} color="var(--accent-secondary)" style={{ animation: "spin 1s linear infinite" }} />
-      </main>
-    );
+    return <PageLoadingState title="Cargando perfil" message="Estamos sincronizando tu cuenta..." minHeight="100dvh" />;
   }
 
   return (
     <>
       {/* Navbar */}
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "1rem 5%",
-        background: "var(--nav-bg)",
-        backdropFilter: "blur(20px)",
-        borderBottom: "1px solid var(--glass-border)",
-      }}>
+      <nav className="page-top-nav">
         <Link href="/" style={{ textDecoration: "none" }}>
           <VybxLogo size={24} textSize="1.4rem" />
         </Link>
@@ -424,12 +414,32 @@ export default function ProfilePage() {
         </div>
       </nav>
 
-      <main id="main-content" style={{ maxWidth: 900, margin: "0 auto", padding: "2.5rem 5% 6rem", display: "flex", gap: "2rem", alignItems: "flex-start", flexDirection: isMobile ? "column" : "row" }}>
+      <main
+        id="main-content"
+        className="page-main-shell"
+        style={{
+          display: "flex",
+          gap: isMobile ? "1rem" : "1.4rem",
+          alignItems: "flex-start",
+          flexDirection: isMobile ? "column" : "row",
+          width: "100%",
+          paddingBottom: "5.5rem",
+        }}
+      >
 
         {/* ── Sidebar / Mobile Tabs ── */}
         {isMobile ? (
           /* Mobile: horizontal tab bar */
-          <div style={{ width: "100%", display: "flex", gap: "0.5rem", overflowX: "auto", paddingBottom: "0.25rem" }}>
+          <div style={{
+            width: "100%",
+            display: "flex",
+            gap: "0.5rem",
+            overflowX: "auto",
+            padding: "0.2rem 0.2rem 0.45rem",
+            borderRadius: "var(--radius-xl)",
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid var(--glass-border)",
+          }}>
             {NAV_TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
@@ -450,12 +460,14 @@ export default function ProfilePage() {
           </div>
         ) : (
           /* Desktop: sidebar */
-          <aside style={{ width: 230, flexShrink: 0, position: "sticky", top: 90 }}>
+          <aside style={{ width: 248, flexShrink: 0, position: "sticky", top: 86 }}>
             {/* Avatar card */}
             <div style={{
-              background: "var(--card-bg)", border: "1px solid var(--glass-border)",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))",
+              border: "1px solid var(--glass-border)",
               borderRadius: "var(--radius-2xl)", padding: "1.5rem 1.25rem",
               marginBottom: "0.75rem", textAlign: "center",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.2)",
             }}>
               <div style={{
                 width: 76, height: 76, borderRadius: "50%", margin: "0 auto 0.85rem",
@@ -471,6 +483,9 @@ export default function ProfilePage() {
                 {user?.firstName} {user?.lastName}
               </p>
               <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", wordBreak: "break-all" }}>{user?.email}</p>
+              <div style={{ marginTop: "0.65rem", display: "inline-flex", alignItems: "center", gap: "0.35rem", borderRadius: "var(--radius-pill)", padding: "0.26rem 0.62rem", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", background: user?.emailVerified ? "rgba(74,222,128,0.14)" : "rgba(245,158,11,0.16)", border: `1px solid ${user?.emailVerified ? "rgba(74,222,128,0.32)" : "rgba(245,158,11,0.34)"}`, color: user?.emailVerified ? "#86efac" : "#fcd34d" }}>
+                {user?.emailVerified ? "Cuenta verificada" : "Correo pendiente"}
+              </div>
             </div>
 
             {/* Nav links */}
@@ -529,12 +544,43 @@ export default function ProfilePage() {
         {/* ── Main Content ── */}
         <div style={{
           flex: 1, minWidth: 0,
-          background: "var(--card-bg)", border: "1px solid var(--glass-border)",
-          borderRadius: "var(--radius-2xl)", padding: "1.75rem 2rem",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
+          border: "1px solid var(--glass-border)",
+          borderRadius: "var(--radius-2xl)",
+          padding: isMobile ? "1.2rem 1rem" : "1.6rem 1.8rem",
+          boxShadow: "0 22px 52px rgba(0,0,0,0.24)",
         }}>
+          <div style={{
+            display: "flex",
+            alignItems: isMobile ? "flex-start" : "center",
+            justifyContent: "space-between",
+            flexDirection: isMobile ? "column" : "row",
+            gap: "0.75rem",
+            marginBottom: "1.25rem",
+            paddingBottom: "1rem",
+            borderBottom: "1px solid var(--glass-border)",
+          }}>
+            <div>
+              <p style={{ fontFamily: "var(--font-heading)", fontSize: isMobile ? "1.1rem" : "1.28rem", fontWeight: 800, color: "var(--text-light)", lineHeight: 1.15 }}>
+                Centro de cuenta
+              </p>
+              <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                Gestiona tu perfil, seguridad y privacidad desde un solo lugar.
+              </p>
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--text-secondary)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-pill)", padding: "0.24rem 0.6rem", background: "rgba(255,255,255,0.02)" }}>
+                Rol: {user?.role ?? "USER"}
+              </span>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", color: user?.emailVerified ? "#86efac" : "#fcd34d", border: `1px solid ${user?.emailVerified ? "rgba(74,222,128,0.35)" : "rgba(245,158,11,0.34)"}`, borderRadius: "var(--radius-pill)", padding: "0.24rem 0.6rem", background: user?.emailVerified ? "rgba(74,222,128,0.1)" : "rgba(245,158,11,0.12)" }}>
+                {user?.emailVerified ? "Verificado" : "Sin verificar"}
+              </span>
+            </div>
+          </div>
+
           {/* Mobile: avatar header */}
           {isMobile && (
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", paddingBottom: "1.25rem", borderBottom: "1px solid var(--glass-border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.3rem", paddingBottom: "1rem", borderBottom: "1px solid var(--glass-border)" }}>
               <div style={{
                 width: 54, height: 54, borderRadius: "50%",
                 background: "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))",

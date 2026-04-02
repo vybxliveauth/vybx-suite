@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEvent } from "@/hooks/useEvents";
 import { EventDetailClient } from "./EventDetailClient";
+import { PageLoadingState } from "@/components/features/StateSurface";
 
 function extractId(slug: string): string | null {
   const delimiter = "__";
@@ -52,14 +53,7 @@ export function EventDetailRouteClient({ slug }: { slug: string }) {
   }
 
   if (query.isLoading) {
-    return (
-      <main id="main-content" className="page-state-shell" style={{ minHeight: "65vh" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "0.65rem", color: "var(--text-muted)" }}>
-        <Loader2 size={18} className="animate-spin" />
-        Cargando evento...
-        </div>
-      </main>
-    );
+    return <PageLoadingState title="Cargando evento" message="Estamos preparando los detalles..." />;
   }
 
   if (query.isError || !query.data) {

@@ -243,12 +243,12 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "6rem 5% 4rem",
+      padding: "6rem 5% 3.2rem",
       overflow: "hidden",
       textAlign: "center",
     }}>
       {/* ── Animated mesh background ── */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "clip", isolation: "isolate" }}>
         <div className="hero-bg-radial" style={{
           position: "absolute", inset: 0,
           background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,58,237,0.4), transparent)",
@@ -899,7 +899,7 @@ export default function HomePage() {
         onAuthOpen={() => setAuthOpen(true)}
         onCommandOpen={() => setCommandOpen(true)}
       />
-      <main id="main-content" style={{ paddingTop: 0 }}>
+      <main id="main-content" style={{ paddingTop: 0, overflowX: "clip" }}>
         <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
           <HeroSection onSearch={setSearch} />
           <EventHighlightsCarousel events={events} />
