@@ -113,7 +113,7 @@ function Navbar({
               border: "1px solid var(--glass-border)",
               borderRadius: "var(--radius-pill)",
               padding: "0.08rem 0.4rem",
-              color: "var(--text-muted)",
+              color: "var(--text-secondary)",
             }}
           >
             Ctrl K
@@ -155,13 +155,13 @@ function Navbar({
                 minWidth: 160, boxShadow: "0 16px 40px rgba(0,0,0,0.5)",
                 zIndex: 200,
               }}>
-                <Link href="/profile" onClick={() => setMenuOpen(false)} style={{ display: "block", padding: "0.55rem 0.85rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem", color: "var(--text-muted)", textDecoration: "none", transition: "background 0.15s" }}
+                <Link href="/profile" onClick={() => setMenuOpen(false)} style={{ display: "block", padding: "0.55rem 0.85rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem", color: "var(--text-secondary)", textDecoration: "none", transition: "background 0.15s" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "var(--glass-bg)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
                   Mi perfil
                 </Link>
-                <Link href="/my-tickets" onClick={() => setMenuOpen(false)} style={{ display: "block", padding: "0.55rem 0.85rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem", color: "var(--text-muted)", textDecoration: "none", transition: "background 0.15s" }}
+                <Link href="/my-tickets" onClick={() => setMenuOpen(false)} style={{ display: "block", padding: "0.55rem 0.85rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem", color: "var(--text-secondary)", textDecoration: "none", transition: "background 0.15s" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "var(--glass-bg)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
@@ -265,7 +265,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
         {/* Announcement pill */}
         <div className="hero-pill fade-in-up" style={{ animationDelay: "-0.1s" }}>
           <span className="pill-dot" />
-          New events dropping every week — don&apos;t miss out
+          Nuevos eventos cada semana, no te lo pierdas
         </div>
 
         {/* Headline */}
@@ -287,7 +287,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
         {/* Subtitle */}
         <p className="fade-in-up" style={{
           fontSize: "clamp(1.05rem, 2vw, 1.3rem)",
-          color: "var(--text-muted)",
+          color: "var(--text-secondary)",
           lineHeight: 1.7,
           maxWidth: 560,
           margin: "0 auto 3rem",
@@ -305,12 +305,12 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
             alignItems: "center",
             gap: "0.75rem",
             borderRadius: "var(--radius-pill)",
-            maxWidth: 580,
+            width: "min(100%, 580px)",
             margin: "0 auto",
             animationDelay: "0.2s",
           }}
         >
-          <Search size={18} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+          <Search size={18} color="var(--text-secondary)" style={{ flexShrink: 0 }} />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -334,17 +334,17 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
         <div className="hero-stats fade-in-up" style={{ animationDelay: "0.3s" }}>
           <div className="hero-stat">
             <span className="hero-stat-value">500+</span>
-            <span className="hero-stat-label">Events</span>
+            <span className="hero-stat-label">Eventos</span>
           </div>
           <div className="hero-stat-divider" />
           <div className="hero-stat">
             <span className="hero-stat-value">50K+</span>
-            <span className="hero-stat-label">Tickets sold</span>
+            <span className="hero-stat-label">Tickets vendidos</span>
           </div>
           <div className="hero-stat-divider" />
           <div className="hero-stat">
             <span className="hero-stat-value">200+</span>
-            <span className="hero-stat-label">Artists</span>
+            <span className="hero-stat-label">Artistas</span>
           </div>
         </div>
 
@@ -380,6 +380,21 @@ const FEATURED_BENTO_LAYOUT = [
   "md:col-span-2 md:row-span-1",
 ] as const;
 
+const LOADING_EVENT_SKELETON_COUNT = 3;
+
+const CATALOG_TEASERS = [
+  {
+    title: "Más eventos cada semana",
+    description:
+      "Estamos publicando nuevas experiencias continuamente. Vuelve pronto para descubrir lo nuevo.",
+  },
+  {
+    title: "Sigue a Vybx",
+    description:
+      "Activa notificaciones y síguenos en redes para enterarte primero de preventas y lanzamientos.",
+  },
+] as const;
+
 function FeaturedEventBentoSkeleton({ className }: { className?: string }) {
   return (
     <div
@@ -404,6 +419,22 @@ function FeaturedEventBentoSkeleton({ className }: { className?: string }) {
   );
 }
 
+function CatalogTeaserCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <article className="catalog-teaser-card reveal" aria-hidden>
+      <div className="catalog-teaser-badge">Próximamente</div>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </article>
+  );
+}
+
 // ─── Event Card ───────────────────────────────────────────────────────────────
 
 function formatRelativeDate(iso: string): string | null {
@@ -420,7 +451,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
   const href = `/events/${event.slug}`;
   const date = new Date(event.startDate);
   const day = date.getDate().toString().padStart(2, "0");
-  const month = date.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const month = date.toLocaleString("es-DO", { month: "short" }).toUpperCase();
   const minPrice = event.tiers.length > 0 ? Math.min(...event.tiers.map((t) => t.price)) : null;
   const totalStock = event.tiers.reduce((acc, t) => acc + t.stock, 0);
   const isLowStock = totalStock > 0 && totalStock <= 50;
@@ -469,7 +500,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
         <div className="card-body">
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.65rem" }}>
             <span className="badge-tag">
-              {event.tags[0] ?? "Event"}
+              {event.tags[0] ?? "Evento"}
             </span>
             {relDate && (
               <span
@@ -485,7 +516,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
             )}
           </div>
           <h3 className="card-title">{event.title}</h3>
-          <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.82rem", color: "var(--text-muted)" }}>
+          <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.82rem", color: "var(--text-secondary)" }}>
             <MapPin size={13} color="var(--accent-primary)" />
             {event.venue.name}{event.venue.city ? `, ${event.venue.city}` : ""}
           </p>
@@ -537,7 +568,7 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 
       {pages.map((p, i) =>
         p === "…" ? (
-          <span key={`ellipsis-${i}`} style={{ color: "var(--text-muted)", padding: "0 0.2rem", fontSize: "0.88rem" }}>
+          <span key={`ellipsis-${i}`} style={{ color: "var(--text-secondary)", padding: "0 0.2rem", fontSize: "0.88rem" }}>
             …
           </span>
         ) : (
@@ -635,6 +666,9 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const compactCatalog = !isLoading && paginated.length > 0 && paginated.length < 3;
+  const teaserFillCount = compactCatalog ? 3 - paginated.length : 0;
+  const shouldRenderShowcase = isLoading || showcaseEvents.length >= 2;
   const paginatedIds = useMemo(
     () => paginated.map((event) => event.id).join("|"),
     [paginated]
@@ -671,7 +705,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             Próximos Eventos
           </h2>
           {!isLoading && filtered.length > 0 && (
-            <span style={{ fontSize: "0.82rem", color: "var(--text-muted)", fontWeight: 500 }}>
+            <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)", fontWeight: 600 }}>
               {filtered.length} {filtered.length === 1 ? "evento" : "eventos"}
             </span>
           )}
@@ -694,12 +728,18 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
       </div>
 
       {isError && (
-        <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+        <div style={{ padding: "1rem 1.25rem", borderRadius: "var(--radius-xl)", background: "rgba(244,63,94,0.08)", border: "1px solid rgba(244,63,94,0.2)", color: "var(--text-secondary)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
           Sin conexión al backend. Intenta de nuevo en unos segundos.
         </div>
       )}
 
-      {(isLoading || showcaseEvents.length > 0) && (
+      {!isLoading && !isError && filtered.length > 0 && filtered.length < 4 && (
+        <div className="catalog-soft-note">
+          Catálogo en expansión: estamos agregando nuevos eventos cada semana.
+        </div>
+      )}
+
+      {shouldRenderShowcase && (
         <div className="showcase-shell" style={{ marginBottom: "2.75rem" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
             <h3 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.2rem, 2vw, 1.45rem)", fontWeight: 800, letterSpacing: "-0.5px" }}>
@@ -725,9 +765,9 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
         </div>
       )}
 
-      <div className="event-grid">
+      <div className={cn("event-grid", compactCatalog && "event-grid-compact")}>
         {isLoading
-          ? Array.from({ length: PAGE_SIZE }).map((_, i) => <EventCardSkeleton key={i} />)
+          ? Array.from({ length: LOADING_EVENT_SKELETON_COUNT }).map((_, i) => <EventCardSkeleton key={i} />)
           : paginated.length === 0
             ? (
               <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "3.5rem 1rem", gap: "1.25rem" }}>
@@ -736,7 +776,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
                   <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.2rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.4rem" }}>
                     {search ? `Sin resultados para "${search}"` : "No hay eventos publicados todavía"}
                   </p>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.88rem", maxWidth: "34ch", margin: "0 auto", lineHeight: 1.5 }}>
+                  <p style={{ color: "var(--text-secondary)", fontSize: "0.88rem", maxWidth: "34ch", margin: "0 auto", lineHeight: 1.5 }}>
                     {search
                       ? "Intenta con otro término o explora todas las categorías."
                       : "Estamos preparando experiencias increíbles. Vuelve pronto."}
@@ -749,7 +789,21 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
                 )}
               </div>
             )
-            : paginated.map((event, i) => <EventCard key={event.id} event={event} index={i} />)
+            : (
+              <>
+                {paginated.map((event, i) => <EventCard key={event.id} event={event} index={i} />)}
+                {Array.from({ length: teaserFillCount }).map((_, index) => {
+                  const teaser = CATALOG_TEASERS[index % CATALOG_TEASERS.length];
+                  return (
+                    <CatalogTeaserCard
+                      key={`catalog-teaser-${teaser.title}`}
+                      title={teaser.title}
+                      description={teaser.description}
+                    />
+                  );
+                })}
+              </>
+            )
         }
       </div>
 
@@ -799,7 +853,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
                     borderRadius: "50%",
                     border: "1px solid var(--glass-border)",
                     background: "var(--glass-bg)",
-                    color: "var(--text-muted)",
+                    color: "var(--text-secondary)",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",

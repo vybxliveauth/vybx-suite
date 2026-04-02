@@ -35,7 +35,7 @@ import {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDateLong(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-DO", {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -44,7 +44,7 @@ function formatDateLong(iso: string) {
 }
 
 function formatTime(iso: string) {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-DO", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -378,7 +378,7 @@ export function EventDetailClient({ event }: { event: Event }) {
               Sobre el evento
             </h2>
             <p style={{
-              color: "var(--text-muted)",
+              color: "var(--text-secondary)",
               fontSize: "1rem",
               lineHeight: 1.85,
               whiteSpace: "pre-wrap",
@@ -435,7 +435,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           <p style={{
             margin: 0,
             fontSize: "0.72rem",
-            color: "var(--text-muted)",
+            color: "var(--text-secondary)",
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.5px",
