@@ -79,10 +79,11 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
 
   return (
     <section
-      style={{ position: "relative", padding: "0 clamp(4px, 0.6vw, 8px) 0.5rem" }}
+      style={{ padding: "0 var(--page-inline) 0.5rem" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      <div className="section-shell" style={{ position: "relative" }}>
       {/* Carousel viewport */}
       <div ref={emblaRef} style={{ overflow: "hidden" }}>
         <div className="event-carousel-track">
@@ -320,6 +321,7 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
           ))}
         </div>
       )}
+      </div>
     </section>
   );
 }
