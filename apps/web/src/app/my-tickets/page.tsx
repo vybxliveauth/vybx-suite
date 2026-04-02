@@ -199,22 +199,32 @@ function QRModal({ ticket, onClose }: { ticket: BackendTicket; onClose: () => vo
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Footer — event info + calendar */}
           <div style={{
             borderTop: "1px dashed var(--glass-border)",
             padding: "1rem 1.5rem",
-            display: "flex", flexDirection: "column", gap: "0.4rem",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
-              <CalendarDays size={13} color="var(--accent-primary)" />
-              {formatDate(event.date)}
-            </div>
-            {event.location && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                <MapPin size={13} color="var(--accent-primary)" />
-                {event.location}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                <CalendarDays size={13} color="var(--accent-primary)" />
+                {formatDate(event.date)}
               </div>
-            )}
+              {event.location && (
+                <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  <MapPin size={13} color="var(--accent-primary)" />
+                  {event.location}
+                </div>
+              )}
+            </div>
+            <AddToCalendarButton
+              compact
+              event={{
+                title: event.title,
+                startDate: event.date,
+                location: event.location ?? undefined,
+              }}
+            />
           </div>
         </div>
       </div>
@@ -475,8 +485,9 @@ function TicketCard({
   return (
     <>
       <div className="ticket-card">
-        {/* ── Image header with overlaid title ── */}
-        <div style={{ position: "relative", height: 165, overflow: "hidden", flexShrink: 0 }}>
+
+        {/* ── Image header ── */}
+        <div style={{ position: "relative", height: 160, flexShrink: 0 }}>
           {event.image ? (
             <SafeEventImage
               src={event.image}
@@ -486,34 +497,34 @@ function TicketCard({
           ) : (
             <div style={{
               width: "100%", height: "100%",
-              background: "linear-gradient(135deg, rgba(124,58,237,0.45) 0%, rgba(255,42,95,0.25) 100%)",
+              background: "linear-gradient(135deg, rgba(124,58,237,0.5) 0%, rgba(255,42,95,0.28) 100%)",
             }} />
           )}
 
-          {/* Gradient overlay — stronger at bottom for title readability */}
+          {/* Bottom gradient for title legibility */}
           <div style={{
             position: "absolute", inset: 0,
-            background: "linear-gradient(to top, rgba(10,8,20,0.96) 0%, rgba(10,8,20,0.4) 55%, transparent 100%)",
+            background: "linear-gradient(to top, rgba(8,6,18,0.98) 0%, rgba(8,6,18,0.35) 55%, transparent 100%)",
           }} />
 
-          {/* USED/CANCELLED stamp */}
+          {/* USED / CANCELLED stamp */}
           {!isValid && (
             <div style={{
               position: "absolute", inset: 0,
               display: "flex", alignItems: "center", justifyContent: "center",
+              pointerEvents: "none",
             }}>
               <span style={{
                 fontFamily: "var(--font-heading)",
-                fontSize: "1.6rem",
+                fontSize: "1.55rem",
                 fontWeight: 900,
-                letterSpacing: "0.15em",
+                letterSpacing: "0.18em",
                 textTransform: "uppercase",
-                color: isUsed ? "rgba(148,163,184,0.45)" : "rgba(244,63,94,0.45)",
-                border: `3px solid ${isUsed ? "rgba(148,163,184,0.3)" : "rgba(244,63,94,0.3)"}`,
-                borderRadius: 6,
-                padding: "0.15rem 0.6rem",
-                transform: "rotate(-18deg)",
-                pointerEvents: "none",
+                color: isUsed ? "rgba(148,163,184,0.5)" : "rgba(244,63,94,0.5)",
+                border: `2.5px solid ${isUsed ? "rgba(148,163,184,0.32)" : "rgba(244,63,94,0.32)"}`,
+                borderRadius: 5,
+                padding: "0.12rem 0.55rem",
+                transform: "rotate(-16deg)",
                 userSelect: "none",
               }}>
                 {isUsed ? "Usado" : "Cancelado"}
@@ -521,110 +532,100 @@ function TicketCard({
             </div>
           )}
 
-          {/* Status badge — top right */}
-          <div style={{ position: "absolute", top: "0.7rem", right: "0.7rem" }}>
+          {/* Status badge */}
+          <div style={{ position: "absolute", top: "0.65rem", right: "0.65rem" }}>
             <StatusBadge status={ticket.status} />
           </div>
 
-          {/* Title overlay — bottom of image */}
-          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 1.1rem 0.9rem" }}>
+          {/* Title + tier overlaid at bottom */}
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "0 1.15rem 1rem" }}>
             <h3 style={{
               fontFamily: "var(--font-heading)",
-              fontSize: "0.95rem",
+              fontSize: "1rem",
               fontWeight: 800,
               color: "#fff",
-              lineHeight: 1.25,
-              marginBottom: "0.35rem",
-              textShadow: "0 1px 4px rgba(0,0,0,0.6)",
+              lineHeight: 1.2,
+              marginBottom: "0.4rem",
+              textShadow: "0 1px 6px rgba(0,0,0,0.7)",
             }}>
               {event.title}
             </h3>
             <span className="ticket-type-badge">{ticket.ticketType.name}</span>
           </div>
 
-          {/* Punch holes at bottom edge */}
-          <div style={{ position: "absolute", bottom: -7, left: -7, width: 14, height: 14, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid var(--glass-border)", zIndex: 1 }} />
-          <div style={{ position: "absolute", bottom: -7, right: -7, width: 14, height: 14, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid var(--glass-border)", zIndex: 1 }} />
+          {/* Punch holes */}
+          <div style={{ position: "absolute", bottom: -8, left: -8, width: 16, height: 16, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid rgba(255,255,255,0.08)", zIndex: 2 }} />
+          <div style={{ position: "absolute", bottom: -8, right: -8, width: 16, height: 16, borderRadius: "50%", background: "var(--bg-dark)", border: "1px solid rgba(255,255,255,0.08)", zIndex: 2 }} />
         </div>
 
-        {/* Dashed perforation */}
-        <div style={{ borderTop: "1.5px dashed rgba(255,255,255,0.08)", margin: "0 0.75rem" }} />
+        {/* Tear perforation */}
+        <div style={{ borderTop: "1.5px dashed rgba(255,255,255,0.07)", margin: "0 0.85rem" }} />
 
-        {/* ── Info section ── */}
-        <div style={{ padding: "1rem 1.1rem 1.1rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-          {/* Date & location */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
-              <CalendarDays size={12} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+        {/* ── Body ── */}
+        <div style={{ padding: "1.1rem 1.25rem 1.25rem", display: "flex", flexDirection: "column", gap: "1rem", flex: 1 }}>
+
+          {/* Date + location */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.32rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.79rem", color: "var(--text-muted)" }}>
+              <CalendarDays size={13} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
               {formatDate(event.date)}
             </div>
             {event.location && (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                <MapPin size={12} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", fontSize: "0.79rem", color: "var(--text-muted)" }}>
+                <MapPin size={13} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
                 {event.location}
               </div>
             )}
           </div>
 
-          {/* Price + actions row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+          {/* Price */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto" }}>
             <div>
-              <p style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: "0.1rem", textTransform: "uppercase", letterSpacing: "0.06em" }}>Precio</p>
-              <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.05rem", fontWeight: 800, color: "var(--text-light)" }}>
+              <p style={{ fontSize: "0.63rem", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "0.2rem" }}>
+                Precio pagado
+              </p>
+              <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.25rem", fontWeight: 900, color: "var(--text-light)", lineHeight: 1 }}>
                 {formatPrice(ticket.ticketType.price)}
               </p>
             </div>
-
-            <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {isValid && (
-                <AddToCalendarButton
-                  compact
-                  event={{
-                    title: event.title,
-                    startDate: event.date,
-                    location: event.location ?? undefined,
-                  }}
-                />
-              )}
-              {ticket.qrCode && isValid && (
-                <button
-                  onClick={() => setShowQR(true)}
-                  className="ticket-btn ticket-btn-violet"
-                >
-                  <QrCode size={13} />
-                  Ver QR
-                </button>
-              )}
-              {isValid && (
-                <button
-                  onClick={() => setShowTransfer(true)}
-                  className="ticket-btn ticket-btn-violet"
-                >
-                  <Send size={13} />
-                  Transferir
-                </button>
-              )}
-              {isValid && (
-                <button
-                  onClick={() => void handleCancel()}
-                  disabled={cancelling}
-                  className="ticket-btn ticket-btn-danger"
-                >
-                  <XCircle size={13} />
-                  {cancelling ? "…" : "Cancelar"}
-                </button>
-              )}
-            </div>
+            <p style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.18)", fontFamily: "monospace", letterSpacing: "0.03em", paddingBottom: "0.1rem" }}>
+              {ticket.id.slice(0, 8).toUpperCase()}
+            </p>
           </div>
-
-          {/* Ticket ID */}
-          <p style={{ fontSize: "0.62rem", color: "rgba(255,255,255,0.2)", fontFamily: "monospace", letterSpacing: "0.02em" }}>
-            {ticket.id.slice(0, 24)}…
-          </p>
         </div>
+
+        {/* ── Action footer strip (VALID only) ── */}
+        {isValid && (
+          <div className="ticket-footer">
+            {ticket.qrCode && (
+              <button
+                className="ticket-footer-btn violet"
+                onClick={() => setShowQR(true)}
+              >
+                <QrCode size={14} />
+                Ver QR
+              </button>
+            )}
+            <button
+              className="ticket-footer-btn violet"
+              onClick={() => setShowTransfer(true)}
+            >
+              <Send size={14} />
+              Transferir
+            </button>
+            <button
+              className="ticket-footer-btn danger"
+              onClick={() => void handleCancel()}
+              disabled={cancelling}
+            >
+              <XCircle size={14} />
+              {cancelling ? "…" : "Cancelar"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Modals — rendered via portal to avoid stacking context issues */}
+      {/* Modals via portal — bypass stacking context of .ticket-card:hover */}
       {showQR && ticket.qrCode && (
         <QRModal ticket={ticket} onClose={() => setShowQR(false)} />
       )}

@@ -1798,70 +1798,71 @@ a:focus-visible {
     transform 0.2s ease,
     box-shadow 0.2s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .ticket-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
 }
 
 .tickets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
 }
 
-/* ─── Ticket action buttons ──────────────────────────────────────────────────── */
-.ticket-btn {
-  display: inline-flex;
+/* ─── Ticket footer action strip ─────────────────────────────────────────────── */
+.ticket-footer {
+  display: flex;
+  border-top: 1px solid var(--glass-border);
+  margin-top: auto;
+}
+
+.ticket-footer-btn {
+  flex: 1;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.78rem;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.25rem;
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  font-size: 0.74rem;
   font-weight: 600;
   font-family: var(--font-body);
   cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-muted);
+  transition:
+    background 0.15s,
+    color 0.15s;
+  white-space: nowrap;
 }
 
-.ticket-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+.ticket-footer-btn:last-child {
+  border-right: none;
+}
+
+.ticket-footer-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-light);
-  border-color: rgba(255, 255, 255, 0.18);
 }
 
-.ticket-btn-violet {
-  background: rgba(124, 58, 237, 0.08);
-  border-color: rgba(124, 58, 237, 0.25);
+.ticket-footer-btn.violet:hover:not(:disabled) {
+  background: rgba(124, 58, 237, 0.1);
   color: #c4b5fd;
 }
 
-.ticket-btn-violet:hover,
-.ticket-btn-violet.active {
-  background: rgba(124, 58, 237, 0.2);
-  border-color: rgba(124, 58, 237, 0.55);
-  color: #ddd6fe;
-}
-
-.ticket-btn-danger {
-  background: rgba(244, 63, 94, 0.08);
-  border-color: rgba(244, 63, 94, 0.25);
+.ticket-footer-btn.danger:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.07);
   color: #fda4af;
 }
 
-.ticket-btn-danger:hover:not(:disabled) {
-  background: rgba(244, 63, 94, 0.16);
-  border-color: rgba(244, 63, 94, 0.5);
-}
-
-.ticket-btn:disabled,
-.ticket-btn-danger:disabled,
-.ticket-btn-violet:disabled {
-  opacity: 0.5;
+.ticket-footer-btn:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
