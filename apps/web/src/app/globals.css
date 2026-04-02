@@ -1532,26 +1532,25 @@ a:focus-visible {
 
 /* ─── Hero marquee banner ────────────────────────────────────────────────────── */
 .hero-banner {
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  right: 50%;
-  margin-left: -50vw;
-  margin-right: -50vw;
+  /* width:100% + align-self:stretch fills the full section without vw tricks.
+     The parent section has overflow:hidden so the marquee is clipped correctly. */
+  width: 100%;
+  align-self: stretch;
   margin-top: 3rem;
+  margin-bottom: 4rem;
   overflow: hidden;
   mask-image: linear-gradient(
     to right,
     transparent 0%,
-    black 12%,
-    black 88%,
+    black 10%,
+    black 90%,
     transparent 100%
   );
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
-    black 12%,
-    black 88%,
+    black 10%,
+    black 90%,
     transparent 100%
   );
 }

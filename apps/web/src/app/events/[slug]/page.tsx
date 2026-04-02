@@ -30,13 +30,14 @@ function extractId(slug: string): string | null {
 function humanizeSlug(slug: string): string {
   const base = slug.includes("__") ? slug.slice(0, slug.lastIndexOf("__")) : slug;
   const normalized = base.replace(/-/g, " ").replace(/\s+/g, " ").trim();
-  if (!normalized) return "Event details";
+  if (!normalized) return "Detalles del evento";
   return normalized.replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
 const FALLBACK: Metadata = {
-  title: "Event | Vybx",
-  description: "Buy tickets for live events. Fast, secure, and hassle-free.",
+  title: "Evento | Vybx",
+  description:
+    "Compra tickets para experiencias en vivo. Rápido, seguro y sin complicaciones.",
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -47,7 +48,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const event = await fetchEventById(id);
 
-    const dateStr = new Intl.DateTimeFormat("en-US", {
+    const dateStr = new Intl.DateTimeFormat("es-DO", {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const description =
       event.description.trim().slice(0, 155) ||
-      `${dateStr} · ${event.venue.name}, ${event.venue.city}${minPrice != null ? ` · From $${minPrice}` : ""}`;
+      `${dateStr} · ${event.venue.name}, ${event.venue.city}${minPrice != null ? ` · Desde $${minPrice}` : ""}`;
 
     const images = event.imageUrl
       ? [{ url: event.imageUrl, width: 1200, height: 630, alt: event.title }]
@@ -78,7 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         type: "website",
         url: `${siteUrl}/events/${slug}`,
         siteName: "Vybx",
-        locale: "en_US",
+        locale: "es_DO",
         images,
       },
       twitter: {

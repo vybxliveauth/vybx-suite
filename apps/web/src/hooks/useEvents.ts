@@ -7,6 +7,8 @@ export function useEvents(page = 1, limit = 20, search?: string) {
   return useQuery({
     queryKey: ["events", page, limit, search],
     queryFn: () => fetchEvents({ page, limit, search }),
+    retry: 1,
+    throwOnError: false,
     staleTime: 30_000, // 30s — inventory can change fast
   });
 }

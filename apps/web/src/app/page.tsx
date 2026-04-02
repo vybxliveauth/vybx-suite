@@ -257,22 +257,19 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "6rem 5% 4rem",
+      padding: "6rem 0 0",
       overflow: "hidden",
       textAlign: "center",
     }}>
       {/* ── Animated mesh background ── */}
       <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-        {/* Base gradient */}
         <div className="hero-bg-radial" style={{
           position: "absolute", inset: 0,
           background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,58,237,0.4), transparent)",
         }} />
-        {/* Orbs */}
         <div className="orb" style={{ width: 700, height: 700, background: "var(--accent-secondary)", top: "-200px", left: "50%", transform: "translateX(-50%)", opacity: 0.25, animationDelay: "0s" }} />
         <div className="orb" style={{ width: 400, height: 400, background: "var(--accent-primary)", bottom: "-50px", left: "5%", opacity: 0.18, animationDelay: "-10s" }} />
         <div className="orb" style={{ width: 350, height: 350, background: "var(--accent-tertiary)", bottom: "10%", right: "5%", opacity: 0.12, animationDelay: "-5s" }} />
-        {/* Bottom fade to body */}
         <div style={{
           position: "absolute", bottom: 0, left: 0, right: 0, height: "40%",
           background: "linear-gradient(to bottom, transparent, var(--bg-dark))",
@@ -280,7 +277,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       </div>
 
       {/* ── Content ── */}
-      <div style={{ position: "relative", zIndex: 2, maxWidth: 820, width: "100%" }}>
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 820, width: "100%", padding: "0 5%", paddingBottom: "4rem" }}>
 
         {/* Announcement pill */}
         <div className="hero-pill fade-in-up" style={{ animationDelay: "-0.1s" }}>
@@ -316,7 +313,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
           Descubre conciertos, festivales y eventos en vivo. Compra tus tickets en segundos, sin filas, sin complicaciones.
         </p>
 
-        {/* Search bar — centered, prominent */}
+        {/* Search bar */}
         <form
           onSubmit={handleSearch}
           className="fade-in-up search-bar"
@@ -349,26 +346,24 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
             Buscar
           </button>
         </form>
+      </div>
 
-        {/* Genre / event-type marquee banner */}
-        <div className="hero-banner fade-in-up" style={{ animationDelay: "0.3s" }}>
-          <div className="hero-marquee-track">
-            {MARQUEE_TAGS.map((tag, i) => (
-              <span key={i} className={`hero-marquee-tag${tag.accent ? ` tag-${tag.accent}` : ""}`}>
-                <tag.Icon size={13} />
-                {tag.label}
-              </span>
-            ))}
-            {/* Duplicate for seamless loop */}
-            {MARQUEE_TAGS.map((tag, i) => (
-              <span key={`b${i}`} className={`hero-marquee-tag${tag.accent ? ` tag-${tag.accent}` : ""}`}>
-                <tag.Icon size={13} />
-                {tag.label}
-              </span>
-            ))}
-          </div>
+      {/* ── Genre marquee — full width sibling, clipped by section overflow:hidden ── */}
+      <div className="hero-banner fade-in-up" style={{ position: "relative", zIndex: 2, animationDelay: "0.3s" }}>
+        <div className="hero-marquee-track">
+          {MARQUEE_TAGS.map((tag, i) => (
+            <span key={i} className={`hero-marquee-tag${tag.accent ? ` tag-${tag.accent}` : ""}`}>
+              <tag.Icon size={13} />
+              {tag.label}
+            </span>
+          ))}
+          {MARQUEE_TAGS.map((tag, i) => (
+            <span key={`b${i}`} className={`hero-marquee-tag${tag.accent ? ` tag-${tag.accent}` : ""}`}>
+              <tag.Icon size={13} />
+              {tag.label}
+            </span>
+          ))}
         </div>
-
       </div>
 
     </section>

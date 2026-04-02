@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(),
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "es_DO",
     siteName: "Vybx",
     title: "Vybx - Tickets para experiencias en vivo",
     description:

@@ -51,7 +51,7 @@ export function Footer() {
             <VybxLogo size={26} textSize="1.5rem" />
           </div>
           <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: 1.6, maxWidth: "28ch" }}>
-            Your platform to discover and buy tickets for the best live events.
+            Tu plataforma para descubrir y comprar tickets para los mejores eventos en vivo.
           </p>
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
             {SOCIAL_ICONS.map((s) => (
@@ -69,13 +69,13 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Platform */}
+        {/* Plataforma */}
         <div>
-          <p className="footer-col-heading">Platform</p>
+          <p className="footer-col-heading">Plataforma</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <FooterLink href="/#events" label="Browse events" />
-            <FooterLink href="/my-tickets" label="My tickets" />
-            <FooterLink href="/profile" label="My account" />
+            <FooterLink href="/#events" label="Explorar eventos" />
+            <FooterLink href="/my-tickets" label="Mis tickets" />
+            <FooterLink href="/profile" label="Mi cuenta" />
           </div>
         </div>
 
@@ -83,14 +83,14 @@ export function Footer() {
         <div>
           <p className="footer-col-heading">Legal</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <FooterLink href="/privacidad" label="Privacy policy" />
-            <FooterLink href="/terminos" label="Terms of service" />
+            <FooterLink href="/privacidad" label="Política de privacidad" />
+            <FooterLink href="/terminos" label="Términos de servicio" />
           </div>
         </div>
 
-        {/* Contact */}
+        {/* Soporte */}
         <div>
-          <p className="footer-col-heading">Support</p>
+          <p className="footer-col-heading">Soporte</p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
             <FooterLink href="mailto:support@vybxlive.com" label="support@vybxlive.com" external />
           </div>
@@ -105,9 +105,9 @@ export function Footer() {
           display: "flex",
           justifyContent: "center",
         }}
-      >
+        >
         <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
-          © {new Date().getFullYear()} Vybx. All rights reserved.
+          © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
         </p>
       </div>
     </footer>

@@ -13,6 +13,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v
 
 const client = createApiClient({
   baseUrl: BASE_URL,
+  requestTimeoutMs: 12000,
   retryOnUnauthorized: false,
 });
 
@@ -167,7 +168,7 @@ export function adaptEvent(raw: BackendEvent): Event {
     },
     status: raw.isActive ? "live" : "upcoming",
     tiers,
-    tags: raw.tags.length > 0 ? raw.tags : [raw.category?.name ?? "Event"],
+    tags: raw.tags.length > 0 ? raw.tags : [raw.category?.name ?? "Evento"],
     isFeatured: Boolean(raw.isFeatured),
     isTrending: trending.trendingScore > 0,
     trendingScore: trending.trendingScore,

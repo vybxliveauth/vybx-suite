@@ -82,13 +82,13 @@ export function FeaturedEventBentoCard({
             ) : (
               <>
                 <Star className="size-4 text-[var(--accent-primary)]" />
-                No tendencia
+                Destacado
               </>
             )}
           </div>
 
           <div className="absolute right-4 top-4 z-30 rounded-full border border-white/40 bg-black/74 px-4 py-1.5 text-center text-[0.82rem] font-extrabold tracking-[0.015em] text-white shadow-[0_8px_22px_rgba(0,0,0,0.46)] backdrop-blur-md">
-            {startDate.toLocaleDateString("en-US", {
+            {startDate.toLocaleDateString("es-DO", {
               day: "2-digit",
               month: "short",
               year: "numeric",

@@ -40,7 +40,7 @@ export default function GlobalError({
             Error fatal
           </p>
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800 }}>
-            La aplicacion encontro un fallo critico
+            La aplicación encontró un fallo crítico
           </h1>
           <p style={{ marginTop: "0.75rem", marginBottom: "1.5rem", color: "#94a3b8" }}>
             Puedes intentar de nuevo o volver a la portada.

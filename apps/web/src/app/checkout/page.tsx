@@ -68,6 +68,12 @@ const DEVICE_ID_STORAGE_KEY = "vybx_device_id";
 const QUEUE_TOKEN_STORAGE_KEY = "vybx_queue_token";
 const QUEUE_TOKEN_DEVICE_STORAGE_KEY = "vybx_queue_token_device_id";
 const CHECKOUT_EXPIRY_GRACE_MS = 2000;
+const QUEUE_TOKEN_RECOVERY_MATCHERS = [
+  "queue verification required",
+  "queue token is no longer valid",
+  "queue token does not match",
+  "invalid queue token",
+];
 
 function getOrCreateCheckoutDeviceId(): string {
   if (typeof window === "undefined") return "";
@@ -85,6 +91,22 @@ function getOrCreateCheckoutDeviceId(): string {
   } catch {
     return "";
   }
+}
+
+function isRecoverableQueueTokenError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.trim().toLowerCase();
+  if (message.length === 0) return false;
+  return QUEUE_TOKEN_RECOVERY_MATCHERS.some((matcher) =>
+    message.includes(matcher),
+  );
+}
+
+function createCheckoutIdempotencyKey(): string | undefined {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return undefined;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -759,10 +781,13 @@ export default function CheckoutPage() {
     const queueToken =
       storedQueueToken && storedQueueTokenDeviceId === deviceId ? storedQueueToken : "";
     let resolvedQueueToken = queueToken;
-
-    if (storedQueueToken && storedQueueTokenDeviceId !== deviceId) {
+    const clearStoredQueueToken = () => {
       sessionStorage.removeItem(QUEUE_TOKEN_STORAGE_KEY);
       sessionStorage.removeItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY);
+    };
+
+    if (storedQueueToken && storedQueueTokenDeviceId !== deviceId) {
+      clearStoredQueueToken();
     }
 
     let turnstileToken = "";
@@ -804,33 +829,64 @@ export default function CheckoutPage() {
     }
 
     setCheckoutPending(true);
+    const checkoutPayload = {
+      eventId,
+      items: items.map((item) => ({
+        ticketTypeId: item.tierId,
+        quantity: item.quantity,
+      })),
+      ...(turnstileToken ? { turnstileToken } : {}),
+    };
+    const requestCheckout = async (queueTokenForRequest?: string) =>
+      apiPaymentsCreateCartIntent(checkoutPayload, {
+        queueToken: queueTokenForRequest?.trim() || undefined,
+        deviceId: deviceId || undefined,
+        idempotencyKey: createCheckoutIdempotencyKey(),
+      });
+
     try {
-      const checkout = await apiPaymentsCreateCartIntent(
-        {
-          eventId,
-          items: items.map((item) => ({
-            ticketTypeId: item.tierId,
-            quantity: item.quantity,
-          })),
-          ...(turnstileToken ? { turnstileToken } : {}),
-        },
-        {
-          queueToken: resolvedQueueToken || undefined,
-          deviceId: deviceId || undefined,
-          idempotencyKey:
-            typeof crypto !== "undefined" &&
-            typeof crypto.randomUUID === "function"
-              ? crypto.randomUUID()
-              : undefined,
-        },
-      );
+      const checkout = await requestCheckout(resolvedQueueToken || undefined);
 
       sessionStorage.removeItem("vybx_checkout_queue");
       sessionStorage.removeItem("vybx_checkout_total");
-      sessionStorage.removeItem(QUEUE_TOKEN_STORAGE_KEY);
-      sessionStorage.removeItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY);
+      clearStoredQueueToken();
       window.location.href = checkout.checkoutUrl;
     } catch (e) {
+      if (resolvedQueueToken && isRecoverableQueueTokenError(e)) {
+        try {
+          clearStoredQueueToken();
+          const refreshedQueueToken = await getQueueTokenForCheckout(
+            eventId,
+            deviceId,
+            turnstileToken || undefined,
+          );
+
+          if (refreshedQueueToken) {
+            resolvedQueueToken = refreshedQueueToken;
+            sessionStorage.setItem(QUEUE_TOKEN_STORAGE_KEY, refreshedQueueToken);
+            sessionStorage.setItem(QUEUE_TOKEN_DEVICE_STORAGE_KEY, deviceId);
+          } else {
+            resolvedQueueToken = "";
+          }
+
+          const retriedCheckout = await requestCheckout(
+            resolvedQueueToken || undefined,
+          );
+          sessionStorage.removeItem("vybx_checkout_queue");
+          sessionStorage.removeItem("vybx_checkout_total");
+          clearStoredQueueToken();
+          window.location.href = retriedCheckout.checkoutUrl;
+          return;
+        } catch (retryError) {
+          setCheckoutError(
+            retryError instanceof Error && retryError.message.trim().length > 0
+              ? retryError.message
+              : "No se pudo iniciar el checkout.",
+          );
+          return;
+        }
+      }
+
       setCheckoutError(
         e instanceof Error && e.message.trim().length > 0
           ? e.message

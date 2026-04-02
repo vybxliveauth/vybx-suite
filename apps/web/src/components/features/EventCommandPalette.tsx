@@ -16,7 +16,7 @@ import { Event } from "@/types";
 import { formatPrice } from "@/lib/utils";
 
 function formatShortDate(value: string) {
-  return new Date(value).toLocaleDateString("en-US", {
+  return new Date(value).toLocaleDateString("es-DO", {
     day: "2-digit",
     month: "short",
   });

@@ -3,6 +3,7 @@ type NormalizeResponseFn = <T>(payload: unknown) => T;
 type ApiClientOptions = {
   baseUrl: string;
   credentials?: RequestCredentials;
+  requestTimeoutMs?: number;
   retryOnUnauthorized?: boolean;
   refreshPath?: string;
   getCsrfToken?: () => string;
@@ -67,6 +68,15 @@ function normalizeJsonLike(payload: unknown): payload is { message?: unknown } {
   return Boolean(payload) && typeof payload === "object" && !Array.isArray(payload);
 }
 
+function isAbortError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error as { name?: string }).name === "AbortError"
+  );
+}
+
 export async function extractErrorMessage(res: Response): Promise<string> {
   try {
     const body = (await res.json()) as unknown;
@@ -126,6 +136,7 @@ export function normalizePaginatedPayload<T>(payload: unknown): T {
 export function createApiClient(options: ApiClientOptions) {
   const baseUrl = resolveApiBaseUrl(options.baseUrl);
   const credentials = options.credentials ?? "include";
+  const requestTimeoutMs = Math.max(1000, Math.floor(options.requestTimeoutMs ?? 12000));
   const retryOnUnauthorized = options.retryOnUnauthorized ?? false;
   const refreshPath = options.refreshPath ?? "/auth/refresh";
   const getCsrfToken = options.getCsrfToken ?? (() => readCookieValue("csrf_token"));
@@ -163,13 +174,36 @@ export function createApiClient(options: ApiClientOptions) {
     const method = (init.method ?? "GET").toUpperCase();
     const headers = toHeadersRecord(init.headers);
     withAuthHeaders(method, headers, contentTypeMode);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeoutMs);
+    const forwardAbort = () => controller.abort();
+    if (init.signal) {
+      if (init.signal.aborted) {
+        controller.abort();
+      } else {
+        init.signal.addEventListener("abort", forwardAbort, { once: true });
+      }
+    }
 
-    return fetchFn(`${baseUrl}${path}`, {
-      ...init,
-      headers,
-      credentials,
-      cache: init.cache ?? "no-store",
-    });
+    try {
+      return await fetchFn(`${baseUrl}${path}`, {
+        ...init,
+        headers,
+        credentials,
+        cache: init.cache ?? "no-store",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (isAbortError(error) && !init.signal?.aborted) {
+        throw new Error("La solicitud tardó demasiado. Intenta nuevamente.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      if (init.signal) {
+        init.signal.removeEventListener("abort", forwardAbort);
+      }
+    }
   };
 
   const fetchWithRefresh = async (
@@ -182,10 +216,13 @@ export function createApiClient(options: ApiClientOptions) {
       return first;
     }
 
-    const refreshed = await fetchFn(`${baseUrl}${refreshPath}`, {
-      method: "POST",
-      credentials,
-    });
+    const refreshed = await fetchOnce(
+      refreshPath,
+      {
+        method: "POST",
+      },
+      "mutating",
+    );
     if (!refreshed.ok) {
       onSessionExpired?.();
       throw makeSessionExpiredError();

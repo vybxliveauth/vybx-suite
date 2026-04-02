@@ -24,7 +24,7 @@ export function formatCountdown(totalSeconds: number): string {
 
 /** Format ISO date string to readable format */
 export function formatEventDate(isoDate: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("es-DO", {
     weekday: "long",
     year: "numeric",
     month: "long",

@@ -60,7 +60,7 @@ export default function ErrorPage({
             color: "var(--text-light)",
           }}
         >
-          Ocurrio un error inesperado
+          Ocurrió un error inesperado
         </h1>
         <p
           style={{
@@ -70,7 +70,7 @@ export default function ErrorPage({
             lineHeight: 1.6,
           }}
         >
-          Intenta recargar esta vista. Si el error continua, vuelve al inicio.
+          Intenta recargar esta vista. Si el error continúa, vuelve al inicio.
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: "0.75rem" }}>
           <button type="button" onClick={reset} className="btn-primary">
