@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiUnsubscribeByToken } from "@/lib/api";
-import { AlertCircle, CheckCircle2, Loader2, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 
 function UnsubscribeContent() {
   const params = useSearchParams();
@@ -53,30 +54,11 @@ function UnsubscribeContent() {
   }, [token]);
 
   return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem 1rem",
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          border: "1px solid var(--glass-border)",
-          borderRadius: "var(--radius-2xl)",
-          padding: "1.5rem",
-          background: "var(--card-bg)",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ display: "inline-flex", alignItems: "center", gap: "0.45rem", marginBottom: "1rem" }}>
-          <Zap size={18} color="var(--accent-primary)" />
-          <span style={{ fontWeight: 800, color: "var(--text-light)" }}>vybx</span>
-        </div>
+    <main id="main-content" className="auth-shell">
+      <section className="auth-card" style={{ width: "100%", maxWidth: 520, textAlign: "center" }}>
+        <Link href="/" className="auth-brand" style={{ marginBottom: "1rem" }} aria-label="Volver al inicio">
+          <VybxLogo size={24} textSize="1.3rem" />
+        </Link>
 
         {status === "loading" && (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>

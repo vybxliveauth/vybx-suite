@@ -929,7 +929,7 @@ export default function CheckoutPage() {
         </Link>
       </nav>
 
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 7.25rem" }}>
+      <main id="main-content" style={{ maxWidth: 1100, margin: "0 auto", padding: "3rem 5% 7.25rem" }}>
         <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "clamp(1.8rem,4vw,2.5rem)", fontWeight: 900, letterSpacing: "-1px", marginBottom: "1.75rem", color: "var(--text-light)" }}>
           Checkout
         </h1>

@@ -143,7 +143,7 @@ export default function LoginPage() {
           <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
             <Zap className="size-6 text-primary fill-primary" />
           </div>
-          <h1 className="text-xl font-bold">VybeTickets</h1>
+          <h1 className="text-xl font-bold">Vybx</h1>
           <p className="text-sm text-muted-foreground">Panel admin</p>
         </div>
 

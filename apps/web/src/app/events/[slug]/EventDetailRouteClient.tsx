@@ -29,26 +29,17 @@ function extractId(slug: string): string | null {
 
 function EventMissingState() {
   return (
-    <div
-      style={{
-        minHeight: "65vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: "1rem",
-        padding: "2rem",
-        textAlign: "center",
-      }}
-    >
-      <h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Evento no encontrado</h1>
-      <p style={{ color: "var(--text-muted)", maxWidth: 420 }}>
+    <main id="main-content" className="page-state-shell" style={{ minHeight: "65vh" }}>
+      <section className="page-state-card" style={{ maxWidth: 560 }}>
+      <h1 className="auth-title" style={{ marginBottom: "0.55rem" }}>Evento no encontrado</h1>
+      <p className="auth-subtitle" style={{ maxWidth: 420, margin: "0 auto" }}>
         El enlace del evento no es valido o ya no esta disponible.
       </p>
-      <Link href="/" className="btn-primary" style={{ textDecoration: "none" }}>
+      <Link href="/" className="btn-primary" style={{ textDecoration: "none", marginTop: "1rem" }}>
         <ArrowLeft size={16} /> Volver al inicio
       </Link>
-    </div>
+      </section>
+    </main>
   );
 }
 
@@ -62,19 +53,12 @@ export function EventDetailRouteClient({ slug }: { slug: string }) {
 
   if (query.isLoading) {
     return (
-      <div
-        style={{
-          minHeight: "65vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "0.65rem",
-          color: "var(--text-muted)",
-        }}
-      >
+      <main id="main-content" className="page-state-shell" style={{ minHeight: "65vh" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "0.65rem", color: "var(--text-muted)" }}>
         <Loader2 size={18} className="animate-spin" />
         Cargando evento...
-      </div>
+        </div>
+      </main>
     );
   }
 
@@ -82,6 +66,9 @@ export function EventDetailRouteClient({ slug }: { slug: string }) {
     return <EventMissingState />;
   }
 
-  return <EventDetailClient event={query.data} />;
+  return (
+    <main id="main-content">
+      <EventDetailClient event={query.data} />
+    </main>
+  );
 }
-

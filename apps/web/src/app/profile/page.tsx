@@ -391,9 +391,9 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <main id="main-content" style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <Loader2 size={28} color="var(--accent-secondary)" style={{ animation: "spin 1s linear infinite" }} />
-      </div>
+      </main>
     );
   }
 
@@ -424,7 +424,7 @@ export default function ProfilePage() {
         </div>
       </nav>
 
-      <main style={{ maxWidth: 900, margin: "0 auto", padding: "2.5rem 5% 6rem", display: "flex", gap: "2rem", alignItems: "flex-start", flexDirection: isMobile ? "column" : "row" }}>
+      <main id="main-content" style={{ maxWidth: 900, margin: "0 auto", padding: "2.5rem 5% 6rem", display: "flex", gap: "2rem", alignItems: "flex-start", flexDirection: isMobile ? "column" : "row" }}>
 
         {/* ── Sidebar / Mobile Tabs ── */}
         {isMobile ? (

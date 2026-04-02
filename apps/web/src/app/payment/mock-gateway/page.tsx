@@ -2,12 +2,16 @@
 
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
+import Link from "next/link";
 import { ShieldCheck, CreditCard, Loader2, X, Lock } from "lucide-react";
 import { resolveApiBaseUrl } from "@vybx/api-client";
 
 const API = resolveApiBaseUrl(
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
 );
+const MOCK_GATEWAY_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_MOCK_GATEWAY === "true" ||
+  process.env.NODE_ENV !== "production";
 
 // ─── Inner component (needs useSearchParams) ──────────────────────────────────
 
@@ -55,8 +59,28 @@ function MockGatewayInner() {
     style: "currency", currency, minimumFractionDigits: 0,
   }).format(Number(amount));
 
+  if (!MOCK_GATEWAY_ENABLED) {
+    return (
+      <main id="main-content" className="page-state-shell">
+        <section className="page-state-card" style={{ maxWidth: 560 }}>
+          <h1 className="auth-title" style={{ marginBottom: "0.6rem" }}>
+            Gateway de prueba deshabilitado
+          </h1>
+          <p className="auth-subtitle">
+            Esta ruta solo está disponible en entornos de desarrollo.
+          </p>
+          <div style={{ marginTop: "1.1rem" }}>
+            <Link href="/" className="btn-secondary" style={{ textDecoration: "none" }}>
+              Volver al inicio
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <div style={{
+    <main id="main-content" style={{
       minHeight: "100dvh",
       display: "flex",
       alignItems: "center",
@@ -238,7 +262,7 @@ function MockGatewayInner() {
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    </main>
   );
 }
 

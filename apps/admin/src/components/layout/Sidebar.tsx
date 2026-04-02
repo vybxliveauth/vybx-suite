@@ -74,7 +74,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground shrink-0">
               <Zap className="size-3.5 fill-current" />
             </div>
-            <span className="text-foreground">VybeTickets</span>
+            <span className="text-foreground">Vybx</span>
           </Link>
           {onClose && (
             <button

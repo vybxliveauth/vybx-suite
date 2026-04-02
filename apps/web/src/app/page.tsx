@@ -99,6 +99,7 @@ function Navbar({
         </div>
 
         <button
+          type="button"
           onClick={onCommandOpen}
           className="btn-secondary nav-search-btn"
           style={{ padding: "0.45rem 0.8rem", fontSize: "0.82rem" }}
@@ -125,8 +126,11 @@ function Navbar({
         {user ? (
           <div ref={menuRef} style={{ position: "relative" }} className="hidden-mobile">
             <button
+              type="button"
               onClick={() => setMenuOpen(!menuOpen)}
               className="nav-user-btn"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
               style={{
                 display: "flex", alignItems: "center", gap: "0.5rem",
                 background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
@@ -168,6 +172,7 @@ function Navbar({
                   Mis tickets
                 </Link>
                 <button
+                  type="button"
                   onClick={() => { logout(); setMenuOpen(false); }}
                   style={{ display: "block", width: "100%", textAlign: "left", padding: "0.55rem 0.85rem", borderRadius: "var(--radius-md)", fontSize: "0.85rem", color: "#f43f5e", background: "transparent", border: "none", cursor: "pointer", transition: "background 0.15s" }}
                   onMouseEnter={e => (e.currentTarget.style.background = "rgba(244,63,94,0.08)")}
@@ -179,13 +184,14 @@ function Navbar({
             )}
           </div>
         ) : (
-          <button onClick={onAuthOpen} className="btn-secondary nav-auth-btn hidden-mobile" style={{ padding: "0.5rem 1.25rem", fontSize: "0.9rem" }}>
+          <button type="button" onClick={onAuthOpen} className="btn-secondary nav-auth-btn hidden-mobile" style={{ padding: "0.5rem 1.25rem", fontSize: "0.9rem" }}>
             Ingresar
           </button>
         )}
 
         {/* Hamburger – mobile only */}
         <button
+          type="button"
           onClick={() => setMobileNavOpen(true)}
           className="mobile-only"
           aria-label="Abrir menú"
@@ -312,6 +318,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Busca un artista, evento o lugar..."
+            aria-label="Buscar artista, evento o lugar"
             style={{
               flex: 1, background: "transparent", border: "none", outline: "none",
               fontSize: "1rem", color: "var(--text-light)",

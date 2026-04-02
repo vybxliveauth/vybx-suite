@@ -71,6 +71,11 @@
 
   /* Transitions */
   --transition-smooth: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-fast: 140ms;
+  --motion-base: 220ms;
+  --motion-slow: 420ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --focus-ring-color: rgba(124, 58, 237, 0.62);
   --page-inline: clamp(12px, 2.1vw, 34px);
   --content-max: 1460px;
 
@@ -112,6 +117,7 @@
   --accent-secondary: #6d28d9;
   --accent-tertiary: #0891b2;
   --accent-glow: rgba(225, 29, 72, 0.3);
+  --focus-ring-color: rgba(109, 40, 217, 0.5);
   --glass-bg: rgba(255, 255, 255, 0.5);
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
@@ -200,6 +206,7 @@
     --accent-secondary: #6d28d9;
     --accent-tertiary: #0891b2;
     --accent-glow: rgba(225, 29, 72, 0.3);
+    --focus-ring-color: rgba(109, 40, 217, 0.5);
     --glass-bg: rgba(255, 255, 255, 0.5);
     --glass-border: rgba(0, 0, 0, 0.08);
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
@@ -429,7 +436,10 @@ h6 {
   text-decoration: none;
   overflow: hidden;
   position: relative;
-  transition: var(--transition-smooth);
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    opacity var(--motion-fast) linear;
 }
 
 .btn-primary::before {
@@ -507,7 +517,12 @@ h6 {
   text-decoration: none;
   position: relative;
   overflow: hidden;
-  transition: var(--transition-smooth);
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    background var(--motion-base) var(--ease-standard),
+    color var(--motion-fast) linear,
+    opacity var(--motion-fast) linear;
 }
 
 .btn-secondary:hover {
@@ -522,6 +537,15 @@ h6 {
 
 .btn-secondary.btn-lg {
   padding: 1rem 2rem;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+button[aria-disabled='true'] {
+  opacity: 0.58;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ─── Form Inputs (shared base) ─────────────────────────────────────────────── */
@@ -1232,6 +1256,20 @@ h6 {
     font-size: 0.82rem !important;
     min-width: 88px;
   }
+
+  .hero-pill {
+    margin-bottom: 1.2rem;
+    font-size: 0.72rem;
+  }
+
+  .auth-shell {
+    align-items: flex-start;
+    padding-top: max(1.25rem, env(safe-area-inset-top));
+  }
+
+  .auth-brand {
+    margin-bottom: 1.3rem;
+  }
 }
 
 /* ─── Footer ─────────────────────────────────────────────────────────────────── */
@@ -1409,6 +1447,20 @@ h6 {
   }
 }
 
+@media (max-width: 430px) {
+  .event-carousel-slide {
+    flex-basis: 92%;
+  }
+
+  .event-carousel-card {
+    aspect-ratio: 1.62 / 1;
+  }
+
+  .checkout-summary-mobile {
+    padding-inline: 0.7rem;
+  }
+}
+
 /* ─── Pagination ─────────────────────────────────────────────────────────────── */
 .pagination {
   display: flex;
@@ -1481,7 +1533,7 @@ h6 {
 
 /* ─── Focus rings ────────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid rgba(124, 58, 237, 0.65);
+  outline: 2px solid var(--focus-ring-color);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -1489,6 +1541,86 @@ h6 {
 button:focus-visible,
 a:focus-visible {
   border-radius: var(--radius-md);
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 1px;
+}
+
+/* ─── Shared auth / state shells ───────────────────────────────────────────── */
+.auth-shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.auth-shell-inner {
+  width: 100%;
+  max-width: 460px;
+}
+
+.auth-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2.1rem;
+  text-decoration: none;
+}
+
+.auth-card {
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  padding: clamp(1.25rem, 2.8vw, 2rem);
+}
+
+.auth-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
+  font-weight: 900;
+  color: var(--text-light);
+  margin: 0 0 0.45rem;
+  line-height: 1.12;
+}
+
+.auth-subtitle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.page-state-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.page-state-card {
+  width: 100%;
+  max-width: 680px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  background: var(--card-bg);
+  padding: clamp(1.25rem, 3vw, 2.1rem);
+  text-align: center;
+}
+
+/* ─── Motion safety ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ─── Hero pill (announcement badge above headline) ──────────────────────────── */

@@ -75,14 +75,19 @@ function Navbar({ onCartOpen, eventTitle }: { onCartOpen: () => void; eventTitle
           <span className="event-detail-nav-label">Volver</span>
         </Link>
         <button
+          type="button"
           className="btn-secondary event-detail-nav-btn"
           style={{ padding: "0.5rem 1.1rem", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: "0.4rem" }}
-          onClick={() => {
-            if (navigator.share) {
-              void navigator.share({ title: eventTitle, url: window.location.href });
-            } else {
-              void navigator.clipboard.writeText(window.location.href);
+          onClick={async () => {
+            try {
+              if (navigator.share) {
+                await navigator.share({ title: eventTitle, url: window.location.href });
+                return;
+              }
+              await navigator.clipboard.writeText(window.location.href);
               toast.success("Enlace copiado");
+            } catch {
+              toast.error("No pudimos compartir este enlace.");
             }
           }}
         >
@@ -161,7 +166,7 @@ function EventHero({ event }: { event: Event }) {
       </div>
 
       {/* Wishlist */}
-      <button className="event-hero-wishlist" style={{
+      <button type="button" className="event-hero-wishlist" style={{
         position: "absolute",
         top: "8rem",
         right: "2rem",
@@ -177,6 +182,8 @@ function EventHero({ event }: { event: Event }) {
         zIndex: 2,
         transition: "background 0.2s",
       }}
+        aria-label="Guardar en favoritos (próximamente)"
+        onClick={() => toast.info("Favoritos estará disponible pronto.")}
         onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,42,95,0.2)")}
         onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
       >
@@ -457,6 +464,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           </p>
         </div>
         <button
+          type="button"
           className="btn-primary"
           onClick={() => setTicketSheetOpen(true)}
           style={{

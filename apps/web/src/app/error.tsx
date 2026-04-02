@@ -31,25 +31,8 @@ export default function ErrorPage({
   }, [error]);
 
   return (
-    <main
-      style={{
-        minHeight: "100dvh",
-        display: "grid",
-        placeItems: "center",
-        padding: "2rem",
-      }}
-    >
-      <section
-        style={{
-          width: "100%",
-          maxWidth: 640,
-          border: "1px solid rgba(244,63,94,0.35)",
-          borderRadius: "var(--radius-2xl)",
-          background: "var(--card-bg)",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
+    <main id="main-content" className="page-state-shell">
+      <section className="page-state-card" style={{ borderColor: "rgba(244,63,94,0.35)" }}>
         <AlertCircle size={28} color="#fda4af" style={{ margin: "0 auto 0.75rem" }} />
         <h1
           style={{

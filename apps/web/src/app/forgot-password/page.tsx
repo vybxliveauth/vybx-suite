@@ -45,28 +45,14 @@ export default function ForgotPasswordPage() {
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div style={{
-        minHeight: "100dvh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-      }}>
-        <div style={{ width: "100%", maxWidth: 440 }}>
-          {/* Logo */}
-          <Link href="/" style={{ textDecoration: "none", marginBottom: "2.5rem", display: "flex", justifyContent: "center" }}>
+      <main id="main-content" className="auth-shell">
+        <div className="auth-shell-inner">
+          <Link href="/" className="auth-brand" aria-label="Volver al inicio">
             <VybxLogo size={28} textSize="1.5rem" />
           </Link>
 
-          <div style={{
-            background: "var(--card-bg)",
-            border: "1px solid var(--glass-border)",
-            borderRadius: "var(--radius-2xl)",
-            padding: "2rem",
-          }}>
+          <section className="auth-card">
             {state.status === "success" ? (
-              /* ── Success state ── */
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem", textAlign: "center" }}>
                 <div style={{
                   width: 72, height: 72, borderRadius: "50%",
@@ -77,10 +63,10 @@ export default function ForgotPasswordPage() {
                   <CheckCircle2 size={32} color="#4ade80" />
                 </div>
                 <div>
-                  <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "1.4rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.5rem" }}>
+                  <h1 className="auth-title" style={{ marginBottom: "0.5rem" }}>
                     Revisa tu email
                   </h1>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.6 }}>
+                  <p className="auth-subtitle">
                     {state.message} El enlace expira en 30 minutos.
                   </p>
                 </div>
@@ -89,13 +75,12 @@ export default function ForgotPasswordPage() {
                 </Link>
               </div>
             ) : (
-              /* ── Form ── */
               <>
                 <div style={{ marginBottom: "1.75rem" }}>
-                  <h1 style={{ fontFamily: "var(--font-heading)", fontSize: "1.5rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.4rem" }}>
+                  <h1 className="auth-title">
                     ¿Olvidaste tu contraseña?
                   </h1>
-                  <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>
+                  <p className="auth-subtitle">
                     Ingresa tu email y te enviaremos un enlace para restablecerla.
                   </p>
                 </div>
@@ -113,17 +98,8 @@ export default function ForgotPasswordPage() {
                         type="email"
                         placeholder="tu@email.com"
                         autoComplete="email"
-                        style={{
-                          width: "100%",
-                          padding: "0.7rem 0.9rem 0.7rem 2.4rem",
-                          background: "rgba(255,255,255,0.04)",
-                          border: `1px solid ${errors.email ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
-                          borderRadius: "var(--radius-lg)",
-                          color: "var(--text-light)",
-                          fontSize: "0.92rem",
-                          fontFamily: "var(--font-body)",
-                          outline: "none",
-                        }}
+                        className="vybx-input"
+                        style={{ paddingLeft: "2.4rem" }}
                         onFocus={e => { e.target.style.borderColor = "rgba(124,58,237,0.6)"; e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.12)"; }}
                         onBlur={e => { e.target.style.borderColor = errors.email ? "rgba(244,63,94,0.6)" : "var(--glass-border)"; e.target.style.boxShadow = "none"; }}
                       />
@@ -155,9 +131,9 @@ export default function ForgotPasswordPage() {
                 </div>
               </>
             )}
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </>
   );
 }

@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, Loader2, MailCheck, Zap } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, MailCheck } from "lucide-react";
 import { resolveApiBaseUrl } from "@vybx/api-client";
+import { VybxLogo } from "@/components/ui/VybxLogo";
 
 const API_BASE_URL = resolveApiBaseUrl(
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
@@ -164,48 +165,13 @@ export default function VerifyEmailPage() {
   return (
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <div
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-        }}
-      >
-        <div style={{ width: "100%", maxWidth: 440 }}>
-          <Link
-            href="/"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              textDecoration: "none",
-              marginBottom: "2.25rem",
-            }}
-          >
-            <Zap size={22} color="var(--accent-primary)" />
-            <span
-              style={{
-                fontFamily: "var(--font-heading)",
-                fontSize: "1.5rem",
-                fontWeight: 900,
-                color: "var(--text-light)",
-              }}
-            >
-              vybx
-            </span>
+      <main id="main-content" className="auth-shell">
+        <div className="auth-shell-inner">
+          <Link href="/" className="auth-brand" aria-label="Volver al inicio">
+            <VybxLogo size={28} textSize="1.5rem" />
           </Link>
 
-          <div
-            style={{
-              background: "var(--card-bg)",
-              border: "1px solid var(--glass-border)",
-              borderRadius: "var(--radius-2xl)",
-              padding: "2rem",
-            }}
-          >
+          <section className="auth-card">
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.15rem", textAlign: "center" }}>
               <div
                 style={{
@@ -233,18 +199,8 @@ export default function VerifyEmailPage() {
               </div>
 
               <div>
-                <h1
-                  style={{
-                    fontFamily: "var(--font-heading)",
-                    fontSize: "1.35rem",
-                    fontWeight: 900,
-                    color: "var(--text-light)",
-                    marginBottom: "0.45rem",
-                  }}
-                >
-                  {title}
-                </h1>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", lineHeight: 1.55 }}>{message}</p>
+                <h1 className="auth-title" style={{ marginBottom: "0.45rem" }}>{title}</h1>
+                <p className="auth-subtitle">{message}</p>
               </div>
 
               {state === "success" ? (
@@ -259,14 +215,7 @@ export default function VerifyEmailPage() {
                     placeholder="tu@email.com"
                     value={resendEmail}
                     onChange={(event) => setResendEmail(event.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "0.72rem 0.82rem",
-                      borderRadius: "0.65rem",
-                      border: "1px solid var(--glass-border)",
-                      background: "rgba(255,255,255,0.04)",
-                      color: "var(--text-light)",
-                    }}
+                    className="vybx-input"
                   />
                   <button
                     type="button"
@@ -297,9 +246,9 @@ export default function VerifyEmailPage() {
                 </div>
               )}
             </div>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </>
   );
 }

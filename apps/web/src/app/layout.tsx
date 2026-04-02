@@ -34,7 +34,17 @@ export const metadata: Metadata = {
   },
   description:
     "Descubre y compra tickets para los mejores eventos en vivo. Rápido, seguro y sin complicaciones.",
+  keywords: [
+    "tickets",
+    "eventos en vivo",
+    "conciertos",
+    "festivales",
+    "Vybx",
+  ],
   metadataBase: resolveMetadataBase(),
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "es_DO",
@@ -42,12 +52,21 @@ export const metadata: Metadata = {
     title: "Vybx - Tickets para experiencias en vivo",
     description:
       "Descubre y compra tickets para los mejores eventos en vivo. Rápido, seguro y sin complicaciones.",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Vybx - Tickets para experiencias en vivo",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Vybx - Tickets para experiencias en vivo",
     description:
       "Descubre y compra tickets para los mejores eventos en vivo.",
+    images: ["/twitter-image"],
   },
   robots: {
     index: true,

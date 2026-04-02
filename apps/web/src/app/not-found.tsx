@@ -3,16 +3,8 @@ import { Zap, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "2rem",
-      textAlign: "center",
-      gap: "1.5rem",
-    }}>
+    <main id="main-content" className="page-state-shell">
+      <section className="page-state-card" style={{ maxWidth: 560 }}>
       <div style={{
         fontFamily: "var(--font-heading)",
         fontSize: "clamp(5rem, 20vw, 12rem)",
@@ -42,6 +34,7 @@ export default function NotFound() {
         <ArrowLeft size={16} />
         Volver al inicio
       </Link>
-    </div>
+      </section>
+    </main>
   );
 }

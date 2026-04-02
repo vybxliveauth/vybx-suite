@@ -20,9 +20,10 @@ export default function GlobalError({
           display: "grid",
           placeItems: "center",
           padding: "2rem",
-          background: "#070b16",
+          background:
+            "radial-gradient(ellipse 80% 50% at 50% -18%, rgba(124,58,237,0.22), transparent), #070b16",
           color: "#e5e7eb",
-          fontFamily: "ui-sans-serif, system-ui, sans-serif",
+          fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
         }}
       >
         <section
@@ -30,16 +31,16 @@ export default function GlobalError({
             width: "100%",
             maxWidth: 640,
             border: "1px solid rgba(244,63,94,0.35)",
-            borderRadius: "1rem",
-            background: "rgba(15, 23, 42, 0.9)",
+            borderRadius: "0.95rem",
+            background: "rgba(12, 17, 30, 0.9)",
             padding: "2rem",
             textAlign: "center",
           }}
         >
-          <p style={{ fontSize: "0.85rem", color: "#fda4af", marginBottom: "0.5rem" }}>
+          <p style={{ fontSize: "0.85rem", color: "#fda4af", marginBottom: "0.5rem", fontWeight: 700 }}>
             Error fatal
           </p>
-          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800 }}>
+          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 800, fontFamily: "Outfit, Inter, sans-serif" }}>
             La aplicación encontró un fallo crítico
           </h1>
           <p style={{ marginTop: "0.75rem", marginBottom: "1.5rem", color: "#94a3b8" }}>

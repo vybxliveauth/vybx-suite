@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "@vybx/ui/styles";
+@import 'tailwindcss';
+@import '@vybx/ui/styles';
 
 /* ── Skip to Main Content (a11y) ──────────────────────────────────────── */
 .skip-to-main {
@@ -24,79 +24,88 @@
 :root {
   color-scheme: dark;
 
-  --background:              240 10% 3.9%;
-  --foreground:              210 20% 98%;
-  --card:                    240 10% 5%;
-  --card-foreground:         210 20% 98%;
-  --popover:                 240 10% 5%;
-  --popover-foreground:      210 20% 98%;
-  --primary:                 262.1 83.3% 57.8%;
-  --primary-foreground:      210 20% 98%;
-  --secondary:               240 3.7% 15.9%;
-  --secondary-foreground:    210 20% 98%;
-  --muted:                   240 3.7% 15.9%;
-  --muted-foreground:        240 5% 64.9%;
-  --accent:                  240 3.7% 15.9%;
-  --accent-foreground:       210 20% 98%;
-  --destructive:             0 62.8% 30.6%;
-  --destructive-foreground:  210 20% 98%;
-  --border:                  240 3.7% 15.9%;
-  --input:                   240 3.7% 15.9%;
-  --ring:                    262.1 83.3% 57.8%;
-  --radius:                  0.5rem;
+  --background: 240 10% 3.9%;
+  --foreground: 210 20% 98%;
+  --card: 240 10% 5%;
+  --card-foreground: 210 20% 98%;
+  --popover: 240 10% 5%;
+  --popover-foreground: 210 20% 98%;
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 262.1 83.3% 57.8%;
+  --radius: 0.5rem;
 
-  --sidebar-width:  256px;
-  --header-height:  56px;
+  --sidebar-width: 256px;
+  --header-height: 56px;
 
-  --glass-bg:     rgba(20, 20, 25, 0.45);
+  --glass-bg: rgba(20, 20, 25, 0.45);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-  --text-light:   #ffffff;
-  --text-muted:   #a1a1aa;
+  --text-light: #ffffff;
+  --text-muted: #a1a1aa;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   color-scheme: light;
 
-  --background:              220 34% 97%;
-  --foreground:              222 42% 12%;
-  --card:                    0 0% 100%;
-  --card-foreground:         222 42% 12%;
-  --popover:                 0 0% 100%;
-  --popover-foreground:      222 42% 12%;
-  --primary:                 262 83% 46%;
-  --primary-foreground:      210 20% 98%;
-  --secondary:               220 18% 93%;
-  --secondary-foreground:    222 42% 12%;
-  --muted:                   220 18% 93%;
-  --muted-foreground:        222 14% 40%;
-  --accent:                  220 18% 93%;
-  --accent-foreground:       222 42% 12%;
-  --destructive:             0 70% 44%;
-  --destructive-foreground:  210 20% 98%;
-  --border:                  220 20% 86%;
-  --input:                   220 20% 90%;
-  --ring:                    262 83% 46%;
+  --background: 220 34% 97%;
+  --foreground: 222 42% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 42% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 42% 12%;
+  --primary: 262 83% 46%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 220 18% 93%;
+  --secondary-foreground: 222 42% 12%;
+  --muted: 220 18% 93%;
+  --muted-foreground: 222 14% 40%;
+  --accent: 220 18% 93%;
+  --accent-foreground: 222 42% 12%;
+  --destructive: 0 70% 44%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 220 20% 86%;
+  --input: 220 20% 90%;
+  --ring: 262 83% 46%;
 
-  --glass-bg:                rgba(255, 255, 255, 0.72);
-  --glass-border:            rgba(15, 23, 42, 0.1);
-  --glass-shadow:            0 10px 26px rgba(15, 23, 42, 0.08);
-  --text-light:              #0f172a;
-  --text-muted:              #475569;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(15, 23, 42, 0.1);
+  --glass-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  --text-light: #0f172a;
+  --text-muted: #475569;
 }
 
 @layer base {
-  html, body {
+  html,
+  body {
     background-color: #030014;
-    background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.07), transparent);
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(124, 58, 237, 0.07),
+      transparent
+    );
     background-attachment: fixed;
     color: hsl(var(--foreground));
-    font-family: var(--font-geist-sans, system-ui, sans-serif);
+    font-family: var(--font-body, system-ui, sans-serif);
   }
 
-  [data-theme="light"] body {
+  [data-theme='light'] body {
     background-color: #f4f8ff;
-    background-image: radial-gradient(ellipse 78% 48% at 50% -20%, rgba(124, 58, 237, 0.15), transparent);
+    background-image: radial-gradient(
+      ellipse 78% 48% at 50% -20%,
+      rgba(124, 58, 237, 0.15),
+      transparent
+    );
     color: hsl(var(--foreground));
   }
 }
@@ -109,7 +118,7 @@
   border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-[data-theme="light"] .sidebar {
+[data-theme='light'] .sidebar {
   background: #f7fbff;
   border-right: 1px solid rgba(15, 23, 42, 0.1);
 }
@@ -123,7 +132,10 @@
   font-size: 0.875rem;
   font-weight: 500;
   color: hsl(var(--muted-foreground));
-  transition: color 150ms, background-color 150ms, border-color 150ms;
+  transition:
+    color 150ms,
+    background-color 150ms,
+    border-color 150ms;
   border: 1px solid transparent;
 }
 
@@ -132,7 +144,7 @@
   color: #ffffff;
 }
 
-[data-theme="light"] .nav-link:hover {
+[data-theme='light'] .nav-link:hover {
   background-color: rgba(15, 23, 42, 0.06);
   color: #0f172a;
 }
@@ -152,10 +164,20 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(124, 58, 237, 0.3) transparent;
 }
-::-webkit-scrollbar        { width: 6px; height: 6px; }
-::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(124, 58, 237, 0.3); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(124, 58, 237, 0.55); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.55);
+}
 
 /* ── Mobile sidebar ──────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
