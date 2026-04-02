@@ -732,7 +732,7 @@ export default function CheckoutPage() {
     throw new Error("No se pudo obtener el token de cola para iniciar el pago.");
   };
 
-  const submitCheckout = async (data: BuyerFields) => {
+  const submitCheckout = async (_data: BuyerFields) => {
     const items = session?.items ?? [];
     if (items.length === 0) return;
     setCheckoutError(null);

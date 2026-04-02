@@ -15,6 +15,7 @@ const betaRuleTuning = {
     "react-hooks/set-state-in-effect": "off",
     "react-hooks/immutability": "off",
     "@next/next/no-html-link-for-pages": "warn",
+    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     "no-restricted-imports": [
       "error",
       {

@@ -64,10 +64,10 @@ function Separator() {
 }
 
 export function EventCountdown({ startDate }: { startDate: string }) {
-  const target = new Date(startDate);
-  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calcTimeLeft(target));
+  const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(() => calcTimeLeft(new Date(startDate)));
 
   useEffect(() => {
+    const target = new Date(startDate);
     const id = setInterval(() => {
       const tl = calcTimeLeft(target);
       setTimeLeft(tl);

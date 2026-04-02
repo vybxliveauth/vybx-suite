@@ -511,7 +511,7 @@ export default function MyTicketsPage() {
     setTickets((prev) => prev.map((t) => t.id === id ? { ...t, status: "CANCELLED" as TicketStatus } : t));
   }
 
-  function handleTransferred(_id: string) {
+  function handleTransferred(_: string) {
     void loadTickets();
   }
 
