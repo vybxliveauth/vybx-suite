@@ -80,8 +80,8 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
   return (
     <section
       style={{
-        padding: "0 var(--page-inline) 0.45rem",
-        marginTop: "-0.9rem",
+        padding: "0 var(--page-inline) 0.35rem",
+        marginTop: "-1.15rem",
         borderTop: "none",
         borderBottom: "none",
         background: "transparent",

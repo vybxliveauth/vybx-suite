@@ -253,6 +253,17 @@ export function EventDetailClient({ event }: { event: Event }) {
     status: "success" | "error";
     message: string;
   } | null>(null);
+  const availableTierPrices = event.tiers
+    .filter((tier) => tier.stock > 0)
+    .map((tier) => tier.price);
+  const fallbackTierPrices = event.tiers.map((tier) => tier.price);
+  const displayFromPrice =
+    availableTierPrices.length > 0
+      ? Math.min(...availableTierPrices)
+      : fallbackTierPrices.length > 0
+        ? Math.min(...fallbackTierPrices)
+        : 0;
+  const displayCurrency = event.tiers[0]?.currency ?? "USD";
 
   useEffect(() => {
     const handleSeatFeedback = (nativeEvent: globalThis.Event) => {
@@ -457,10 +468,7 @@ export function EventDetailClient({ event }: { event: Event }) {
             color: "var(--text-light)",
             lineHeight: 1.1,
           }}>
-            {formatPrice(
-              Math.min(...event.tiers.filter(t => t.stock > 0).map(t => t.price)),
-              event.tiers[0]?.currency ?? "USD",
-            )}
+            {formatPrice(displayFromPrice, displayCurrency)}
           </p>
         </div>
         <button

@@ -277,7 +277,7 @@
 
 html {
   scroll-behavior: smooth;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 /* Global square-ish profile: keep pills untouched (`rounded-full`) */
@@ -315,7 +315,7 @@ body {
       rgba(6, 182, 212, 0.15),
       transparent
     );
-  background-attachment: fixed;
+  background-attachment: scroll;
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;
@@ -326,7 +326,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 /* ─── Typography ─────────────────────────────────────────────────────────────── */
@@ -1174,6 +1174,11 @@ button[aria-disabled='true'] {
     transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
     box-shadow 0.3s ease;
   isolation: isolate;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  outline: 1px solid transparent;
+  background-clip: padding-box;
 }
 
 .event-carousel-card::after {
@@ -1182,6 +1187,7 @@ button[aria-disabled='true'] {
   inset: 0;
   border-radius: inherit;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
   pointer-events: none;
   z-index: 4;
 }
@@ -1194,9 +1200,13 @@ button[aria-disabled='true'] {
 }
 
 .event-carousel-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  will-change: transform;
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
