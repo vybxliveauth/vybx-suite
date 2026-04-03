@@ -85,7 +85,7 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
     >
       <div className="section-shell event-highlights-shell" style={{ position: "relative" }}>
       {/* Carousel viewport */}
-      <div ref={emblaRef} style={{ overflow: "hidden" }}>
+      <div ref={emblaRef} className="event-carousel-viewport" style={{ overflow: "hidden" }}>
         <div className="event-carousel-track">
           {slides.map((event) => (
             <div key={event.id} className="event-carousel-slide">
