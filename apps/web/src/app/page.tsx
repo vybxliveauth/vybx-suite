@@ -20,7 +20,6 @@ import { MobileNavDrawer } from "@/components/features/MobileNavDrawer";
 import { SearchIllustration, EventsIllustration } from "@/components/features/EmptyStateIllustration";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useAuthStore } from "@/store/useAuthStore";
-import { Footer } from "@/components/features/Footer";
 
 function normalizeCategory(value: string): string {
   return value.trim().toLowerCase();
@@ -890,7 +889,6 @@ export default function HomePage() {
         </div>
         <EventsSection allEvents={events} isLoading={isLoading} isError={isError} search={search} onSearch={setSearch} />
       </main>
-      <Footer />
       <EventCommandPalette
         events={events}
         open={commandOpen}

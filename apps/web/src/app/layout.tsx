@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { Footer } from "@/components/features/Footer";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -92,7 +93,10 @@ export default function RootLayout({
         >
           Saltar al contenido
         </a>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

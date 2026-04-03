@@ -31,32 +31,16 @@ const SOCIAL_ICONS = [
   },
 ];
 
-export function Footer({ showCta = false }: { showCta?: boolean }) {
-  const showBottomBar = !showCta;
-
+export function Footer() {
   return (
-    <footer className={`footer-shell${showCta ? " footer-shell-with-cta" : ""}`}>
+    <footer className="footer-shell">
       {/* Main grid */}
       <div
         className="section-shell"
         style={{
-          padding: showCta
-            ? "2.15rem var(--page-inline) 2.35rem"
-            : "3.5rem var(--page-inline) 3rem",
+          padding: "3.5rem var(--page-inline) 3rem",
         }}
       >
-        {showCta && (
-          <div className="footer-cta">
-            <div>
-              <p className="footer-cta-title">Listo para tu próxima experiencia en vivo</p>
-              <p className="footer-cta-copy">Explora eventos, compra en segundos y gestiona todo desde tu cuenta.</p>
-            </div>
-            <Link href="/#events" className="btn-primary" style={{ textDecoration: "none", padding: "0.56rem 1.15rem", fontSize: "0.84rem", whiteSpace: "nowrap" }}>
-              Ver eventos
-            </Link>
-          </div>
-        )}
-
         <div className="footer-grid" style={{ display: "grid", gap: "2.5rem" }}>
         {/* Brand */}
         <div>
@@ -112,20 +96,18 @@ export function Footer({ showCta = false }: { showCta?: boolean }) {
       </div>
 
       {/* Bottom bar */}
-      {showBottomBar && (
-        <div
-          className="footer-bottom-bar"
-          style={{
-            padding: "1.25rem var(--page-inline)",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
-            © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
-          </p>
-        </div>
-      )}
+      <div
+        className="footer-bottom-bar"
+        style={{
+          padding: "1.25rem var(--page-inline)",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
+          © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
+        </p>
+      </div>
     </footer>
   );
 }

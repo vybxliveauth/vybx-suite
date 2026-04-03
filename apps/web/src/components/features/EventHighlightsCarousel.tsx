@@ -79,17 +79,11 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
 
   return (
     <section
-      style={{
-        padding: "0 var(--page-inline) 0.35rem",
-        marginTop: "-1.15rem",
-        borderTop: "none",
-        borderBottom: "none",
-        background: "transparent",
-      }}
+      className="event-highlights-floating"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="section-shell" style={{ position: "relative", overflow: "clip" }}>
+      <div className="section-shell event-highlights-shell" style={{ position: "relative" }}>
       {/* Carousel viewport */}
       <div ref={emblaRef} style={{ overflow: "hidden" }}>
         <div className="event-carousel-track">

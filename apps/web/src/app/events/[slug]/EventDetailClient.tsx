@@ -374,13 +374,6 @@ export function EventDetailClient({ event }: { event: Event }) {
         {/* ── Left: Content ── */}
         <div style={{ paddingTop: "3rem" }}>
 
-          {/* Tags */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "1.75rem" }}>
-            {event.tags.map((tag) => (
-              <span key={tag} className="event-tag">{tag}</span>
-            ))}
-          </div>
-
           {/* Countdown */}
           <EventCountdown startDate={event.startDate} />
 
