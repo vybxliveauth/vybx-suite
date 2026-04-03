@@ -3,11 +3,32 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
   AlertTriangle,
+  BriefcaseBusiness,
+  Drama,
+  Dumbbell,
+  Film,
   FolderTree,
+  Gamepad2,
+  Globe2,
+  GraduationCap,
+  HeartPulse,
+  Landmark,
   Loader2,
+  Mic2,
+  Music2,
+  Palette,
+  PartyPopper,
+  Plane,
   Plus,
   RefreshCw,
+  ShoppingBag,
+  Sparkles,
+  Ticket,
+  Trophy,
   Trash2,
+  type LucideIcon,
+  Users,
+  UtensilsCrossed,
 } from "lucide-react";
 import {
   Badge,
@@ -40,6 +61,34 @@ import {
   useDeleteCategory,
   useUpdateCategory,
 } from "@/lib/queries";
+
+const ICON_OPTIONS: Array<{ value: string; label: string; Icon: LucideIcon }> = [
+  { value: "music", label: "Música", Icon: Music2 },
+  { value: "ticket", label: "Entradas", Icon: Ticket },
+  { value: "food", label: "Gastronomía", Icon: UtensilsCrossed },
+  { value: "show", label: "Espectáculo", Icon: Drama },
+  { value: "gaming", label: "Gaming", Icon: Gamepad2 },
+  { value: "sports", label: "Deportes", Icon: Dumbbell },
+  { value: "business", label: "Negocios", Icon: BriefcaseBusiness },
+  { value: "education", label: "Educación", Icon: GraduationCap },
+  { value: "health", label: "Salud", Icon: HeartPulse },
+  { value: "conference", label: "Conferencia", Icon: Mic2 },
+  { value: "culture", label: "Cultura", Icon: Landmark },
+  { value: "art", label: "Arte", Icon: Palette },
+  { value: "cinema", label: "Cine", Icon: Film },
+  { value: "travel", label: "Viajes", Icon: Plane },
+  { value: "lifestyle", label: "Lifestyle", Icon: Sparkles },
+  { value: "party", label: "Fiesta", Icon: PartyPopper },
+  { value: "competition", label: "Competencia", Icon: Trophy },
+  { value: "community", label: "Comunidad", Icon: Users },
+  { value: "shopping", label: "Compras", Icon: ShoppingBag },
+  { value: "global", label: "Global", Icon: Globe2 },
+];
+
+function getIconOption(iconValue?: string | null) {
+  if (!iconValue) return null;
+  return ICON_OPTIONS.find((option) => option.value === iconValue) ?? null;
+}
 
 export default function CategoriesPage() {
   const user = useAuthUser();
@@ -230,14 +279,27 @@ export default function CategoriesPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="category-icon">Icono (opcional)</Label>
-                <Input
-                  id="category-icon"
-                  value={icon}
-                  onChange={(event) => setIcon(event.target.value)}
-                  placeholder="music"
+                <Label>Icono</Label>
+                <Select
+                  value={icon || "__none__"}
+                  onValueChange={(value) => setIcon(value === "__none__" ? "" : value)}
                   disabled={!isSuperAdmin || createCategory.isPending}
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar icono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Sin icono</SelectItem>
+                    {ICON_OPTIONS.map(({ value, label, Icon }) => (
+                      <SelectItem key={value} value={value}>
+                        <span className="inline-flex items-center gap-2">
+                          <Icon className="size-4" />
+                          {label}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="category-order">Orden</Label>
@@ -317,7 +379,17 @@ export default function CategoriesPage() {
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">{category.name}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {category.icon || "—"}
+                        {(() => {
+                          const iconOption = getIconOption(category.icon);
+                          if (!iconOption) return category.icon || "—";
+                          const Icon = iconOption.Icon;
+                          return (
+                            <span className="inline-flex items-center gap-2 text-foreground">
+                              <Icon className="size-4 text-muted-foreground" />
+                              {iconOption.label}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{category.order}</TableCell>
                       <TableCell>
