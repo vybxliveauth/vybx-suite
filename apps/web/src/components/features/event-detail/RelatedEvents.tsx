@@ -16,23 +16,7 @@ function RelatedCard({ event }: { event: Event }) {
 
   return (
     <Link href={href} style={{ textDecoration: "none", display: "block", minWidth: 260, maxWidth: 320, flex: "0 0 auto" }}>
-      <div style={{
-        background: "var(--card-bg)",
-        border: "1px solid var(--glass-border)",
-        borderRadius: "var(--radius-2xl)",
-        overflow: "hidden",
-        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-        cursor: "pointer",
-      }}
-        onMouseEnter={e => {
-          e.currentTarget.style.transform = "translateY(-4px)";
-          e.currentTarget.style.boxShadow = "0 12px 30px rgba(0,0,0,0.3)";
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.transform = "translateY(0)";
-          e.currentTarget.style.boxShadow = "none";
-        }}
-      >
+      <div className="related-event-card">
         <div style={{ position: "relative", height: 150, overflow: "hidden" }}>
           <SafeEventImage
             src={event.imageUrl}
@@ -110,33 +94,28 @@ export function RelatedEvents({ currentEvent }: { currentEvent: Event }) {
   return (
     <section style={{ padding: "0 var(--page-inline) 4rem", position: "relative", zIndex: 10 }}>
       <div className="section-shell">
-      <h2 style={{
-        fontFamily: "var(--font-heading)",
-        fontSize: "1.25rem",
-        fontWeight: 800,
-        color: "var(--text-light)",
-        display: "flex",
-        alignItems: "center",
-        gap: "0.5rem",
-        marginBottom: "1.25rem",
-        letterSpacing: "-0.3px",
-      }}>
-        <Zap size={18} color="var(--accent-primary)" />
-        También te puede interesar
-      </h2>
+        <div className="surface-panel-soft related-events-shell">
+          <h2 style={{
+            fontFamily: "var(--font-heading)",
+            fontSize: "1.25rem",
+            fontWeight: 800,
+            color: "var(--text-light)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginBottom: "1.1rem",
+            letterSpacing: "-0.3px",
+          }}>
+            <Zap size={18} color="var(--accent-primary)" />
+            También te puede interesar
+          </h2>
 
-      <div style={{
-        display: "flex",
-        gap: "1rem",
-        overflowX: "auto",
-        WebkitOverflowScrolling: "touch",
-        paddingBottom: "0.5rem",
-        scrollbarWidth: "none",
-      }}>
-        {related.map((event) => (
-          <RelatedCard key={event.id} event={event} />
-        ))}
-      </div>
+          <div className="related-events-row">
+            {related.map((event) => (
+              <RelatedCard key={event.id} event={event} />
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

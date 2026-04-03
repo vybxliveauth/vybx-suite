@@ -101,7 +101,15 @@ function Navbar({ onCartOpen, eventTitle }: { onCartOpen: () => void; eventTitle
 
 // ─── Hero ──────────────────────────────────────────────────────────────────────
 
-function EventHero({ event }: { event: Event }) {
+function EventHero({
+  event,
+  fromPrice,
+  currency,
+}: {
+  event: Event;
+  fromPrice: number;
+  currency: string;
+}) {
   return (
     <div style={{
       position: "relative",
@@ -161,6 +169,15 @@ function EventHero({ event }: { event: Event }) {
           <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
             <MapPin size={14} color="var(--accent-primary)" />
             {event.venue.name}{event.venue.city ? `, ${event.venue.city}` : ""}
+          </span>
+        </div>
+
+        <div className="event-hero-meta-chips">
+          <span className="event-hero-meta-chip">
+            Entradas desde {formatPrice(fromPrice, currency)}
+          </span>
+          <span className="event-hero-meta-chip">
+            Checkout seguro con Stripe
           </span>
         </div>
       </div>
@@ -360,7 +377,7 @@ export function EventDetailClient({ event }: { event: Event }) {
         </div>
       )}
 
-      <EventHero event={event} />
+      <EventHero event={event} fromPrice={displayFromPrice} currency={displayCurrency} />
 
       <div className="event-detail-grid">
         {/* ── Left: Content ── */}
@@ -380,7 +397,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           <EventInfoCard event={event} />
 
           {/* About */}
-          <div style={{ maxWidth: "75ch", marginTop: "2.5rem" }}>
+          <div className="surface-panel-soft event-about-card" style={{ maxWidth: "75ch" }}>
             <h2 style={{
               fontSize: "1.2rem",
               fontWeight: 700,

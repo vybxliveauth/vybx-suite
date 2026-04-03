@@ -74,6 +74,7 @@ export function CartDrawer({
 
       {/* Panel */}
       <div
+        className="cart-drawer-panel"
         style={{
           position: "fixed",
           top: 0,
@@ -81,7 +82,6 @@ export function CartDrawer({
           bottom: 0,
           zIndex: 1200,
           width: "min(420px, 100vw)",
-          background: "var(--bg-dark)",
           borderLeft: "1px solid var(--glass-border)",
           boxShadow: "-20px 0 60px rgba(0,0,0,0.5)",
           display: "flex",
@@ -119,6 +119,7 @@ export function CartDrawer({
           </div>
           <button
             onClick={onClose}
+            aria-label="Cerrar carrito"
             style={{
               background: "var(--glass-bg)",
               border: "1px solid var(--glass-border)",
@@ -187,18 +188,21 @@ export function CartDrawer({
               <p style={{ color: "var(--text-muted)", fontSize: "0.9rem", textAlign: "center" }}>
                 Tu carrito está vacío.<br />Selecciona un evento para empezar.
               </p>
+              <Link
+                href="/#events"
+                onClick={onClose}
+                className="btn-secondary"
+                style={{ textDecoration: "none", padding: "0.55rem 1rem", fontSize: "0.84rem" }}
+              >
+                Explorar eventos
+              </Link>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {items.map((item) => (
                 <div
                   key={`${item.eventId}-${item.tierId}`}
-                  style={{
-                    background: "var(--card-bg)",
-                    border: "1px solid var(--glass-border)",
-                    borderRadius: "var(--radius-xl)",
-                    padding: "1rem",
-                  }}
+                  className="cart-item-card"
                 >
                   {/* Event + tier */}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem" }}>
@@ -240,16 +244,11 @@ export function CartDrawer({
                   {/* Qty + price */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     {/* Quantity controls */}
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      border: "1px solid var(--glass-border)",
-                      borderRadius: "var(--radius-pill)",
-                      overflow: "hidden",
-                    }}>
+                    <div className="cart-qty-control">
                       <button
+                        className="cart-qty-btn"
                         onClick={() => updateQuantity(item.tierId, item.eventId, item.quantity - 1)}
-                        style={{ width: 32, height: 32, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        aria-label="Disminuir cantidad"
                       >
                         <Minus size={12} />
                       </button>
@@ -257,8 +256,9 @@ export function CartDrawer({
                         {item.quantity}
                       </span>
                       <button
+                        className="cart-qty-btn"
                         onClick={() => updateQuantity(item.tierId, item.eventId, item.quantity + 1)}
-                        style={{ width: 32, height: 32, background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center" }}
+                        aria-label="Aumentar cantidad"
                       >
                         <Plus size={12} />
                       </button>
@@ -330,6 +330,7 @@ export function CartDrawer({
               >
                 Vaciar carrito
               </button>
+              <p className="cart-drawer-note">Reserva protegida por tiempo limitado para evitar sobreventa.</p>
             </div>
           </div>
         )}
@@ -354,6 +355,7 @@ export function CartButton({
   return (
     <button
       onClick={onClick}
+      aria-label={hasItems ? `Abrir carrito con ${count} ticket${count > 1 ? "s" : ""}` : "Abrir carrito"}
       className={compactOnMobile ? "cart-btn cart-btn-compact-mobile" : "cart-btn"}
       style={{
         position: "relative",
