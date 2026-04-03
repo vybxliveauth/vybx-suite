@@ -749,6 +749,9 @@ export default function MyTicketsPage() {
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
+      {/* Page wrapper — fills the viewport so the footer starts below the fold */}
+      <div style={{ minHeight: "100svh", display: "flex", flexDirection: "column" }}>
+
       {/* Navbar */}
       <nav className="page-top-nav">
         <Link href="/" style={{ textDecoration: "none" }}>
@@ -759,7 +762,7 @@ export default function MyTicketsPage() {
         </Link>
       </nav>
 
-      <main className="page-main-shell">
+      <main className="page-main-shell" style={{ flex: 1 }}>
         {/* Header */}
         <div className="surface-panel" style={{ marginBottom: "1.4rem", padding: "1.1rem 1.15rem" }}>
           <h1 className="page-title" style={{ marginBottom: "0.5rem" }}>
@@ -835,6 +838,8 @@ export default function MyTicketsPage() {
           </div>
         )}
       </main>
+
+      </div>{/* end min-height wrapper */}
 
       <Footer showCta />
     </>
