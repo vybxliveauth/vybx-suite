@@ -759,7 +759,7 @@ export default function MyTicketsPage() {
         </Link>
       </nav>
 
-      <main className="page-main-shell" style={{ minHeight: "calc(100svh - 4.5rem)" }}>
+      <main className="page-main-shell">
         {/* Header */}
         <div className="surface-panel" style={{ marginBottom: "1.4rem", padding: "1.1rem 1.15rem" }}>
           <h1 className="page-title" style={{ marginBottom: "0.5rem" }}>

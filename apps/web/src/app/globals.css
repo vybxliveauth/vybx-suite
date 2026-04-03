@@ -958,7 +958,7 @@ button[aria-disabled='true'] {
   width: 100%;
   max-width: 1120px;
   margin-inline: auto;
-  padding: 2.25rem var(--page-inline) 6rem;
+  padding: 2.25rem var(--page-inline) 10rem;
 }
 
 .page-main-shell-roomy {
@@ -1342,6 +1342,34 @@ button[aria-disabled='true'] {
   margin-inline: auto;
 }
 
+.hero-carousel-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.hero-carousel-float {
+  position: relative;
+  z-index: 6;
+  margin-top: -3.1rem;
+  padding-bottom: 0.2rem;
+}
+
+.hero-to-catalog-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 46%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(10, 10, 18, 0.72) 68%,
+    var(--bg-dark) 100%
+  );
+}
+
 .showcase-shell {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-2xl);
@@ -1383,6 +1411,17 @@ button[aria-disabled='true'] {
 
 .checkout-summary-mobile {
   display: none;
+}
+
+.event-highlights-floating {
+  padding: 0 var(--page-inline) 0.2rem;
+  border-top: none;
+  border-bottom: none;
+  background: transparent;
+}
+
+.event-highlights-shell {
+  overflow: visible;
 }
 
 .event-carousel-track {
@@ -1460,6 +1499,15 @@ button[aria-disabled='true'] {
 
 [data-theme='light'] .event-carousel-card::after {
   border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-theme='light'] .hero-to-catalog-fade {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(248, 250, 252, 0.78) 68%,
+    var(--bg-dark) 100%
+  );
 }
 
 .page-transition-shell {
@@ -1877,6 +1925,14 @@ button[aria-disabled='true'] {
 }
 
 @media (max-width: 768px) {
+  .hero-carousel-float {
+    margin-top: -2.25rem;
+  }
+
+  .hero-to-catalog-fade {
+    height: 50%;
+  }
+
   .event-carousel-card {
     aspect-ratio: 1.85 / 1;
   }
@@ -1893,6 +1949,17 @@ button[aria-disabled='true'] {
 
   .checkout-summary-mobile {
     padding-inline: 0.7rem;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) .hero-to-catalog-fade {
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(248, 250, 252, 0.78) 68%,
+      var(--bg-dark) 100%
+    );
   }
 }
 
