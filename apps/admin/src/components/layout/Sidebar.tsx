@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   Landmark,
   ClipboardList,
+  FolderTree,
   Zap,
   X,
   LogOut,
@@ -35,6 +36,7 @@ const NAV: { href: string; label: string; icon: React.ElementType; permission: P
   { href: "/security",  label: "Seguridad",      icon: ShieldAlert,     permission: "security:view"  },
   { href: "/audit",     label: "Audit Logs",     icon: ClipboardList,   permission: "audit:view"     },
   { href: "/staff",     label: "Staff",          icon: Users,           permission: "staff:view"     },
+  { href: "/categories",label: "Categorías",     icon: FolderTree,      permission: "settings:view"  },
   { href: "/settings",  label: "Configuración",  icon: Settings,        permission: "settings:view"  },
 ];
 

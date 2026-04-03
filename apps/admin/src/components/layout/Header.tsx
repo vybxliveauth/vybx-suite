@@ -34,6 +34,7 @@ const MODULES = [
   { label: "Seguridad",      href: "/security",   keywords: ["fraude", "seguridad", "abuse", "risk", "bloqueo"] },
   { label: "Audit Logs",     href: "/audit",      keywords: ["audit", "logs", "timeline"] },
   { label: "Staff",          href: "/staff",      keywords: ["staff", "escaner", "scanner", "personal"] },
+  { label: "Categorías",     href: "/categories", keywords: ["categorias", "categories", "catalogo"] },
   { label: "Configuración",  href: "/settings",   keywords: ["settings", "configuracion", "perfil"] },
   { label: "Nuevo evento",   href: "/events/new", keywords: ["new", "crear", "nuevo", "create"] },
 ];

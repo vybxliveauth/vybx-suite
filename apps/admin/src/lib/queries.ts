@@ -87,6 +87,7 @@ export const qk = {
     ["admin", "users", page, pageSize, role, q] as const,
   adminFraudSignals: (limit: number, dimension: string) =>
     ["admin", "fraud", "signals", limit, dimension] as const,
+  adminCategories: ["admin", "categories"] as const,
 } as const;
 
 // ── Legacy/promoter hooks reused by existing screens ─────────────────────────
@@ -109,6 +110,16 @@ export interface DashboardResponse {
     successfulPayments: number;
     soldTickets: number;
   }>;
+}
+
+export interface AdminCategory {
+  id: string;
+  name: string;
+  icon: string | null;
+  order: number;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export function useDashboard() {
@@ -187,6 +198,60 @@ export function useAdminFraudSignals(
         })}`
       ),
     staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminCategories() {
+  return useQuery({
+    queryKey: qk.adminCategories,
+    queryFn: () => api.get<AdminCategory[]>("/categories"),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: {
+      name: string;
+      icon?: string;
+      order?: number;
+      isActive?: boolean;
+    }) => api.post<AdminCategory>("/categories", payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminCategories });
+    },
+  });
+}
+
+export function useUpdateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: {
+        name?: string;
+        icon?: string;
+        order?: number;
+        isActive?: boolean;
+      };
+    }) => api.patch<AdminCategory>(`/categories/${id}`, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminCategories });
+    },
+  });
+}
+
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.delete(`/categories/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.adminCategories });
+    },
   });
 }
 

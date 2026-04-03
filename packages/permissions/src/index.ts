@@ -132,6 +132,9 @@ export function resolveAdminRequiredPermissionForPath(
   if (pathname === "/staff" || pathname.startsWith("/staff/")) {
     return "staff:view";
   }
+  if (pathname === "/categories" || pathname.startsWith("/categories/")) {
+    return "settings:view";
+  }
   if (pathname === "/settings" || pathname.startsWith("/settings/")) {
     return "settings:view";
   }

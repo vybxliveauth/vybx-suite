@@ -26,6 +26,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
+import { useActiveCategories } from "@/lib/queries";
 
 const tierSchema = z.object({
   name: z.string().min(1, "Nombre requerido"),
@@ -40,6 +41,7 @@ const schema = z.object({
   location: z.string().min(2, "Ubicación requerida"),
   date: z.string().min(1, "Fecha requerida"),
   time: z.string().min(1, "Hora requerida"),
+  categoryId: z.string().uuid("Categoría inválida").or(z.literal("")).optional(),
   isActive: z.boolean(),
   tiers: z.array(tierSchema).min(1, "Agrega al menos un tipo de boleto"),
 });
@@ -52,6 +54,7 @@ interface CreatedEvent {
 
 export default function NewEventPage() {
   const router = useRouter();
+  const categoriesQuery = useActiveCategories();
   const [serverError, setServerError] = useState<string | null>(null);
   const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
   const [localFlyerPreview, setLocalFlyerPreview] = useState<string | null>(null);
@@ -69,6 +72,7 @@ export default function NewEventPage() {
     defaultValues: {
       isActive: false,
       image: "",
+      categoryId: "",
       tiers: [{ name: "General", price: 350, quantity: 200 }],
     },
   });
@@ -159,6 +163,7 @@ export default function NewEventPage() {
         image: values.image || undefined,
         location: values.location,
         date: dateTime,
+        categoryId: values.categoryId || null,
         isActive: values.isActive,
       });
 
@@ -267,6 +272,35 @@ export default function NewEventPage() {
               <Label htmlFor="location">Ubicación *</Label>
               <Input id="location" placeholder="Venue, Ciudad" {...register("location")} />
               {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Categoría</Label>
+              <Select
+                value={watch("categoryId") || "__none__"}
+                onValueChange={(value) =>
+                  setValue("categoryId", value === "__none__" ? "" : value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                disabled={categoriesQuery.isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={categoriesQuery.isLoading ? "Cargando categorías..." : "Sin categoría"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin categoría</SelectItem>
+                  {(categoriesQuery.data ?? []).map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.categoryId && (
+                <p className="text-xs text-destructive">{errors.categoryId.message}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">

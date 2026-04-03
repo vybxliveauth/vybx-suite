@@ -15,7 +15,16 @@ export const qk = {
                     ["events", page, pageSize]               as const,
   event:          (id: string) => ["event", id]             as const,
   eventAnalytics: (id: string) => ["event-analytics", id]   as const,
+  categoriesActive: ["categories", "active"]                as const,
 };
+
+export interface ActiveCategory {
+  id: string;
+  name: string;
+  icon: string | null;
+  order: number;
+  isActive: boolean;
+}
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 export function useDashboard() {
@@ -52,6 +61,14 @@ export function useEventAnalytics(id: string) {
       api.get<EventAnalyticsResponse>(`/promoter/events/${id}/analytics`),
     enabled:  !!id,
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useActiveCategories() {
+  return useQuery({
+    queryKey: qk.categoriesActive,
+    queryFn: () => api.get<ActiveCategory[]>("/categories/active"),
+    staleTime: 5 * 60 * 1000,
   });
 }
 

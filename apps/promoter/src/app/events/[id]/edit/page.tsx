@@ -17,7 +17,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
-import { useEventDetail } from "@/lib/queries";
+import { useActiveCategories, useEventDetail } from "@/lib/queries";
 import type { EventDetail } from "@/lib/types";
 
 // ── Schemas ────────────────────────────────────────────────────────────────────
@@ -37,6 +37,7 @@ const schema = z.object({
   location:    z.string().min(2, "Ubicación requerida"),
   date:        z.string().min(1, "Fecha requerida"),
   time:        z.string().min(1, "Hora requerida"),
+  categoryId:  z.string().uuid("Categoría inválida").or(z.literal("")).optional(),
   isActive:    z.boolean(),
   tiers:       z.array(tierSchema).min(1, "Agrega al menos un tipo de boleto"),
   tagInput:    z.string().optional(),
@@ -67,6 +68,7 @@ function toDateParts(iso: string) {
 export default function EditEventPage() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
+  const categoriesQuery = useActiveCategories();
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [tags, setTags]           = useState<string[]>([]);
@@ -80,7 +82,7 @@ export default function EditEventPage() {
     formState: { errors, isSubmitting, isDirty },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { isActive: false, tiers: [], tagInput: "", image: "" },
+    defaultValues: { isActive: false, tiers: [], tagInput: "", image: "", categoryId: "" },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "tiers" });
@@ -98,6 +100,7 @@ export default function EditEventPage() {
       time,
       isActive:    ev.isActive,
       image:       ev.image ?? "",
+      categoryId:  ev.categoryId ?? "",
       tagInput:    "",
       tiers: ev.ticketTypes.map((t) => ({
         id:       t.id,
@@ -148,6 +151,7 @@ export default function EditEventPage() {
         description: values.description || undefined,
         location:    values.location,
         date:        dateTime,
+        categoryId:  values.categoryId || null,
         isActive:    values.isActive,
         image:       values.image || undefined,
         tags,
@@ -267,6 +271,35 @@ export default function EditEventPage() {
               <Label htmlFor="location">Ubicación *</Label>
               <Input id="location" placeholder="Venue, Ciudad" {...register("location")} />
               {errors.location && <p className="text-xs text-destructive">{errors.location.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Categoría</Label>
+              <Select
+                value={watch("categoryId") || "__none__"}
+                onValueChange={(value) =>
+                  setValue("categoryId", value === "__none__" ? "" : value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                disabled={categoriesQuery.isLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={categoriesQuery.isLoading ? "Cargando categorías..." : "Sin categoría"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sin categoría</SelectItem>
+                  {(categoriesQuery.data ?? []).map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.categoryId && (
+                <p className="text-xs text-destructive">{errors.categoryId.message}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
