@@ -14,14 +14,11 @@ import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
 import type { Event, PaginatedResponse, StaffAssignment, StaffListResponse, StaffRole } from "@/lib/types";
+import { fmtDate } from "@/lib/format";
 
 function displayName(u?: { firstName?: string; lastName?: string; email?: string } | null) {
   const full = [u?.firstName, u?.lastName].filter(Boolean).join(" ").trim();
   return full || u?.email || "—";
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 export default function StaffPage() {

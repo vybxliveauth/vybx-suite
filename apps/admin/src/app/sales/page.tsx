@@ -31,6 +31,12 @@ import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useAdminRefunds, useAdminStats, useAdminTransactions } from "@/lib/queries";
 import { fmtCurrency, fmtDateShort as fmtDate, fmtDateTime } from "@/lib/format";
 
+const CHART_TICK_COLOR = "hsl(var(--muted-foreground))";
+const CHART_GRID_COLOR = "hsl(var(--border) / 0.55)";
+const CHART_TOOLTIP_BG = "hsl(var(--popover))";
+const CHART_TOOLTIP_BORDER = "1px solid hsl(var(--border))";
+const CHART_SERIES_COLOR = "hsl(var(--primary))";
+
 function txStatusBadge(status: string) {
   if (status === "SUCCESS") {
     return (
@@ -132,21 +138,21 @@ export default function SalesPage() {
               <AreaChart data={sparkline} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(212 90% 56%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(212 90% 56%)" stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHART_SERIES_COLOR} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={CHART_SERIES_COLOR} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={fmtDate}
-                  tick={{ fontSize: 11, fill: "hsl(240 5% 64.9%)" }}
+                  tick={{ fontSize: 11, fill: CHART_TICK_COLOR }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: "hsl(240 5% 64.9%)" }}
+                  tick={{ fontSize: 11, fill: CHART_TICK_COLOR }}
                   axisLine={false}
                   tickLine={false}
                   width={42}
@@ -155,13 +161,13 @@ export default function SalesPage() {
                   formatter={(v: number) => [fmtCurrency(v), "Ingresos"]}
                   labelFormatter={fmtDate}
                   contentStyle={{
-                    background: "rgba(20,20,25,0.9)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: CHART_TOOLTIP_BG,
+                    border: CHART_TOOLTIP_BORDER,
                     borderRadius: "0.5rem",
                     fontSize: 12,
                   }}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="hsl(212 90% 56%)" strokeWidth={2} fill="url(#salesGrad)" />
+                <Area type="monotone" dataKey="revenue" stroke={CHART_SERIES_COLOR} strokeWidth={2} fill="url(#salesGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>

@@ -64,7 +64,7 @@ type PlatformConfigCache = {
   vipOverrides: VipFeeOverride[];
 };
 
-const PLATFORM_CONFIG_CACHE_KEY = "vybx.admin.platform-config.v1";
+const PLATFORM_CONFIG_CACHE_KEY_PREFIX = "vybx.admin.platform-config.v2";
 const CONFIG_KEY_MAINTENANCE_MODE = "MAINTENANCE_MODE";
 const CONFIG_KEY_WAITING_ROOM_MODE = "WAITING_ROOM_MODE";
 const CONFIG_KEY_OPS_ALERTS_ENABLED = "OPS_ALERTS_ENABLED";
@@ -85,10 +85,14 @@ function clampFeePercent(value: number): number {
   return Math.min(100, Math.max(0, Number(value.toFixed(2))));
 }
 
-function readPlatformConfigCache(): PlatformConfigCache | null {
+function resolvePlatformConfigCacheKey(userId?: string): string {
+  return `${PLATFORM_CONFIG_CACHE_KEY_PREFIX}:${userId ?? "anonymous"}`;
+}
+
+function readPlatformConfigCache(storageKey: string): PlatformConfigCache | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(PLATFORM_CONFIG_CACHE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PlatformConfigCache>;
     return {
@@ -111,9 +115,9 @@ function readPlatformConfigCache(): PlatformConfigCache | null {
   }
 }
 
-function writePlatformConfigCache(payload: PlatformConfigCache): void {
+function writePlatformConfigCache(storageKey: string, payload: PlatformConfigCache): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(PLATFORM_CONFIG_CACHE_KEY, JSON.stringify(payload));
+  window.localStorage.setItem(storageKey, JSON.stringify(payload));
 }
 
 // Password: mínimo 12 chars, una mayúscula, un número y un símbolo (política del backend)
@@ -169,6 +173,10 @@ export default function SettingsPage() {
 
   const [selectedPromoterId, setSelectedPromoterId] = useState("");
   const [selectedPromoterFeeInput, setSelectedPromoterFeeInput] = useState("8");
+  const platformConfigCacheKey = useMemo(
+    () => resolvePlatformConfigCacheKey(user?.userId),
+    [user?.userId]
+  );
 
   const promotersQuery = usePromoters();
   const promoters = promotersQuery.data?.data ?? [];
@@ -221,7 +229,7 @@ export default function SettingsPage() {
   }, [promoters, selectedPromoterId]);
 
   useEffect(() => {
-    const cached = readPlatformConfigCache();
+    const cached = readPlatformConfigCache(platformConfigCacheKey);
     if (cached) {
       setMaintenanceMode(cached.maintenanceMode);
       setWaitingRoomMode(cached.waitingRoomMode);
@@ -286,7 +294,7 @@ export default function SettingsPage() {
         setPlatformFeePercentInput(String(nextFee));
         setVipOverrides(nextOverrides);
 
-        writePlatformConfigCache({
+        writePlatformConfigCache(platformConfigCacheKey, {
           maintenanceMode: nextMaintenance,
           waitingRoomMode: nextWaitingRoom,
           opsAlertsEnabled: nextOpsAlerts,
@@ -301,7 +309,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, platformConfigCacheKey]);
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
@@ -368,7 +376,7 @@ export default function SettingsPage() {
         }),
       ]);
 
-      writePlatformConfigCache(platformSnapshot);
+      writePlatformConfigCache(platformConfigCacheKey, platformSnapshot);
       setOpsNotice("Ajustes de operación global guardados correctamente.");
     } catch (error) {
       setOpsError((error as Error).message || "No se pudieron guardar los ajustes.");
@@ -461,7 +469,7 @@ export default function SettingsPage() {
         vipOverrides: normalizedOverrides,
       };
 
-      writePlatformConfigCache(snapshot);
+      writePlatformConfigCache(platformConfigCacheKey, snapshot);
       setFeesNotice("Configuración de comisiones guardada correctamente.");
     } catch (error) {
       setFeesError(

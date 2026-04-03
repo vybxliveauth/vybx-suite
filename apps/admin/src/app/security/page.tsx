@@ -29,18 +29,7 @@ import {
   useBlockFraudUser,
   useUnblockFraudUser,
 } from "@/lib/queries";
-
-function fmtDate(input?: string | null) {
-  if (!input) return "-";
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { fmtDateTimeSafe } from "@/lib/format";
 
 function fmtDuration(seconds: number) {
   if (seconds < 60) return `${seconds}s`;
@@ -306,12 +295,12 @@ export default function SecurityPage() {
                       <TableCell className="text-sm">
                         {row.reason ?? "Sin motivo registrado"}
                       </TableCell>
-                      <TableCell className="text-sm">{fmtDate(row.blockedAt)}</TableCell>
+                      <TableCell className="text-sm">{fmtDateTimeSafe(row.blockedAt)}</TableCell>
                       <TableCell className="text-sm">
                         {row.isPermanent ? (
                           <Badge className="bg-zinc-500/10 text-zinc-300 border border-zinc-500/30">Permanente</Badge>
                         ) : (
-                          row.expiresInSeconds !== null ? fmtDuration(row.expiresInSeconds) : fmtDate(row.expiresAt)
+                          row.expiresInSeconds !== null ? fmtDuration(row.expiresInSeconds) : fmtDateTimeSafe(row.expiresAt)
                         )}
                       </TableCell>
                       <TableCell className="text-right">

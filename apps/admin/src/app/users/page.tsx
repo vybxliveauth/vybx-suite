@@ -37,22 +37,10 @@ import {
   useAdminFraudSignals,
 } from "@/lib/queries";
 import type { AdminUserManageRecord, UserRole } from "@/lib/types";
+import { fmtDateTimeSafe } from "@/lib/format";
 
 const ALL_ROLES: UserRole[] = ["USER", "PROMOTER", "ADMIN", "SUPER_ADMIN"];
 const SAFE_ROLES: UserRole[] = ["USER", "PROMOTER"];
-
-function fmtDate(input?: string | null) {
-  if (!input) return "-";
-  const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 function roleBadge(role: string) {
   if (role === "SUPER_ADMIN") {
@@ -480,7 +468,7 @@ export default function UsersPage() {
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{fmtDate(user.createdAt)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{fmtDateTimeSafe(user.createdAt)}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end flex-wrap gap-1.5">
                               {isBlocked ? (

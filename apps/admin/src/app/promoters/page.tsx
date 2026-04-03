@@ -17,6 +17,7 @@ import {
   useUpdatePromoterBankVerification,
 } from "@/lib/queries";
 import type { PromoterApplicationStatus, PromoterPayoutMethod } from "@/lib/types";
+import { fmtDate } from "@/lib/format";
 
 type PromoterReviewRow = {
   id: string;
@@ -36,14 +37,6 @@ type PromoterReviewRow = {
   riskFlags: string[];
   submittedAgeHours: number | null;
 };
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function displayName(input: { firstName?: string | null; lastName?: string | null; email: string }) {
   const full = [input.firstName, input.lastName].filter(Boolean).join(" ").trim();

@@ -28,6 +28,12 @@ import {
 import { api } from "@/lib/api";
 import { fmtCurrency, fmtDateShort as fmtDate } from "@/lib/format";
 
+const CHART_TICK_COLOR = "hsl(var(--muted-foreground))";
+const CHART_GRID_COLOR = "hsl(var(--border) / 0.6)";
+const CHART_TOOLTIP_BG = "hsl(var(--popover))";
+const CHART_TOOLTIP_BORDER = "1px solid hsl(var(--border))";
+const CHART_SERIES_COLOR = "hsl(var(--primary))";
+
 
 function buildTrend(values: Array<{ v: number }>) {
   return values.map((entry, i) => {
@@ -271,17 +277,17 @@ export default function DashboardPage() {
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={trend} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID_COLOR} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={fmtDate}
-                  tick={{ fontSize: 11, fill: "hsl(220 10% 66%)" }}
+                  tick={{ fontSize: 11, fill: CHART_TICK_COLOR }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: "hsl(220 10% 66%)" }}
+                  tick={{ fontSize: 11, fill: CHART_TICK_COLOR }}
                   axisLine={false}
                   tickLine={false}
                   width={42}
@@ -290,8 +296,8 @@ export default function DashboardPage() {
                   formatter={(v: number) => [fmtCurrency(v), "Ingresos"]}
                   labelFormatter={fmtDate}
                   contentStyle={{
-                    background: "rgba(5,10,20,0.92)",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: CHART_TOOLTIP_BG,
+                    border: CHART_TOOLTIP_BORDER,
                     borderRadius: "0.5rem",
                     fontSize: 12,
                   }}
@@ -299,7 +305,7 @@ export default function DashboardPage() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="hsl(212 90% 56%)"
+                  stroke={CHART_SERIES_COLOR}
                   strokeWidth={2.5}
                   dot={{ r: 2 }}
                   activeDot={{ r: 4 }}

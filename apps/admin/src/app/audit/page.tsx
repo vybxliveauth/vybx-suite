@@ -9,16 +9,7 @@ import { AuditTimeline, type AuditItem } from "@/components/pro/AuditTimeline";
 import { ProDataTable } from "@/components/pro/ProDataTable";
 import { useAdminAuditLogs } from "@/lib/queries";
 import type { AdminAuditLog } from "@/lib/types";
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { fmtDateTime } from "@/lib/format";
 
 function severityFromAction(action: string): "info" | "warning" | "success" {
   if (action.includes("REJECTED")) return "warning";
@@ -94,7 +85,7 @@ export default function AuditPage() {
       {
         accessorKey: "createdAt",
         header: "Fecha",
-        cell: ({ row }) => <span className="text-sm text-muted-foreground">{fmtDate(row.original.createdAt)}</span>,
+        cell: ({ row }) => <span className="text-sm text-muted-foreground">{fmtDateTime(row.original.createdAt)}</span>,
       },
     ],
     []

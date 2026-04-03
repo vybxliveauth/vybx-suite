@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fmtCurrency } from "@/lib/format";
+import { fmtCurrency, fmtDateLong } from "@/lib/format";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -50,13 +50,6 @@ import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, u
 import type { EventDetail, EventStatus } from "@/lib/types";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-DO", {
-    weekday: "long", day: "2-digit", month: "long", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
-
 function getStatusBadge(ev: EventDetail): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
   if (!ev.isActive && ev.status === "APPROVED") return { label: "Inactivo", variant: "secondary" };
   const map: Record<EventStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -92,7 +85,7 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 
 function OccupancyBar({ value, max, label }: { value: number; max: number; label: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
-  const color = pct >= 90 ? "#f43f5e" : pct >= 65 ? "#f59e0b" : "hsl(262.1 83.3% 57.8%)";
+  const color = pct >= 90 ? "#f43f5e" : pct >= 65 ? "#f59e0b" : "hsl(var(--primary))";
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
@@ -109,7 +102,11 @@ function OccupancyBar({ value, max, label }: { value: number; max: number; label
   );
 }
 
-const CHART_COLORS = ["hsl(262.1 83.3% 57.8%)", "#22d3ee", "#34d399"];
+const CHART_COLORS = ["hsl(var(--primary))", "#22d3ee", "#34d399"];
+const CHART_TICK_COLOR = "hsl(var(--muted-foreground))";
+const CHART_TOOLTIP_BG = "hsl(var(--popover))";
+const CHART_TOOLTIP_BORDER = "1px solid hsl(var(--border))";
+const CHART_VOLUME_COLOR = "hsl(var(--secondary-foreground) / 0.35)";
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 export default function EventDetailPage() {
@@ -233,7 +230,7 @@ export default function EventDetailPage() {
               <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-white/70">
                 <span className="flex items-center gap-1.5">
                   <CalendarDays className="size-3.5 text-primary" />
-                  {fmtDate(event.date)}
+                  {fmtDateLong(event.date)}
                 </span>
                 {event.location && (
                   <span className="flex items-center gap-1.5">
@@ -308,22 +305,22 @@ export default function EventDetailPage() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barGap={6}>
-                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: "hsl(217.9 10.6% 54.9%)" }} axisLine={false} tickLine={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: CHART_TICK_COLOR }} axisLine={false} tickLine={false} />
                       <YAxis
                         yAxisId="rev"
                         orientation="left"
                         tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                        tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
+                        tick={{ fontSize: 11, fill: CHART_TICK_COLOR }}
                         axisLine={false} tickLine={false} width={42}
                       />
                       <YAxis
                         yAxisId="qty"
                         orientation="right"
-                        tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
+                        tick={{ fontSize: 11, fill: CHART_TICK_COLOR }}
                         axisLine={false} tickLine={false} width={32}
                       />
                       <Tooltip
-                        contentStyle={{ background: "hsl(224 71.4% 6%)", border: "1px solid hsl(215 27.9% 16.9%)", borderRadius: "0.5rem", fontSize: 12 }}
+                        contentStyle={{ background: CHART_TOOLTIP_BG, border: CHART_TOOLTIP_BORDER, borderRadius: "0.5rem", fontSize: 12 }}
                         formatter={(v: number, name: string) => [
                           name === "ingresos" ? fmtCurrency(v) : `${v} boletos`,
                           name === "ingresos" ? "Ingresos" : "Vendidos",
@@ -334,7 +331,7 @@ export default function EventDetailPage() {
                           <Cell key={i} fill={entry.color} fillOpacity={0.85} />
                         ))}
                       </Bar>
-                      <Bar yAxisId="qty" dataKey="vendidos" radius={[4, 4, 0, 0]} fill="hsl(217.9 10.6% 30%)" maxBarSize={24} />
+                      <Bar yAxisId="qty" dataKey="vendidos" radius={[4, 4, 0, 0]} fill={CHART_VOLUME_COLOR} maxBarSize={24} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
