@@ -31,7 +31,7 @@ const SOCIAL_ICONS = [
   },
 ];
 
-export function Footer() {
+export function Footer({ showCta = false }: { showCta?: boolean }) {
   return (
     <footer className="footer-shell">
       {/* Main grid */}
@@ -41,15 +41,17 @@ export function Footer() {
           padding: "3.5rem var(--page-inline) 3rem",
         }}
       >
-        <div className="footer-cta surface-panel-soft">
-          <div>
-            <p className="footer-cta-title">Listo para tu próxima experiencia en vivo</p>
-            <p className="footer-cta-copy">Explora eventos, compra en segundos y gestiona todo desde tu cuenta.</p>
+        {showCta && (
+          <div className="footer-cta surface-panel-soft">
+            <div>
+              <p className="footer-cta-title">Listo para tu próxima experiencia en vivo</p>
+              <p className="footer-cta-copy">Explora eventos, compra en segundos y gestiona todo desde tu cuenta.</p>
+            </div>
+            <Link href="/#events" className="btn-primary" style={{ textDecoration: "none", padding: "0.56rem 1.15rem", fontSize: "0.84rem", whiteSpace: "nowrap" }}>
+              Ver eventos
+            </Link>
           </div>
-          <Link href="/#events" className="btn-primary" style={{ textDecoration: "none", padding: "0.56rem 1.15rem", fontSize: "0.84rem", whiteSpace: "nowrap" }}>
-            Ver eventos
-          </Link>
-        </div>
+        )}
 
         <div className="footer-grid" style={{ display: "grid", gap: "2.5rem" }}>
         {/* Brand */}

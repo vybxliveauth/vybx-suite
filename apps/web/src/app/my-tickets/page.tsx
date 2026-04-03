@@ -836,7 +836,7 @@ export default function MyTicketsPage() {
         )}
       </main>
 
-      <Footer />
+      <Footer showCta />
     </>
   );
 }
