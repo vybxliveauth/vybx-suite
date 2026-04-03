@@ -5,6 +5,7 @@ type EdgeAuthMiddlewareOptions = {
   publicPaths?: readonly string[];
   allowedRoles?: readonly string[];
   accessTokenCookieName?: string;
+  allowMissingAccessToken?: boolean;
   loginPath?: string;
   nextParamName?: string;
 };
@@ -55,6 +56,7 @@ export function createEdgeAuthMiddleware(options: EdgeAuthMiddlewareOptions = {}
   const publicPaths = options.publicPaths ?? ["/login"];
   const allowedRoles = new Set(options.allowedRoles ?? []);
   const accessTokenCookieName = options.accessTokenCookieName ?? "access_token";
+  const allowMissingAccessToken = options.allowMissingAccessToken ?? false;
   const loginPath = options.loginPath ?? "/login";
   const nextParamName = options.nextParamName ?? "next";
 
@@ -67,6 +69,9 @@ export function createEdgeAuthMiddleware(options: EdgeAuthMiddlewareOptions = {}
 
     const accessToken = request.cookies.get(accessTokenCookieName)?.value;
     if (!accessToken) {
+      if (allowMissingAccessToken) {
+        return NextResponse.next();
+      }
       return buildLoginRedirect(request, pathname, loginPath, nextParamName);
     }
 
