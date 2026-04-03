@@ -9,6 +9,7 @@ import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ProDataTable } from "@/components/pro/ProDataTable";
 import { BulkActionBar } from "@/components/pro/BulkActionBar";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import {
   useAdminEvents,
   useDeleteEvent,
@@ -74,6 +75,7 @@ export default function EventsPage() {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  const actionDialog = useAdminActionDialog();
 
   const listQuery = useAdminEvents(1, 100, statusFilter);
   const deleteEvent = useDeleteEvent();
@@ -176,8 +178,14 @@ export default function EventsPage() {
               variant="ghost"
               className="text-destructive hover:text-destructive"
               disabled={deleteEvent.isPending}
-              onClick={() => {
-                if (!window.confirm(`Eliminar ${row.original.title}?`)) return;
+              onClick={async () => {
+                const confirmed = await actionDialog.confirm({
+                  title: "Eliminar evento",
+                  description: `¿Eliminar ${row.original.title}?`,
+                  confirmLabel: "Eliminar",
+                  tone: "destructive",
+                });
+                if (!confirmed) return;
                 deleteEvent.mutate(row.original.id);
               }}
             >
@@ -187,7 +195,7 @@ export default function EventsPage() {
         ),
       },
     ],
-    [deleteEvent, featuredMutation]
+    [actionDialog, deleteEvent, featuredMutation]
   );
 
   function settledStats(results: PromiseSettledResult<unknown>[]) {
@@ -207,11 +215,14 @@ export default function EventsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Publicar ${selected.length} evento(s)?\n\n` +
+    const confirmed = await actionDialog.confirm({
+      title: "Publicación masiva",
+      description:
+        `Publicar ${selected.length} evento(s)?\n` +
         `Aprobar: ${toApprove.length}\n` +
-        `Activar ventas: ${toActivate.length}`
-    );
+        `Activar ventas: ${toActivate.length}`,
+      confirmLabel: "Publicar",
+    });
     if (!confirmed) return;
 
     setBulkNotice(null);
@@ -248,9 +259,12 @@ export default function EventsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Pausar ${targets.length} evento(s)?\n\nEsto detiene ventas temporalmente.`
-    );
+    const confirmed = await actionDialog.confirm({
+      title: "Pausar eventos",
+      description: `Pausar ${targets.length} evento(s)? Esto detiene ventas temporalmente.`,
+      confirmLabel: "Pausar",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
     setBulkNotice(null);
@@ -275,9 +289,11 @@ export default function EventsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Destacar ${targets.length} evento(s)?\n\nSolo se destacan eventos aprobados y activos.`
-    );
+    const confirmed = await actionDialog.confirm({
+      title: "Destacar eventos",
+      description: `Destacar ${targets.length} evento(s)? Solo se destacan eventos aprobados y activos.`,
+      confirmLabel: "Destacar",
+    });
     if (!confirmed) return;
 
     setBulkNotice(null);
@@ -302,7 +318,12 @@ export default function EventsPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Quitar destacado a ${targets.length} evento(s)?`);
+    const confirmed = await actionDialog.confirm({
+      title: "Quitar destacados",
+      description: `Quitar destacado a ${targets.length} evento(s)?`,
+      confirmLabel: "Quitar",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
     setBulkNotice(null);
@@ -328,11 +349,15 @@ export default function EventsPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Rechazar ${selected.length} evento(s)?\n\n` +
+    const confirmed = await actionDialog.confirm({
+      title: "Rechazo masivo",
+      description:
+        `Rechazar ${selected.length} evento(s)?\n` +
         `Rechazar moderación: ${toReject.length}\n` +
-        `Desactivar ventas: ${toDeactivate.length}`
-    );
+        `Desactivar ventas: ${toDeactivate.length}`,
+      confirmLabel: "Rechazar",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
     setBulkNotice(null);
@@ -448,6 +473,7 @@ export default function EventsPage() {
             },
           ]}
         />
+        {actionDialog.dialog}
       </div>
     </PromoterShell>
   );

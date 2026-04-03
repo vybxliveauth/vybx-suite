@@ -24,6 +24,7 @@ import {
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import {
   useAdminFraudSignals,
   useBlockFraudUser,
@@ -51,6 +52,7 @@ export default function SecurityPage() {
   const [dimension, setDimension] = useState<"ALL" | "IP" | "USER" | "DEVICE">("ALL");
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const actionDialog = useAdminActionDialog();
 
   const fraudQuery = useAdminFraudSignals(120, dimension);
   const blockMutation = useBlockFraudUser();
@@ -64,10 +66,17 @@ export default function SecurityPage() {
   );
 
   async function handleBlockUser(userId: string) {
-    const reason = window.prompt(
-      "Motivo del bloqueo (min 8 caracteres):",
-      "Actividad sospechosa de checkout desde multiples intentos"
-    );
+    const reason = await actionDialog.prompt({
+      title: "Bloquear por fraude",
+      description: "Registra el motivo operativo para este bloqueo.",
+      label: "Motivo",
+      defaultValue: "Actividad sospechosa de checkout desde multiples intentos",
+      multiline: true,
+      required: true,
+      minLength: 8,
+      confirmLabel: "Bloquear",
+      tone: "destructive",
+    });
     if (!reason) return;
     const cleanedReason = reason.trim();
     if (cleanedReason.length < 8) {
@@ -75,7 +84,24 @@ export default function SecurityPage() {
       return;
     }
 
-    const durationRaw = window.prompt("Duracion en minutos (opcional, default 1440):", "1440");
+    const durationRaw = await actionDialog.prompt({
+      title: "Duración del bloqueo",
+      description: "Configura minutos de bloqueo (default recomendado: 1440).",
+      label: "Minutos",
+      defaultValue: "1440",
+      inputType: "number",
+      validate: (value) => {
+        const normalized = value.trim();
+        if (!normalized) return "Debes indicar una duración en minutos.";
+        const parsed = Number(normalized);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          return "Ingresa un número mayor que 0.";
+        }
+        return null;
+      },
+      confirmLabel: "Aplicar",
+    });
+    if (durationRaw === null) return;
     const durationMinutes = durationRaw && durationRaw.trim() ? Number(durationRaw) : 1440;
 
     setBusyId(`block:${userId}`);
@@ -95,7 +121,11 @@ export default function SecurityPage() {
   }
 
   async function handleUnblockUser(userId: string) {
-    const confirmed = window.confirm("Quitar bloqueo de seguridad a este usuario?");
+    const confirmed = await actionDialog.confirm({
+      title: "Desbloquear usuario",
+      description: "¿Quitar bloqueo de seguridad a este usuario?",
+      confirmLabel: "Desbloquear",
+    });
     if (!confirmed) return;
 
     setBusyId(`unblock:${userId}`);
@@ -329,6 +359,7 @@ export default function SecurityPage() {
             Módulo en modo operativo sin pasarela: las acciones marcan y contienen riesgo a nivel de plataforma.
           </CardContent>
         </Card>
+        {actionDialog.dialog}
       </div>
     </PromoterShell>
   );

@@ -25,6 +25,7 @@ import {
 import { Loader2, RefreshCw, ShieldAlert, UserPlus, Users } from "lucide-react";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import { useAuthUser } from "@/lib/auth";
 import {
   useBlockFraudUser,
@@ -78,6 +79,7 @@ export default function UsersPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newRole, setNewRole] = useState<UserRole>(assignableRoles[0] ?? "USER");
+  const actionDialog = useAdminActionDialog();
 
   const usersQuery = useUsers(page, 30, roleFilter, search);
   const fraudQuery = useAdminFraudSignals(200, "ALL");
@@ -162,7 +164,11 @@ export default function UsersPage() {
   async function handleUpdateRole(user: AdminUserManageRecord, role: UserRole) {
     if (user.role === role) return;
     if (user.id === sessionUser?.userId) {
-      const selfConfirmed = window.confirm("Estas cambiando tu propio rol. Deseas continuar?");
+      const selfConfirmed = await actionDialog.confirm({
+        title: "Cambiar tu propio rol",
+        description: "Estas cambiando tu propio rol. ¿Deseas continuar?",
+        confirmLabel: "Continuar",
+      });
       if (!selfConfirmed) return;
     }
 
@@ -178,10 +184,17 @@ export default function UsersPage() {
   }
 
   async function handleBlock(user: AdminUserManageRecord) {
-    const reason = window.prompt(
-      "Motivo del bloqueo (min 8 caracteres):",
-      "Bloqueo operativo desde modulo de usuarios por revision de seguridad."
-    );
+    const reason = await actionDialog.prompt({
+      title: "Bloquear usuario",
+      description: `Define el motivo del bloqueo para ${user.email}.`,
+      label: "Motivo del bloqueo",
+      defaultValue: "Bloqueo operativo desde modulo de usuarios por revision de seguridad.",
+      multiline: true,
+      required: true,
+      minLength: 8,
+      confirmLabel: "Aplicar bloqueo",
+      tone: "destructive",
+    });
     if (!reason) return;
     const cleaned = reason.trim();
     if (cleaned.length < 8) {
@@ -189,7 +202,23 @@ export default function UsersPage() {
       return;
     }
 
-    const rawDuration = window.prompt("Duracion en minutos (vacio = bloqueo permanente):", "1440");
+    const rawDuration = await actionDialog.prompt({
+      title: "Duración del bloqueo",
+      description: "Deja vacío para bloqueo permanente.",
+      label: "Duración en minutos",
+      defaultValue: "1440",
+      inputType: "number",
+      validate: (value) => {
+        if (!value.trim()) return null;
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          return "Ingresa un número mayor que 0 o deja el campo vacío.";
+        }
+        return null;
+      },
+      confirmLabel: "Continuar",
+    });
+    if (rawDuration === null) return;
     const parsedDuration = rawDuration?.trim() ? Number(rawDuration) : undefined;
 
     await runAction(
@@ -207,7 +236,11 @@ export default function UsersPage() {
   }
 
   async function handleUnblock(user: AdminUserManageRecord) {
-    const confirmed = window.confirm(`Desbloquear a ${user.email}?`);
+    const confirmed = await actionDialog.confirm({
+      title: "Desbloquear usuario",
+      description: `¿Desbloquear a ${user.email}?`,
+      confirmLabel: "Desbloquear",
+    });
     if (!confirmed) return;
 
     await runAction(
@@ -221,7 +254,11 @@ export default function UsersPage() {
   }
 
   async function handleResetPassword(user: AdminUserManageRecord) {
-    const confirmed = window.confirm(`Enviar email de recuperacion de password a ${user.email}?`);
+    const confirmed = await actionDialog.confirm({
+      title: "Enviar recuperación de contraseña",
+      description: `Se enviará un email de recuperación a ${user.email}.`,
+      confirmLabel: "Enviar email",
+    });
     if (!confirmed) return;
 
     await runAction(
@@ -232,9 +269,12 @@ export default function UsersPage() {
   }
 
   async function handleDeleteUser(user: AdminUserManageRecord) {
-    const confirmed = window.confirm(
-      `Eliminar usuario ${user.email}?\n\nEsta accion borra la cuenta de forma permanente.`
-    );
+    const confirmed = await actionDialog.confirm({
+      title: "Eliminar usuario",
+      description: `Esta acción elimina permanentemente la cuenta ${user.email}.`,
+      confirmLabel: "Eliminar",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
     await runAction(
@@ -547,6 +587,7 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       </div>
+      {actionDialog.dialog}
     </PromoterShell>
   );
 }

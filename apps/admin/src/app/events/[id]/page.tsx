@@ -46,6 +46,7 @@ import {
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, useDeleteEvent } from "@/lib/queries";
 import type { EventDetail, EventStatus } from "@/lib/types";
 
@@ -113,6 +114,7 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const actionDialog = useAdminActionDialog();
 
   const eventQuery     = useEventDetail(id);
   const analyticsQuery = useEventAnalytics(id);
@@ -147,7 +149,13 @@ export default function EventDetailPage() {
 
   async function handleDelete() {
     if (!event) return;
-    if (!window.confirm(`¿Eliminar "${event.title}"? Esta acción no se puede deshacer.`)) return;
+    const confirmed = await actionDialog.confirm({
+      title: "Eliminar evento",
+      description: `¿Eliminar "${event.title}"? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar",
+      tone: "destructive",
+    });
+    if (!confirmed) return;
     deleteEvent.mutate(event.id, {
       onSuccess: () => router.push("/events"),
     });
@@ -475,6 +483,7 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
+      {actionDialog.dialog}
     </PromoterShell>
   );
 }

@@ -27,7 +27,7 @@ const MODULES = [
   { label: "Dashboard",      href: "/dashboard",  keywords: ["dashboard", "inicio", "command"] },
   { label: "Eventos",        href: "/events",     keywords: ["events", "eventos", "moderacion"] },
   { label: "Promotores",     href: "/promoters",  keywords: ["promotores", "kyc", "verification"] },
-  { label: "Liquidaciones",  href: "/payouts",    keywords: ["payouts", "pagos", "azul", "cardnet"] },
+  { label: "Liquidaciones",  href: "/payouts",    keywords: ["payouts", "pagos", "stripe", "batches"] },
   { label: "Ventas",         href: "/sales",      keywords: ["sales", "ventas", "ingresos"] },
   { label: "Reembolsos",     href: "/refunds",    keywords: ["refunds", "reembolsos", "cancelaciones"] },
   { label: "Usuarios",       href: "/users",      keywords: ["usuarios", "roles", "bloqueo", "acceso"] },

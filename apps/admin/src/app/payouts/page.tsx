@@ -8,6 +8,7 @@ import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ProDataTable } from "@/components/pro/ProDataTable";
 import { BulkActionBar } from "@/components/pro/BulkActionBar";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import type { AdminPayoutItem, AdminPayoutStatus } from "@/lib/types";
 import {
   useAdminPayoutBatchHistory,
@@ -20,11 +21,18 @@ import {
 
 type PayoutRow = AdminPayoutItem;
 
-function money(value: number) {
-  return new Intl.NumberFormat("es-DO", {
+type NoticeTone = "success" | "error" | "info";
+
+function money(value: number, currency = "USD", decimals: 0 | 2 = 2) {
+  const safeCurrency =
+    typeof currency === "string" && currency.trim().length === 3
+      ? currency.toUpperCase()
+      : "USD";
+  return new Intl.NumberFormat("es-US", {
     style: "currency",
-    currency: "DOP",
-    maximumFractionDigits: 0,
+    currency: safeCurrency,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(value);
 }
 
@@ -60,6 +68,8 @@ function statusBadge(status: AdminPayoutStatus) {
 export default function PayoutsPage() {
   const [selected, setSelected] = useState<PayoutRow[]>([]);
   const [receiptLoadingId, setReceiptLoadingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(null);
+  const actionDialog = useAdminActionDialog();
   const payoutQuery = useAdminPayouts(1, 100, "ALL");
   const historyQuery = useAdminPayoutBatchHistory(12);
   const bulkUpdatePayoutStatus = useBulkUpdateAdminPayoutStatus();
@@ -74,12 +84,16 @@ export default function PayoutsPage() {
   const downloadPayoutReceipt = useCallback(
     async (row: PayoutRow) => {
       if (row.payoutStatus !== "PAID") {
-        window.alert("El comprobante fiscal solo se habilita para pagos marcados como pagados.");
+        setNotice({
+          tone: "info",
+          text: "El comprobante fiscal solo se habilita para pagos marcados como pagados.",
+        });
         return;
       }
 
       try {
         setReceiptLoadingId(row.id);
+        setNotice(null);
         const { blob, fileName } = await exportPayoutFiscalReceipt.mutateAsync(row.id);
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
@@ -89,9 +103,17 @@ export default function PayoutsPage() {
         anchor.click();
         anchor.remove();
         URL.revokeObjectURL(url);
+        setNotice({
+          tone: "success",
+          text: `Comprobante fiscal descargado para orden ${row.orderNumber}.`,
+        });
       } catch (error) {
-        console.error("No se pudo descargar comprobante fiscal", error);
-        window.alert("No se pudo generar el comprobante fiscal de este pago.");
+        setNotice({
+          tone: "error",
+          text:
+            (error as Error)?.message ||
+            "No se pudo generar el comprobante fiscal de este pago.",
+        });
       } finally {
         setReceiptLoadingId(null);
       }
@@ -143,21 +165,31 @@ export default function PayoutsPage() {
       {
         accessorKey: "grossSales",
         header: "Venta total",
-        cell: ({ row }) => <span className="font-mono text-sm">{money(row.original.grossSales)}</span>,
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">
+            {money(row.original.grossSales, row.original.currency)}
+          </span>
+        ),
       },
       {
         id: "formula",
         header: "Calculo neto",
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
-            {money(row.original.grossSales)} - {money(row.original.vybeCommission)} - {money(row.original.itbis)} (ITBIS comision)
+            {money(row.original.grossSales, row.original.currency)} -{" "}
+            {money(row.original.vybeCommission, row.original.currency)} -{" "}
+            {money(row.original.itbis, row.original.currency)} (impuesto sobre comisión)
           </span>
         ),
       },
       {
         accessorKey: "netPayout",
         header: "Pago neto",
-        cell: ({ row }) => <span className="font-semibold text-sm">{money(row.original.netPayout)}</span>,
+        cell: ({ row }) => (
+          <span className="font-semibold text-sm">
+            {money(row.original.netPayout, row.original.currency)}
+          </span>
+        ),
       },
       {
         accessorKey: "payoutStatus",
@@ -214,35 +246,71 @@ export default function PayoutsPage() {
   }, [payoutQuery.data?.summary.statusBreakdown, rows]);
 
   async function bulkSetStatus(status: AdminPayoutStatus, externalReference?: string) {
-    if (selected.length === 0) return;
+    if (selected.length === 0) {
+      setNotice({ tone: "info", text: "Selecciona al menos una liquidación." });
+      return;
+    }
     try {
+      setNotice(null);
       const result = await bulkUpdatePayoutStatus.mutateAsync({
         transactionIds: selected.map((row) => row.id),
         status,
         externalReference,
       });
-      window.alert(
-        `Batch ${result.batch.id}\nActualizados: ${result.summary.updatedCount ?? 0}\nOmitidos: ${result.summary.skippedCount}\nFallidos: ${result.summary.failedCount}`
-      );
+      const updated = result.summary.updatedCount ?? 0;
+      const skipped = result.summary.skippedCount ?? 0;
+      const failed = result.summary.failedCount ?? 0;
+      const tone: NoticeTone = failed > 0 ? "error" : "success";
+      setNotice({
+        tone,
+        text: `Batch ${result.batch.id}: actualizados ${updated}, omitidos ${skipped}, fallidos ${failed}.`,
+      });
       setSelected([]);
     } catch (error) {
-      console.error("No se pudo actualizar estatus de payout", error);
+      setNotice({
+        tone: "error",
+        text:
+          (error as Error)?.message || "No se pudo actualizar estatus de liquidaciones.",
+      });
     }
   }
 
   async function executeQueueBatch(source: AdminPayoutStatus[], target: AdminPayoutStatus) {
-    const limitInput =
-      typeof window !== "undefined" ? window.prompt("Cantidad max (1-500)", "50") : "50";
+    const limitInput = await actionDialog.prompt({
+      title: "Ejecutar lote",
+      description: "Define cuántas transacciones procesar en este batch.",
+      label: "Cantidad máxima (1-500)",
+      defaultValue: "50",
+      inputType: "number",
+      required: true,
+      validate: (value) => {
+        const parsed = Number(value);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          return "Ingresa un número válido mayor que 0.";
+        }
+        return null;
+      },
+      confirmLabel: "Continuar",
+    });
     if (!limitInput) return;
     const parsed = Number(limitInput);
     if (!Number.isFinite(parsed) || parsed <= 0) return;
 
     const externalReferencePrefix =
-      target === "PAID" && typeof window !== "undefined"
-        ? window.prompt("Prefijo referencia externa (opcional):") ?? undefined
+      target === "PAID"
+        ? (
+            await actionDialog.prompt({
+              title: "Prefijo de referencia externa",
+              description: "Opcional: se usará para el lote marcado como pagado.",
+              label: "Prefijo",
+              defaultValue: "",
+              confirmLabel: "Aplicar",
+            })
+          ) ?? undefined
         : undefined;
 
     try {
+      setNotice(null);
       const result = await executePayoutBatch.mutateAsync({
         sourceStatuses: source,
         targetStatus: target,
@@ -252,30 +320,62 @@ export default function PayoutsPage() {
             ? externalReferencePrefix.trim()
             : undefined,
       });
-      window.alert(
-        `Batch ${result.batch.id}\nElegibles: ${result.summary.eligibleCount ?? 0}\nProcesados: ${result.summary.processedCount ?? 0}\nMonto neto: ${money(result.summary.totalNetPayout ?? 0)}`
-      );
+      const eligible = result.summary.eligibleCount ?? 0;
+      const processed = result.summary.processedCount ?? 0;
+      const totalNet = result.summary.totalNetPayout ?? 0;
+      setNotice({
+        tone: "success",
+        text: `Batch ${result.batch.id}: elegibles ${eligible}, procesados ${processed}, monto neto ${money(totalNet)}.`,
+      });
     } catch (error) {
-      console.error("No se pudo ejecutar el batch de liquidaciones", error);
+      setNotice({
+        tone: "error",
+        text:
+          (error as Error)?.message ||
+          "No se pudo ejecutar el batch de liquidaciones.",
+      });
     }
   }
 
   async function copySelectedIds() {
     const text = selected.map((x) => x.id).join("\n");
-    if (!text) return;
-    await navigator.clipboard.writeText(text);
-    setSelected([]);
+    if (!text) {
+      setNotice({ tone: "info", text: "No hay IDs seleccionados para copiar." });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice({ tone: "success", text: "IDs copiados al portapapeles." });
+      setSelected([]);
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        text: (error as Error)?.message || "No se pudieron copiar los IDs.",
+      });
+    }
   }
 
   async function copySelectedOrders() {
     const text = selected.map((x) => x.orderNumber).join("\n");
-    if (!text) return;
-    await navigator.clipboard.writeText(text);
-    setSelected([]);
+    if (!text) {
+      setNotice({ tone: "info", text: "No hay órdenes seleccionadas para copiar." });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice({ tone: "success", text: "Órdenes copiadas al portapapeles." });
+      setSelected([]);
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        text: (error as Error)?.message || "No se pudieron copiar las órdenes.",
+      });
+    }
   }
 
   async function downloadFiscalReport() {
     try {
+      setNotice(null);
       const { blob, fileName } = await exportPayoutFiscalReport.mutateAsync({
         status: "ALL",
       });
@@ -288,9 +388,17 @@ export default function PayoutsPage() {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
+      setNotice({
+        tone: "success",
+        text: "Reporte fiscal descargado correctamente.",
+      });
     } catch (error) {
-      console.error("No se pudo exportar el reporte fiscal", error);
-      window.alert("No se pudo exportar el reporte fiscal. Revisa permisos o conexión.");
+      setNotice({
+        tone: "error",
+        text:
+          (error as Error)?.message ||
+          "No se pudo exportar el reporte fiscal. Revisa permisos o conexión.",
+      });
     }
   }
 
@@ -337,6 +445,38 @@ export default function PayoutsPage() {
           </div>
         </div>
 
+        {notice && (
+          <div
+            className={
+              notice.tone === "success"
+                ? "rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"
+                : notice.tone === "info"
+                  ? "rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 py-3 text-sm text-sky-200"
+                  : "rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            }
+          >
+            {notice.text}
+          </div>
+        )}
+
+        {(payoutQuery.isError || historyQuery.isError) && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            No se pudieron cargar algunas secciones de liquidaciones.
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-3 h-7"
+              onClick={() => {
+                void payoutQuery.refetch();
+                void historyQuery.refetch();
+              }}
+            >
+              Reintentar
+            </Button>
+          </div>
+        )}
+
         <div className="grid gap-4 md:grid-cols-3">
           <Card className="kpi-card">
             <CardHeader className="pb-2">
@@ -366,7 +506,7 @@ export default function PayoutsPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Venta total - Comision Vybe - ITBIS (sobre comision)
+                Venta total - Comisión Vybx - impuesto de plataforma
               </p>
             </CardContent>
           </Card>
@@ -388,7 +528,7 @@ export default function PayoutsPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {item.mode === "queue_execution" ? "Batch de cola" : "Batch manual"} •{" "}
-                    {new Date(item.executedAt).toLocaleString("es-DO", {
+                    {new Date(item.executedAt).toLocaleString("es-US", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
@@ -421,7 +561,7 @@ export default function PayoutsPage() {
             columns={columns}
             enableRowSelection
             onSelectionChange={setSelected}
-            searchPlaceholder="Buscar evento, orden o gateway..."
+            searchPlaceholder="Buscar evento, orden o proveedor..."
             emptyMessage="Sin pagos en cola."
           />
         )}
@@ -439,11 +579,15 @@ export default function PayoutsPage() {
             {
               id: "mark-paid",
               label: bulkUpdatePayoutStatus.isPending ? "Procesando..." : "Marcar pagado",
-              onClick: () => {
+              onClick: async () => {
                 const externalReference =
-                  typeof window !== "undefined"
-                    ? window.prompt("Referencia externa (opcional):") ?? undefined
-                    : undefined;
+                  (await actionDialog.prompt({
+                    title: "Referencia externa",
+                    description: "Opcional para conciliación manual.",
+                    label: "Referencia",
+                    defaultValue: "",
+                    confirmLabel: "Continuar",
+                  })) ?? undefined;
                 void bulkSetStatus("PAID", externalReference);
               },
               variant: "default",
@@ -458,6 +602,7 @@ export default function PayoutsPage() {
             { id: "copy-ids", label: "Copiar IDs", onClick: () => void copySelectedIds(), variant: "outline" },
           ]}
         />
+        {actionDialog.dialog}
       </div>
     </PromoterShell>
   );

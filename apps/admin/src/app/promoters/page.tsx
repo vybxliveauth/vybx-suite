@@ -8,6 +8,7 @@ import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ProDataTable } from "@/components/pro/ProDataTable";
 import { BulkActionBar } from "@/components/pro/BulkActionBar";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import {
   useApprovePromoterApplication,
   usePromoterApplications,
@@ -88,6 +89,7 @@ export default function PromotersPage() {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  const actionDialog = useAdminActionDialog();
 
   const overviewQuery = usePromoterApplicationsOverview();
   const pendingQuery = usePromoterApplications("PENDING_APPROVAL");
@@ -301,10 +303,17 @@ export default function PromotersPage() {
       setBulkNotice({ tone: "info", text: "No hay solicitudes pendientes seleccionadas para rechazar." });
       return;
     }
-    const feedback = window.prompt(
-      "Feedback para rechazar (minimo 8 caracteres):",
-      "Documentacion incompleta para aprobacion."
-    );
+    const feedback = await actionDialog.prompt({
+      title: "Rechazar solicitudes KYC",
+      description: "El feedback será enviado a los promotores seleccionados.",
+      label: "Feedback de rechazo",
+      defaultValue: "Documentacion incompleta para aprobacion.",
+      multiline: true,
+      required: true,
+      minLength: 8,
+      tone: "destructive",
+      confirmLabel: "Rechazar",
+    });
     if (!feedback || feedback.trim().length < 8) return;
     const results = await Promise.allSettled(
       pending.map((item) =>
@@ -329,10 +338,21 @@ export default function PromotersPage() {
       return;
     }
 
-    const methodInput = window.prompt(
-      "Metodo de liquidacion (STRIPE_CONNECT, PAYPAL, BANK_TRANSFER):",
-      "STRIPE_CONNECT"
-    );
+    const methodInput = await actionDialog.prompt({
+      title: "Método de liquidación",
+      description: "Define el método a aplicar en lote.",
+      label: "Método (STRIPE_CONNECT, PAYPAL, BANK_TRANSFER)",
+      defaultValue: "STRIPE_CONNECT",
+      required: true,
+      validate: (value) => {
+        const normalized = value.trim().toUpperCase();
+        if (!["STRIPE_CONNECT", "PAYPAL", "BANK_TRANSFER"].includes(normalized)) {
+          return "Método inválido. Usa STRIPE_CONNECT, PAYPAL o BANK_TRANSFER.";
+        }
+        return null;
+      },
+      confirmLabel: "Continuar",
+    });
     if (!methodInput) return;
     const normalizedMethod = methodInput.trim().toUpperCase();
     if (!["STRIPE_CONNECT", "PAYPAL", "BANK_TRANSFER"].includes(normalizedMethod)) {
@@ -343,18 +363,36 @@ export default function PromotersPage() {
       return;
     }
 
-    const accountMasked = window.prompt("Cuenta enmascarada (ej. ***1234 o 8290****123):", "***1234");
+    const accountMasked = await actionDialog.prompt({
+      title: "Cuenta enmascarada",
+      description: "Ejemplo: ***1234 o 8290****123",
+      label: "Cuenta",
+      defaultValue: "***1234",
+      required: true,
+      minLength: 4,
+      confirmLabel: "Continuar",
+    });
     if (!accountMasked || accountMasked.trim().length < 4) {
       setBulkNotice({ tone: "error", text: "Cuenta enmascarada invalida." });
       return;
     }
-    const accountHolder = window.prompt("Titular de cuenta (opcional):", "");
+    const accountHolder = await actionDialog.prompt({
+      title: "Titular de cuenta",
+      description: "Opcional",
+      label: "Titular",
+      defaultValue: "",
+      confirmLabel: "Continuar",
+    });
+    if (accountHolder === null) return;
 
-    const confirmed = window.confirm(
-      `Verificar banco para ${targets.length} promotor(es)?\n\n` +
-        `Metodo: ${normalizedMethod}\n` +
-        `Cuenta: ${accountMasked.trim()}`
-    );
+    const confirmed = await actionDialog.confirm({
+      title: "Confirmar verificación bancaria",
+      description:
+        `Verificar banco para ${targets.length} promotor(es)?\n` +
+        `Método: ${normalizedMethod}\n` +
+        `Cuenta: ${accountMasked.trim()}`,
+      confirmLabel: "Verificar",
+    });
     if (!confirmed) return;
 
     const results = await Promise.allSettled(
@@ -384,9 +422,12 @@ export default function PromotersPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Marcar ${targets.length} cuenta(s) como pendientes de verificacion bancaria?`
-    );
+    const confirmed = await actionDialog.confirm({
+      title: "Reabrir verificación bancaria",
+      description: `Marcar ${targets.length} cuenta(s) como pendientes de verificación bancaria.`,
+      confirmLabel: "Reabrir",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
     const results = await Promise.allSettled(
@@ -530,6 +571,7 @@ export default function PromotersPage() {
             },
           ]}
         />
+        {actionDialog.dialog}
       </div>
     </PromoterShell>
   );

@@ -9,6 +9,7 @@ import { Input, Button } from "@vybx/ui";
 import { api } from "@/lib/api";
 import { usePermissions } from "@/lib/use-permissions";
 import type { Permission } from "@/lib/permissions";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 
 type CommandSource = "module" | "event" | "promoter" | "application" | "transaction";
 
@@ -58,11 +59,20 @@ const ITEMS: CommandItem[] = [
   {
     id: "payouts",
     label: "Liquidaciones",
-    description: "Cola de pagos y estado Azul/Cardnet",
+    description: "Cola de pagos y estado de Stripe",
     href: "/payouts",
-    keywords: ["payout", "liquidaciones", "pagos", "azul", "cardnet"],
+    keywords: ["payout", "liquidaciones", "pagos", "stripe", "batch"],
     source: "module",
     permission: "payouts:view",
+  },
+  {
+    id: "sales",
+    label: "Ventas",
+    description: "Actividad de transacciones, volumen y tendencias",
+    href: "/sales",
+    keywords: ["ventas", "transactions", "ingresos", "gmv"],
+    source: "module",
+    permission: "sales:view",
   },
   {
     id: "refunds",
@@ -101,6 +111,24 @@ const ITEMS: CommandItem[] = [
     permission: "audit:view",
   },
   {
+    id: "staff",
+    label: "Staff",
+    description: "Asignación operativa de escáneres y supervisores",
+    href: "/staff",
+    keywords: ["staff", "scanner", "supervisor", "checkin"],
+    source: "module",
+    permission: "staff:view",
+  },
+  {
+    id: "categories",
+    label: "Categorías",
+    description: "Catálogo de categorías e íconos para eventos",
+    href: "/categories",
+    keywords: ["categorias", "catalogo", "iconos", "tags"],
+    source: "module",
+    permission: "settings:view",
+  },
+  {
     id: "settings",
     label: "Configuracion",
     description: "Ajustes de cuenta y seguridad",
@@ -119,7 +147,7 @@ function fmtShortDate(input?: string | null) {
   if (!input) return "";
   const date = new Date(input);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("es-DO", { day: "2-digit", month: "short" });
+  return date.toLocaleDateString("es-US", { day: "2-digit", month: "short" });
 }
 
 function sourceBadge(source: CommandItem["source"]) {
@@ -156,6 +184,7 @@ export function CommandPalette() {
     text: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const actionDialog = useAdminActionDialog();
 
   const openPalette = () => {
     setOpen(true);
@@ -300,11 +329,12 @@ export function CommandPalette() {
           const status = String(entry.status ?? "PENDING");
           const provider = String(entry.provider ?? "pasarela");
           const amount = Number(entry.amount ?? 0);
+          const currency = String(entry.currency ?? "USD").toUpperCase();
           const event = (entry.event as { title?: string } | undefined)?.title ?? "Evento";
-          const amountFmt = new Intl.NumberFormat("es-DO", {
+          const amountFmt = new Intl.NumberFormat("es-US", {
             style: "currency",
-            currency: "DOP",
-            maximumFractionDigits: 0,
+            currency,
+            maximumFractionDigits: 2,
           }).format(amount);
 
           return {
@@ -476,10 +506,17 @@ export function CommandPalette() {
         item.actionTarget.kind === "application"
       ) {
         const feedback =
-          window.prompt(
-            "Feedback para rechazo (minimo 8 caracteres):",
-            "Documentacion incompleta para aprobacion."
-          ) ?? "";
+          (await actionDialog.prompt({
+            title: "Rechazar solicitud KYC",
+            description: "Debes incluir feedback de al menos 8 caracteres.",
+            label: "Feedback",
+            defaultValue: "Documentacion incompleta para aprobacion.",
+            multiline: true,
+            required: true,
+            minLength: 8,
+            confirmLabel: "Rechazar",
+            tone: "destructive",
+          })) ?? "";
         const normalized = feedback.trim();
         if (normalized.length < 8) {
           setActionNotice({
@@ -509,127 +546,132 @@ export function CommandPalette() {
     }
   };
 
-  return open ? (
-    <div
-      className="fixed inset-0 z-[120] flex items-start justify-center p-4 md:p-6"
-      onMouseDown={() => setOpen(false)}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+  return (
+    <>
+      {open ? (
+        <div
+          className="fixed inset-0 z-[120] flex items-start justify-center p-4 md:p-6"
+          onMouseDown={() => setOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-      <div
-        className="relative w-full max-w-2xl mt-8 border border-white/10 bg-background/95 rounded-xl overflow-hidden shadow-2xl"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 pt-5 pb-2">
-          <p className="text-base flex items-center gap-2 font-semibold">
-            <Command className="size-4 text-primary" />
-            Command Palette
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Navega en segundos. Atajo:{" "}
-            <kbd className="rounded border border-white/10 px-1.5 py-0.5 text-[11px]">Cmd/Ctrl + K</kbd>
-          </p>
-        </div>
+          <div
+            className="relative w-full max-w-2xl mt-8 border border-white/10 bg-background/95 rounded-xl overflow-hidden shadow-2xl"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="px-5 pt-5 pb-2">
+              <p className="text-base flex items-center gap-2 font-semibold">
+                <Command className="size-4 text-primary" />
+                Command Palette
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Navega en segundos. Atajo:{" "}
+                <kbd className="rounded border border-white/10 px-1.5 py-0.5 text-[11px]">Cmd/Ctrl + K</kbd>
+              </p>
+            </div>
 
-        <div className="px-5 pb-5 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              ref={inputRef}
-              autoFocus
-              placeholder="Buscar modulo o accion..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-2">
-            {isSearching ? (
-              <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-muted-foreground">
-                <Loader2 className="size-3.5 animate-spin" />
-                Buscando en eventos, promotores, solicitudes y pagos...
+            <div className="px-5 pb-5 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  ref={inputRef}
+                  autoFocus
+                  placeholder="Buscar modulo o accion..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-            ) : null}
-            {actionNotice ? (
-              <div
-                className={
-                  actionNotice.type === "success"
-                    ? "rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200"
-                    : "rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200"
-                }
-              >
-                {actionNotice.text}
-              </div>
-            ) : null}
-            {filtered.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No se encontraron resultados.</p>
-            ) : (
-              filtered.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.16, delay: idx * 0.02 }}
-                >
-                  <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-3">
-                    <button
-                      type="button"
-                      className="w-full text-left flex items-start justify-between gap-3 hover:opacity-90"
-                      onClick={() => go(item.href)}
-                    >
-                      <span>
-                        <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
-                          {item.label}
-                          <span className="rounded border border-white/15 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
-                            {sourceBadge(item.source)}
-                          </span>
-                        </span>
-                        <span className="block text-xs text-muted-foreground mt-0.5">{item.description}</span>
-                      </span>
-                      <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
-                    </button>
 
-                    {getQuickActions(item).length > 0 ? (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {getQuickActions(item).map((action) => {
-                          const busy = actionBusyKey === `${item.id}:${action.id}`;
-                          return (
-                            <Button
-                              key={action.id}
-                              type="button"
-                              size="sm"
-                              variant="outline"
-                              disabled={busy || !!actionBusyKey}
-                              onClick={() => void runQuickAction(item, action)}
-                              className={
-                                action.tone === "danger"
-                                  ? "h-7 px-2 text-xs border-red-500/30 text-red-300 hover:bg-red-500/10"
-                                  : "h-7 px-2 text-xs border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
-                              }
-                            >
-                              {busy ? (
-                                <>
-                                  <Loader2 className="size-3 mr-1 animate-spin" />
-                                  Procesando...
-                                </>
-                              ) : (
-                                action.label
-                              )}
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    ) : null}
+              <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-2">
+                {isSearching ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Buscando en eventos, promotores, solicitudes y pagos...
                   </div>
-                </motion.div>
-              ))
-            )}
+                ) : null}
+                {actionNotice ? (
+                  <div
+                    className={
+                      actionNotice.type === "success"
+                        ? "rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200"
+                        : "rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200"
+                    }
+                  >
+                    {actionNotice.text}
+                  </div>
+                ) : null}
+                {filtered.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No se encontraron resultados.</p>
+                ) : (
+                  filtered.map((item, idx) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.16, delay: idx * 0.02 }}
+                    >
+                      <div className="rounded-lg border border-white/10 bg-white/[0.02] px-3 py-3">
+                        <button
+                          type="button"
+                          className="w-full text-left flex items-start justify-between gap-3 hover:opacity-90"
+                          onClick={() => go(item.href)}
+                        >
+                          <span>
+                            <span className="inline-flex items-center gap-2 text-sm font-medium text-foreground">
+                              {item.label}
+                              <span className="rounded border border-white/15 bg-white/[0.04] px-1.5 py-0.5 text-[10px] font-normal uppercase tracking-wide text-muted-foreground">
+                                {sourceBadge(item.source)}
+                              </span>
+                            </span>
+                            <span className="block text-xs text-muted-foreground mt-0.5">{item.description}</span>
+                          </span>
+                          <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
+                        </button>
+
+                        {getQuickActions(item).length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {getQuickActions(item).map((action) => {
+                              const busy = actionBusyKey === `${item.id}:${action.id}`;
+                              return (
+                                <Button
+                                  key={action.id}
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={busy || !!actionBusyKey}
+                                  onClick={() => void runQuickAction(item, action)}
+                                  className={
+                                    action.tone === "danger"
+                                      ? "h-7 px-2 text-xs border-red-500/30 text-red-300 hover:bg-red-500/10"
+                                      : "h-7 px-2 text-xs border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+                                  }
+                                >
+                                  {busy ? (
+                                    <>
+                                      <Loader2 className="size-3 mr-1 animate-spin" />
+                                      Procesando...
+                                    </>
+                                  ) : (
+                                    action.label
+                                  )}
+                                </Button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  ) : null;
+      ) : null}
+      {actionDialog.dialog}
+    </>
+  );
 }

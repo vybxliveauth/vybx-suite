@@ -26,6 +26,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { BulkActionBar } from "@/components/pro/BulkActionBar";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import {
   useAdminRefunds,
   useReviewAdminRefund,
@@ -96,6 +97,7 @@ export default function RefundsPage() {
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
+  const actionDialog = useAdminActionDialog();
 
   const refundsQuery = useAdminRefunds(1, 100, statusFilter);
   const reviewMutation = useReviewAdminRefund();
@@ -184,7 +186,17 @@ export default function RefundsPage() {
     try {
       const reviewNotes =
         decision === "REJECT"
-          ? window.prompt("Notas de rechazo (opcional):", "No cumple condiciones de reembolso.") ?? undefined
+          ? (
+              await actionDialog.prompt({
+                title: "Rechazar solicitud",
+                description: "Opcional: agrega notas para justificar el rechazo.",
+                label: "Notas de rechazo",
+                defaultValue: "No cumple condiciones de reembolso.",
+                multiline: true,
+                confirmLabel: "Aplicar rechazo",
+                tone: "destructive",
+              })
+            ) ?? undefined
           : undefined;
       await reviewMutation.mutateAsync({ id, decision, reviewNotes });
       setLocalStatuses((prev) => ({
@@ -212,16 +224,35 @@ export default function RefundsPage() {
       let refundAmount: number | undefined;
       if (action === "MARK_REFUNDED") {
         providerReference =
-          window.prompt("Referencia de pasarela (opcional):", "manual-refund")?.trim() ||
-          undefined;
+          (
+            await actionDialog.prompt({
+              title: "Referencia de pasarela",
+              description: "Opcional",
+              label: "Referencia",
+              defaultValue: "manual-refund",
+              confirmLabel: "Continuar",
+            })
+          )?.trim() || undefined;
         const suggestedAmount =
           typeof defaultRefundAmount === "number" && Number.isFinite(defaultRefundAmount)
             ? defaultRefundAmount
             : undefined;
-        const amountInput = window.prompt(
-          "Monto exacto de reembolso (DOP):",
-          suggestedAmount !== undefined ? suggestedAmount.toFixed(2) : ""
-        );
+        const amountInput = await actionDialog.prompt({
+          title: "Monto exacto de reembolso",
+          description: "Ingresa el monto exacto en USD.",
+          label: "Monto (USD)",
+          defaultValue: suggestedAmount !== undefined ? suggestedAmount.toFixed(2) : "",
+          inputType: "number",
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (!Number.isFinite(parsed) || parsed <= 0) {
+              return "Ingresa un monto válido mayor que 0.";
+            }
+            return null;
+          },
+          confirmLabel: "Marcar reembolsado",
+        });
         if (amountInput === null) {
           return;
         }
@@ -234,8 +265,17 @@ export default function RefundsPage() {
       }
       if (action === "MARK_FAILED") {
         const failure =
-          window.prompt("Motivo del fallo de reembolso (requerido):", "Error de pasarela") ??
-          "";
+          (await actionDialog.prompt({
+            title: "Marcar reembolso fallido",
+            description: "Este motivo se registrará para auditoría.",
+            label: "Motivo del fallo",
+            defaultValue: "Error de pasarela",
+            multiline: true,
+            required: true,
+            minLength: 8,
+            confirmLabel: "Marcar fallido",
+            tone: "destructive",
+          })) ?? "";
         if (failure.trim().length < 8) {
           setActionError("El motivo del fallo debe tener al menos 8 caracteres.");
           return;
@@ -276,15 +316,33 @@ export default function RefundsPage() {
       let note: string | undefined;
       if (action === "OPEN") {
         const reason =
-          window.prompt("Motivo de disputa (mínimo 8 caracteres):", "Cliente reporta incidencia") ??
-          "";
+          (await actionDialog.prompt({
+            title: "Abrir disputa",
+            description: "Indica el motivo principal de la disputa.",
+            label: "Motivo",
+            defaultValue: "Cliente reporta incidencia",
+            multiline: true,
+            required: true,
+            minLength: 8,
+            confirmLabel: "Abrir",
+            tone: "destructive",
+          })) ?? "";
         if (reason.trim().length < 8) {
           setActionError("El motivo de disputa debe tener al menos 8 caracteres.");
           return;
         }
         note = reason.trim();
       } else {
-        note = window.prompt("Notas de cierre (opcional):", "")?.trim() || undefined;
+        const closeNotes = await actionDialog.prompt({
+          title: action === "RESOLVE" ? "Resolver disputa" : "Descartar disputa",
+          description: "Opcional: agrega notas de cierre.",
+          label: "Notas",
+          defaultValue: "",
+          multiline: true,
+          confirmLabel: "Guardar",
+        });
+        if (closeNotes === null) return;
+        note = closeNotes.trim() || undefined;
       }
       await disputeMutation.mutateAsync({ id, action, note });
       setLocalDisputeStatuses((prev) => ({
@@ -308,7 +366,11 @@ export default function RefundsPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Aprobar ${targets.length} solicitud(es) de reembolso?`);
+    const confirmed = await actionDialog.confirm({
+      title: "Aprobar solicitudes",
+      description: `¿Aprobar ${targets.length} solicitud(es) de reembolso?`,
+      confirmLabel: "Aprobar",
+    });
     if (!confirmed) return;
 
     setBulkBusyAction("APPROVE");
@@ -347,13 +409,22 @@ export default function RefundsPage() {
       return;
     }
 
-    const confirmed = window.confirm(`Rechazar ${targets.length} solicitud(es) de reembolso?`);
+    const confirmed = await actionDialog.confirm({
+      title: "Rechazar solicitudes",
+      description: `¿Rechazar ${targets.length} solicitud(es) de reembolso?`,
+      confirmLabel: "Rechazar",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
-    const reviewNotesRaw = window.prompt(
-      "Notas de rechazo para lote (opcional):",
-      "No cumple condiciones de reembolso."
-    );
+    const reviewNotesRaw = await actionDialog.prompt({
+      title: "Notas de rechazo en lote",
+      description: "Opcional: se aplicará a todas las solicitudes seleccionadas.",
+      label: "Notas",
+      defaultValue: "No cumple condiciones de reembolso.",
+      multiline: true,
+      confirmLabel: "Continuar",
+    });
     if (reviewNotesRaw === null) return;
     const reviewNotes = reviewNotesRaw.trim().length > 0 ? reviewNotesRaw.trim() : undefined;
 
@@ -426,6 +497,20 @@ export default function RefundsPage() {
             }
           >
             {bulkNotice.text}
+          </div>
+        )}
+        {refundsQuery.isError && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            No se pudo cargar el listado de reembolsos.
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="ml-3 h-7"
+              onClick={() => void refundsQuery.refetch()}
+            >
+              Reintentar
+            </Button>
           </div>
         )}
 
@@ -738,6 +823,7 @@ export default function RefundsPage() {
             },
           ]}
         />
+        {actionDialog.dialog}
       </div>
     </PromoterShell>
   );

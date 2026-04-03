@@ -255,6 +255,13 @@ export function useAuthGuardCore<TUser, TRole extends string, TPermission>(
 
       if (!user) {
         user = await hydrateUserFromSession();
+        if (!user) {
+          // Avoid false logouts during short-lived refresh/network races on hard reload.
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          if (!cancelled) {
+            user = await hydrateUserFromSession();
+          }
+        }
       }
 
       if (cancelled) return;

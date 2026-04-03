@@ -54,6 +54,7 @@ import {
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
+import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
 import { useAuthUser } from "@/lib/auth";
 import {
   useAdminCategories,
@@ -106,6 +107,7 @@ export default function CategoriesPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actingId, setActingId] = useState<string | null>(null);
+  const actionDialog = useAdminActionDialog();
 
   const categories = categoriesQuery.data ?? [];
   const stats = useMemo(
@@ -177,9 +179,14 @@ export default function CategoriesPage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `¿Eliminar la categoría "${categoryName}"?\n\nSi tiene eventos asignados, el backend bloqueará la operación.`
-    );
+    const confirmed = await actionDialog.confirm({
+      title: "Eliminar categoría",
+      description:
+        `¿Eliminar la categoría "${categoryName}"?\n` +
+        "Si tiene eventos asignados, el backend bloqueará la operación.",
+      confirmLabel: "Eliminar",
+      tone: "destructive",
+    });
     if (!confirmed) return;
 
     setActingId(`delete:${categoryId}`);
@@ -447,6 +454,7 @@ export default function CategoriesPage() {
           Si una categoría está asignada a eventos, el backend impedirá eliminarla hasta que se
           reasigne o se desactive.
         </div>
+        {actionDialog.dialog}
       </div>
     </PromoterShell>
   );
