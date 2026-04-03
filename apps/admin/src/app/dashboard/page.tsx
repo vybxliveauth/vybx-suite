@@ -26,18 +26,8 @@ import {
   useAdminTransactions,
 } from "@/lib/queries";
 import { api } from "@/lib/api";
+import { fmtCurrency, fmtDateShort as fmtDate } from "@/lib/format";
 
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-DO", {
-    style: "currency",
-    currency: "DOP",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-DO", { month: "short", day: "numeric" });
-}
 
 function buildTrend(values: Array<{ v: number }>) {
   return values.map((entry, i) => {
@@ -90,7 +80,7 @@ export default function DashboardPage() {
   const ticketsDelta = deltaPct(todayTickets, yesterdayTickets);
 
   const pendingCancellations = checklist?.items?.pendingCancellations?.pendingCount ?? 0;
-  const refundRate = (stats?.tickets.sold ?? 0) > 0 ? (pendingCancellations / stats!.tickets.sold) * 100 : 0;
+  const refundRate = (stats?.tickets.sold ?? 0) > 0 ? (pendingCancellations / (stats?.tickets.sold ?? 1)) * 100 : 0;
 
   const timelineItems = useMemo<AuditItem[]>(
     () =>

@@ -59,6 +59,7 @@ type VipFeeOverride = {
 type PlatformConfigCache = {
   maintenanceMode: boolean;
   waitingRoomMode: boolean;
+  opsAlertsEnabled: boolean;
   platformFeePercent: number;
   vipOverrides: VipFeeOverride[];
 };
@@ -66,6 +67,7 @@ type PlatformConfigCache = {
 const PLATFORM_CONFIG_CACHE_KEY = "vybx.admin.platform-config.v1";
 const CONFIG_KEY_MAINTENANCE_MODE = "MAINTENANCE_MODE";
 const CONFIG_KEY_WAITING_ROOM_MODE = "WAITING_ROOM_MODE";
+const CONFIG_KEY_OPS_ALERTS_ENABLED = "OPS_ALERTS_ENABLED";
 const CONFIG_KEY_PLATFORM_FEE = "PLATFORM_FEE";
 const CONFIG_KEY_VIP_PROMOTER_FEES = "VIP_PROMOTER_FEES";
 
@@ -92,6 +94,7 @@ function readPlatformConfigCache(): PlatformConfigCache | null {
     return {
       maintenanceMode: Boolean(parsed.maintenanceMode),
       waitingRoomMode: Boolean(parsed.waitingRoomMode),
+      opsAlertsEnabled: parseBoolean(parsed.opsAlertsEnabled, true),
       platformFeePercent: clampFeePercent(Number(parsed.platformFeePercent ?? 0)),
       vipOverrides: Array.isArray(parsed.vipOverrides)
         ? parsed.vipOverrides
@@ -150,6 +153,7 @@ export default function SettingsPage() {
 
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [waitingRoomMode, setWaitingRoomMode] = useState(false);
+  const [opsAlertsEnabled, setOpsAlertsEnabled] = useState(true);
   const [platformFeePercentInput, setPlatformFeePercentInput] = useState("10");
   const [vipOverrides, setVipOverrides] = useState<VipFeeOverride[]>([]);
 
@@ -198,10 +202,11 @@ export default function SettingsPage() {
     () => ({
       maintenanceMode,
       waitingRoomMode,
+      opsAlertsEnabled,
       platformFeePercent: clampFeePercent(Number(platformFeePercentInput)),
       vipOverrides,
     }),
-    [maintenanceMode, platformFeePercentInput, vipOverrides, waitingRoomMode]
+    [maintenanceMode, opsAlertsEnabled, platformFeePercentInput, vipOverrides, waitingRoomMode]
   );
 
   useEffect(() => {
@@ -220,6 +225,7 @@ export default function SettingsPage() {
     if (cached) {
       setMaintenanceMode(cached.maintenanceMode);
       setWaitingRoomMode(cached.waitingRoomMode);
+      setOpsAlertsEnabled(cached.opsAlertsEnabled);
       setPlatformFeePercentInput(String(cached.platformFeePercent));
       setVipOverrides(cached.vipOverrides);
     }
@@ -227,12 +233,14 @@ export default function SettingsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const entries = await api.get<ConfigRecord[]>("/config");
+        const endpoint = isSuperAdmin ? "/config/internal/all" : "/config";
+        const entries = await api.get<ConfigRecord[]>(endpoint);
         if (cancelled || !Array.isArray(entries)) return;
 
         const lookup = new Map(entries.map((item) => [item.key, item.value]));
         const remoteMaintenance = lookup.get(CONFIG_KEY_MAINTENANCE_MODE);
         const remoteWaitingRoom = lookup.get(CONFIG_KEY_WAITING_ROOM_MODE);
+        const remoteOpsAlerts = lookup.get(CONFIG_KEY_OPS_ALERTS_ENABLED);
         const remoteFee = lookup.get(CONFIG_KEY_PLATFORM_FEE);
         const remoteOverridesRaw = lookup.get(CONFIG_KEY_VIP_PROMOTER_FEES);
 
@@ -243,6 +251,10 @@ export default function SettingsPage() {
         const nextWaitingRoom = parseBoolean(
           remoteWaitingRoom,
           cached?.waitingRoomMode ?? false
+        );
+        const nextOpsAlerts = parseBoolean(
+          remoteOpsAlerts,
+          cached?.opsAlertsEnabled ?? true
         );
         const nextFee = clampFeePercent(Number(remoteFee ?? cached?.platformFeePercent ?? 10));
 
@@ -270,12 +282,14 @@ export default function SettingsPage() {
 
         setMaintenanceMode(nextMaintenance);
         setWaitingRoomMode(nextWaitingRoom);
+        setOpsAlertsEnabled(nextOpsAlerts);
         setPlatformFeePercentInput(String(nextFee));
         setVipOverrides(nextOverrides);
 
         writePlatformConfigCache({
           maintenanceMode: nextMaintenance,
           waitingRoomMode: nextWaitingRoom,
+          opsAlertsEnabled: nextOpsAlerts,
           platformFeePercent: nextFee,
           vipOverrides: nextOverrides,
         });
@@ -287,7 +301,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [isSuperAdmin]);
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
@@ -347,10 +361,15 @@ export default function SettingsPage() {
           value: String(waitingRoomMode),
           description: "Global waiting-room pre-gate for high traffic windows",
         }),
+        api.patch("/config", {
+          key: CONFIG_KEY_OPS_ALERTS_ENABLED,
+          value: String(opsAlertsEnabled),
+          description: "Enable or disable operational alert dispatch channels",
+        }),
       ]);
 
       writePlatformConfigCache(platformSnapshot);
-      setOpsNotice("Maintenance Mode y Waiting Room guardados correctamente.");
+      setOpsNotice("Ajustes de operación global guardados correctamente.");
     } catch (error) {
       setOpsError((error as Error).message || "No se pudieron guardar los ajustes.");
     } finally {
@@ -437,6 +456,7 @@ export default function SettingsPage() {
       const snapshot: PlatformConfigCache = {
         maintenanceMode,
         waitingRoomMode,
+        opsAlertsEnabled,
         platformFeePercent: normalizedPlatformFee,
         vipOverrides: normalizedOverrides,
       };
@@ -618,6 +638,20 @@ export default function SettingsPage() {
               <Switch
                 checked={waitingRoomMode}
                 onCheckedChange={setWaitingRoomMode}
+                disabled={!isSuperAdmin || opsSaving}
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Alertas Operativas</p>
+                <p className="text-xs text-muted-foreground">
+                  Activa o pausa envío de alertas de observabilidad y conciliación.
+                </p>
+              </div>
+              <Switch
+                checked={opsAlertsEnabled}
+                onCheckedChange={setOpsAlertsEnabled}
                 disabled={!isSuperAdmin || opsSaving}
               />
             </div>

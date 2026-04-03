@@ -17,14 +17,7 @@ import {
   useUpdateEventFeatured,
 } from "@/lib/queries";
 import type { Event, EventStatus } from "@/lib/types";
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", maximumFractionDigits: 0 }).format(n);
-}
+import { fmtCurrency, fmtDate } from "@/lib/format";
 
 function statusBadge(ev: Event) {
   if (!ev.isActive && ev.status === "APPROVED") {

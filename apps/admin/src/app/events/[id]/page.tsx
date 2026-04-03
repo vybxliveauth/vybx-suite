@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fmtCurrency } from "@/lib/format";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -49,14 +50,8 @@ import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, u
 import type { EventDetail, EventStatus } from "@/lib/types";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", {
-    style: "currency", currency: "MXN", maximumFractionDigits: 0,
-  }).format(n);
-}
-
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  return new Date(iso).toLocaleDateString("es-DO", {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });

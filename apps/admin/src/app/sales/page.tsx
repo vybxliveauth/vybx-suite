@@ -29,27 +29,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useAdminRefunds, useAdminStats, useAdminTransactions } from "@/lib/queries";
-
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-DO", {
-    style: "currency",
-    currency: "DOP",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-DO", { month: "short", day: "numeric" });
-}
-
-function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+import { fmtCurrency, fmtDateShort as fmtDate, fmtDateTime } from "@/lib/format";
 
 function txStatusBadge(status: string) {
   if (status === "SUCCESS") {

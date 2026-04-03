@@ -32,25 +32,14 @@ import {
   useUpdateAdminRefundDispute,
   useUpdateAdminRefundExecution,
 } from "@/lib/queries";
+import { fmtDate } from "@/lib/format";
 
 type UiStatus = "REQUESTED" | "APPROVED" | "REJECTED";
 type UiRefundStatus = "NONE" | "PENDING" | "REFUNDED" | "FAILED";
 type UiDisputeStatus = "NONE" | "OPEN" | "RESOLVED" | "DISMISSED";
 
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-DO", {
-    style: "currency",
-    currency: "DOP",
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-DO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", maximumFractionDigits: 2 }).format(n);
 }
 
 const STATUS_COLOR: Record<UiStatus, string> = {
@@ -129,10 +118,10 @@ export default function RefundsPage() {
       .filter((r) => {
         if (!search.trim()) return true;
         const q = search.toLowerCase();
-        const eventTitle = r.ticket?.ticketType?.event?.title?.toLowerCase?.() ?? "";
-        const tierName = r.ticket?.ticketType?.name?.toLowerCase?.() ?? "";
-        const buyerEmail = r.requester?.email?.toLowerCase?.() ?? "";
-        const dispute = r.disputeStatus?.toLowerCase?.() ?? "";
+        const eventTitle = r.ticket?.ticketType?.event?.title?.toLowerCase() ?? "";
+        const tierName = r.ticket?.ticketType?.name?.toLowerCase() ?? "";
+        const buyerEmail = r.requester?.email?.toLowerCase() ?? "";
+        const dispute = r.disputeStatus?.toLowerCase() ?? "";
         const txId = (r.paymentTransactionId ?? r.ticket?.paymentTransactionId ?? "").toLowerCase();
         return (
           eventTitle.includes(q) ||

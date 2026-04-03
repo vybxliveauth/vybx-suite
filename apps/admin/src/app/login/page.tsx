@@ -107,6 +107,7 @@ export default function LoginPage() {
         return;
       }
 
+      setTwoFactorNotice(null);
       setUser(res.user);
       router.replace("/dashboard");
     } catch (err: unknown) {
