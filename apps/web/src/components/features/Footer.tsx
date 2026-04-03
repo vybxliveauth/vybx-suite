@@ -111,11 +111,13 @@ export function Footer({ showCta = false }: { showCta?: boolean }) {
       <div
         className="footer-bottom-bar"
         style={{
-          padding: "1.25rem var(--page-inline)",
+          padding: showCta
+            ? "1.4rem var(--page-inline) calc(1.55rem + env(safe-area-inset-bottom))"
+            : "1.25rem var(--page-inline)",
           display: "flex",
           justifyContent: "center",
         }}
-        >
+      >
         <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
           © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
         </p>
