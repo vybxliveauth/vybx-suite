@@ -1640,7 +1640,10 @@ button[aria-disabled='true'] {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 2.1rem;
-  padding: 0.95rem 1.05rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: var(--radius-2xl);
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
 }
 
 .footer-shell-with-cta .footer-cta {
@@ -1727,8 +1730,8 @@ button[aria-disabled='true'] {
 }
 
 [data-theme='light'] .footer-cta {
-  border-color: rgba(0, 0, 0, 0.08);
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.025);
+  border: none;
 }
 
 .footer-bottom-bar {

@@ -46,7 +46,7 @@ export function Footer({ showCta = false }: { showCta?: boolean }) {
         }}
       >
         {showCta && (
-          <div className="footer-cta surface-panel-soft">
+          <div className="footer-cta">
             <div>
               <p className="footer-cta-title">Listo para tu próxima experiencia en vivo</p>
               <p className="footer-cta-copy">Explora eventos, compra en segundos y gestiona todo desde tu cuenta.</p>
