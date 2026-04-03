@@ -164,10 +164,9 @@ type PasswordValues = z.infer<typeof passwordSchema>;
 export default function SettingsPage() {
   const user = useAuthUser();
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
-  // Admin app is already protected to ADMIN/SUPER_ADMIN at middleware + guards.
-  // If role hydration lags or claims arrive partial, keep operations UI interactive
-  // and let backend enforce authorization on save.
-  const canManageGlobalOps = Boolean(user);
+  // Keep operation controls interactive even when auth hydration lags.
+  // Authorization still happens server-side in /config/ops.
+  const canManageGlobalOps = true;
 
   const [profileSaved, setProfileSaved] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
@@ -266,10 +265,6 @@ export default function SettingsPage() {
   }, [promoters, selectedPromoterId]);
 
   useEffect(() => {
-    // Wait for session hydration — if user is null we don't yet know the role,
-    // so calling the endpoint would fall through to the public /config branch
-    // and leave the operation mode controls empty/incorrect.
-    if (!user) return;
     setOpsInitialized(false);
 
     const cached = readPlatformConfigCache(platformConfigCacheKey);
@@ -289,11 +284,7 @@ export default function SettingsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const endpoint = isSuperAdmin
-          ? "/config/internal/all"
-          : canManageGlobalOps
-            ? "/config/internal/ops"
-            : "/config";
+        const endpoint = isSuperAdmin ? "/config/internal/all" : "/config/internal/ops";
         const entries = await api.get<ConfigRecord[]>(endpoint);
         if (cancelled || !Array.isArray(entries)) return;
 
@@ -370,7 +361,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, canManageGlobalOps, isSuperAdmin, platformConfigCacheKey]);
+  }, [isSuperAdmin, platformConfigCacheKey]);
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
@@ -412,11 +403,6 @@ export default function SettingsPage() {
     snapshot?: OpsConfigState;
     autosave?: boolean;
   }) {
-    if (!canManageGlobalOps) {
-      setOpsError("Solo ADMIN o SUPER_ADMIN puede guardar estos ajustes operativos.");
-      return;
-    }
-
     const snapshot = options?.snapshot ?? opsSnapshot;
     if (sameOpsConfig(lastSavedOpsRef.current, snapshot)) {
       return;
@@ -475,7 +461,7 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    if (!user || !canManageGlobalOps || !opsInitialized || opsSaving) return;
+    if (!opsInitialized || opsSaving) return;
 
     if (!lastSavedOpsRef.current) {
       lastSavedOpsRef.current = opsSnapshot;
@@ -494,7 +480,7 @@ export default function SettingsPage() {
         autosave: true,
       });
     }, OPS_AUTOSAVE_DELAY_MS);
-  }, [canManageGlobalOps, opsInitialized, opsSaving, opsSnapshot, user]);
+  }, [opsInitialized, opsSaving, opsSnapshot]);
 
   function addOrUpdateVipOverride() {
     setFeesError(null);
@@ -733,83 +719,68 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {user === null ? (
-              <div className="flex items-center gap-2 py-3 text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" />
-                <span className="text-sm">Verificando permisos…</span>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Maintenance Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  Si está activo, la plataforma pública entra en modo mantenimiento.
+                </p>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">Maintenance Mode</p>
-                    <p className="text-xs text-muted-foreground">
-                      Si está activo, la plataforma pública entra en modo mantenimiento.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={maintenanceMode}
-                    onCheckedChange={setMaintenanceMode}
-                    disabled={!canManageGlobalOps}
-                  />
-                </div>
+              <Switch
+                checked={maintenanceMode}
+                onCheckedChange={setMaintenanceMode}
+                disabled={!canManageGlobalOps}
+              />
+            </div>
 
-                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">Waiting Room Mode</p>
-                    <p className="text-xs text-muted-foreground">
-                      Habilita sala de espera previa para ventanas de tráfico masivo.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={waitingRoomMode}
-                    onCheckedChange={setWaitingRoomMode}
-                    disabled={!canManageGlobalOps}
-                  />
-                </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Waiting Room Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  Habilita sala de espera previa para ventanas de tráfico masivo.
+                </p>
+              </div>
+              <Switch
+                checked={waitingRoomMode}
+                onCheckedChange={setWaitingRoomMode}
+                disabled={!canManageGlobalOps}
+              />
+            </div>
 
-                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-medium">Alertas Operativas</p>
-                    <p className="text-xs text-muted-foreground">
-                      Activa o pausa envío de alertas de observabilidad y conciliación.
-                    </p>
-                  </div>
-                  <Switch
-                    checked={opsAlertsEnabled}
-                    onCheckedChange={setOpsAlertsEnabled}
-                    disabled={!canManageGlobalOps}
-                  />
-                </div>
+            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Alertas Operativas</p>
+                <p className="text-xs text-muted-foreground">
+                  Activa o pausa envío de alertas de observabilidad y conciliación.
+                </p>
+              </div>
+              <Switch
+                checked={opsAlertsEnabled}
+                onCheckedChange={setOpsAlertsEnabled}
+                disabled={!canManageGlobalOps}
+              />
+            </div>
 
-                {!canManageGlobalOps && (
-                  <Badge variant="outline" className="border-amber-500/40 text-amber-300 bg-amber-500/10">
-                    Solo ADMIN o SUPER_ADMIN puede guardar cambios de operación.
-                  </Badge>
-                )}
-
-                {opsNotice && (
-                  <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2">
-                    {opsNotice}
-                  </p>
-                )}
-                {opsError && (
-                  <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
-                    {opsError}
-                  </p>
-                )}
-                {canManageGlobalOps && (
-                  <p className="text-xs text-muted-foreground">
-                    Auto-guardado activo. Los cambios se aplican automáticamente.
-                  </p>
-                )}
-
-                <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
-                  {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                  {opsSaving ? "Guardando..." : "Guardar ahora"}
-                </Button>
-              </>
+            {opsNotice && (
+              <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2">
+                {opsNotice}
+              </p>
             )}
+            {opsError && (
+              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                {opsError}
+              </p>
+            )}
+            {canManageGlobalOps && (
+              <p className="text-xs text-muted-foreground">
+                Auto-guardado activo. Los cambios se aplican automáticamente.
+              </p>
+            )}
+
+            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
+              {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+              {opsSaving ? "Guardando..." : "Guardar ahora"}
+            </Button>
           </CardContent>
         </Card>
 
