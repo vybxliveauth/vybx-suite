@@ -45,6 +45,11 @@ function deltaPct(current: number, prev: number) {
   return ((current - prev) / prev) * 100;
 }
 
+function resolvePlatformFeePercent(raw: number | undefined): number {
+  if (!Number.isFinite(raw)) return 10;
+  return Math.max(0, Math.min(100, Number((raw as number).toFixed(2))));
+}
+
 export default function DashboardPage() {
   const statsQuery = useAdminStats();
   const auditQuery = useAdminAuditLogs(1, 8);
@@ -74,6 +79,10 @@ export default function DashboardPage() {
   const todayRevenue = trend.at(-1)?.revenue ?? 0;
   const yesterdayRevenue = trend.at(-2)?.revenue ?? 0;
   const revenueDelta = deltaPct(todayRevenue, yesterdayRevenue);
+  const platformFeePercent = resolvePlatformFeePercent(stats?.revenue.platformFeePercent);
+  const vybeCommissionEstimate = Number.isFinite(stats?.revenue.vybeCommissionEstimated)
+    ? Number(stats?.revenue.vybeCommissionEstimated)
+    : Number(((stats?.revenue.estimated ?? 0) * (platformFeePercent / 100)).toFixed(2));
 
   const todayTickets = stats?.sparklines.tickets.at(-1)?.v ?? 0;
   const yesterdayTickets = stats?.sparklines.tickets.at(-2)?.v ?? 0;
@@ -217,9 +226,9 @@ export default function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold tabular-nums">{fmtCurrency(stats.revenue.estimated * 0.1)}</p>
+              <p className="text-2xl font-bold tabular-nums">{fmtCurrency(vybeCommissionEstimate)}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {stats.revenue.successfulPayments} pagos exitosos
+                Fee aplicado: {platformFeePercent.toFixed(2)}%
               </p>
             </CardContent>
           </Card>

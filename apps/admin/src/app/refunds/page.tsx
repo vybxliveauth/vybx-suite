@@ -32,15 +32,11 @@ import {
   useUpdateAdminRefundDispute,
   useUpdateAdminRefundExecution,
 } from "@/lib/queries";
-import { fmtDate } from "@/lib/format";
+import { fmtCurrency, fmtDate } from "@/lib/format";
 
 type UiStatus = "REQUESTED" | "APPROVED" | "REJECTED";
 type UiRefundStatus = "NONE" | "PENDING" | "REFUNDED" | "FAILED";
 type UiDisputeStatus = "NONE" | "OPEN" | "RESOLVED" | "DISMISSED";
-
-function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP", maximumFractionDigits: 2 }).format(n);
-}
 
 const STATUS_COLOR: Record<UiStatus, string> = {
   REQUESTED: "bg-amber-500/10 text-amber-400 border-amber-500/20",

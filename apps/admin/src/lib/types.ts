@@ -123,7 +123,12 @@ export interface AdminStatsResponse {
   users: { total: number };
   events: { total: number; active: number };
   tickets: { sold: number };
-  revenue: { estimated: number; successfulPayments: number };
+  revenue: {
+    estimated: number;
+    successfulPayments: number;
+    platformFeePercent?: number;
+    vybeCommissionEstimated?: number;
+  };
   sparklines: {
     revenue: Array<{ v: number }>;
     tickets: Array<{ v: number }>;

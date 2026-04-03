@@ -1,15 +1,17 @@
 /** Shared formatting utilities — single source of truth for locale/currency */
 
-const LOCALE = "es-DO";
-const CURRENCY = "DOP";
+const LOCALE = "es-US";
+const CURRENCY = "USD";
 
 /** Format a number as DOP currency. Use decimals=2 for exact cent display. */
 export function fmtCurrency(n: number, decimals: 0 | 2 = 0): string {
+  const safe = Number.isFinite(n) ? n : 0;
   return new Intl.NumberFormat(LOCALE, {
     style: "currency",
     currency: CURRENCY,
+    minimumFractionDigits: decimals === 2 ? 2 : 0,
     maximumFractionDigits: decimals,
-  }).format(n);
+  }).format(safe);
 }
 
 /** Short date: "10 ago" */
