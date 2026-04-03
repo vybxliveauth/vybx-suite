@@ -230,6 +230,11 @@ export default function SettingsPage() {
   }, [promoters, selectedPromoterId]);
 
   useEffect(() => {
+    // Wait for session hydration — if user is null we don't yet know the role,
+    // so calling the endpoint would fall through to the public /config branch
+    // and leave the operation mode controls empty/incorrect.
+    if (!user) return;
+
     const cached = readPlatformConfigCache(platformConfigCacheKey);
     if (cached) {
       setMaintenanceMode(cached.maintenanceMode);
@@ -314,7 +319,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [canManageGlobalOps, isSuperAdmin, platformConfigCacheKey]);
+  }, [user, canManageGlobalOps, isSuperAdmin, platformConfigCacheKey]);
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
