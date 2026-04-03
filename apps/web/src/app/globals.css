@@ -1623,6 +1623,30 @@ button[aria-disabled='true'] {
     radial-gradient(70% 60% at 90% 0%, rgba(255, 42, 95, 0.1), transparent);
 }
 
+.footer-shell-with-cta {
+  border-top-color: transparent;
+  background:
+    radial-gradient(78% 56% at 12% -8%, rgba(124, 58, 237, 0.14), transparent),
+    radial-gradient(78% 60% at 90% 0%, rgba(255, 42, 95, 0.1), transparent),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 42%);
+}
+
+.footer-shell-with-cta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--page-inline);
+  right: var(--page-inline);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-border),
+    transparent
+  );
+  pointer-events: none;
+}
+
 .footer-cta {
   display: flex;
   align-items: center;
@@ -1630,6 +1654,11 @@ button[aria-disabled='true'] {
   gap: 1rem;
   margin-bottom: 2.1rem;
   padding: 0.95rem 1.05rem;
+}
+
+.footer-shell-with-cta .footer-cta {
+  margin-top: -1.15rem;
+  margin-bottom: 1.9rem;
 }
 
 .footer-cta-title {
@@ -1703,9 +1732,46 @@ button[aria-disabled='true'] {
     radial-gradient(70% 60% at 90% 0%, rgba(225, 29, 72, 0.08), transparent);
 }
 
+[data-theme='light'] .footer-shell-with-cta {
+  background:
+    radial-gradient(80% 56% at 12% -8%, rgba(109, 40, 217, 0.09), transparent),
+    radial-gradient(80% 60% at 90% 0%, rgba(225, 29, 72, 0.07), transparent),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.74),
+      rgba(255, 255, 255, 0.2) 44%,
+      transparent 70%
+    );
+}
+
 [data-theme='light'] .footer-cta {
   border-color: rgba(0, 0, 0, 0.08);
   background: rgba(255, 255, 255, 0.72);
+}
+
+.footer-bottom-bar {
+  position: relative;
+  border-top: 1px solid var(--glass-border);
+}
+
+.footer-shell-with-cta .footer-bottom-bar {
+  border-top-color: transparent;
+}
+
+.footer-shell-with-cta .footer-bottom-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: var(--page-inline);
+  right: var(--page-inline);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-border),
+    transparent
+  );
+  pointer-events: none;
 }
 
 @media (max-width: 640px) {
@@ -1717,6 +1783,10 @@ button[aria-disabled='true'] {
   .footer-cta {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .footer-shell-with-cta .footer-cta {
+    margin-top: -0.55rem;
   }
 }
 

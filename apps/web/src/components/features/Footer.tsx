@@ -33,7 +33,7 @@ const SOCIAL_ICONS = [
 
 export function Footer({ showCta = false }: { showCta?: boolean }) {
   return (
-    <footer className="footer-shell">
+    <footer className={`footer-shell${showCta ? " footer-shell-with-cta" : ""}`}>
       {/* Main grid */}
       <div
         className="section-shell"
@@ -109,8 +109,8 @@ export function Footer({ showCta = false }: { showCta?: boolean }) {
 
       {/* Bottom bar */}
       <div
+        className="footer-bottom-bar"
         style={{
-          borderTop: "1px solid var(--glass-border)",
           padding: "1.25rem var(--page-inline)",
           display: "flex",
           justifyContent: "center",
