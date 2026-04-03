@@ -62,24 +62,6 @@ function TierCard({
         }
       }}
     >
-      {/* Selected checkmark */}
-      {selected && (
-        <div style={{
-          position: "absolute",
-          top: "0.7rem",
-          right: "0.7rem",
-          width: 20,
-          height: 20,
-          borderRadius: "50%",
-          background: "var(--accent-secondary)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <Check size={12} color="#fff" />
-        </div>
-      )}
-
       {/* Tier name + price */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.4rem" }}>
         <div>
