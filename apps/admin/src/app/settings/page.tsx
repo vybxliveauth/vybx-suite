@@ -632,69 +632,78 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">Maintenance Mode</p>
-                <p className="text-xs text-muted-foreground">
-                  Si está activo, la plataforma pública entra en modo mantenimiento.
-                </p>
+            {user === null ? (
+              <div className="flex items-center gap-2 py-3 text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                <span className="text-sm">Verificando permisos…</span>
               </div>
-              <Switch
-                checked={maintenanceMode}
-                onCheckedChange={setMaintenanceMode}
-                disabled={!canManageGlobalOps || opsSaving}
-              />
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Maintenance Mode</p>
+                    <p className="text-xs text-muted-foreground">
+                      Si está activo, la plataforma pública entra en modo mantenimiento.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={maintenanceMode}
+                    onCheckedChange={setMaintenanceMode}
+                    disabled={!canManageGlobalOps || opsSaving}
+                  />
+                </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">Waiting Room Mode</p>
-                <p className="text-xs text-muted-foreground">
-                  Habilita sala de espera previa para ventanas de tráfico masivo.
-                </p>
-              </div>
-              <Switch
-                checked={waitingRoomMode}
-                onCheckedChange={setWaitingRoomMode}
-                disabled={!canManageGlobalOps || opsSaving}
-              />
-            </div>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Waiting Room Mode</p>
+                    <p className="text-xs text-muted-foreground">
+                      Habilita sala de espera previa para ventanas de tráfico masivo.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={waitingRoomMode}
+                    onCheckedChange={setWaitingRoomMode}
+                    disabled={!canManageGlobalOps || opsSaving}
+                  />
+                </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">Alertas Operativas</p>
-                <p className="text-xs text-muted-foreground">
-                  Activa o pausa envío de alertas de observabilidad y conciliación.
-                </p>
-              </div>
-              <Switch
-                checked={opsAlertsEnabled}
-                onCheckedChange={setOpsAlertsEnabled}
-                disabled={!canManageGlobalOps || opsSaving}
-              />
-            </div>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Alertas Operativas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Activa o pausa envío de alertas de observabilidad y conciliación.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={opsAlertsEnabled}
+                    onCheckedChange={setOpsAlertsEnabled}
+                    disabled={!canManageGlobalOps || opsSaving}
+                  />
+                </div>
 
-            {!canManageGlobalOps && (
-              <Badge variant="outline" className="border-amber-500/40 text-amber-300 bg-amber-500/10">
-                Solo ADMIN o SUPER_ADMIN puede guardar cambios de operación.
-              </Badge>
+                {!canManageGlobalOps && (
+                  <Badge variant="outline" className="border-amber-500/40 text-amber-300 bg-amber-500/10">
+                    Solo ADMIN o SUPER_ADMIN puede guardar cambios de operación.
+                  </Badge>
+                )}
+
+                {opsNotice && (
+                  <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2">
+                    {opsNotice}
+                  </p>
+                )}
+                {opsError && (
+                  <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
+                    {opsError}
+                  </p>
+                )}
+
+                <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
+                  {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+                  Guardar operación global
+                </Button>
+              </>
             )}
-
-            {opsNotice && (
-              <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2">
-                {opsNotice}
-              </p>
-            )}
-            {opsError && (
-              <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded px-3 py-2">
-                {opsError}
-              </p>
-            )}
-
-            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
-              {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-              Guardar operación global
-            </Button>
           </CardContent>
         </Card>
 
@@ -801,7 +810,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {!isSuperAdmin && (
+            {user !== null && !isSuperAdmin && (
               <Badge variant="outline" className="border-amber-500/40 text-amber-300 bg-amber-500/10">
                 Solo SUPER_ADMIN puede guardar configuración de fees.
               </Badge>
