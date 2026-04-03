@@ -164,7 +164,10 @@ type PasswordValues = z.infer<typeof passwordSchema>;
 export default function SettingsPage() {
   const user = useAuthUser();
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
-  const canManageGlobalOps = user?.role === "SUPER_ADMIN" || user?.role === "ADMIN";
+  // Admin app is already protected to ADMIN/SUPER_ADMIN at middleware + guards.
+  // If role hydration lags or claims arrive partial, keep operations UI interactive
+  // and let backend enforce authorization on save.
+  const canManageGlobalOps = Boolean(user);
 
   const [profileSaved, setProfileSaved] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
