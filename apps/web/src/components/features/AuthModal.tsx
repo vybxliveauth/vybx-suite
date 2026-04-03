@@ -99,7 +99,7 @@ function Field({
           style={{
             width: "100%",
             padding: `0.7rem ${suffix ? "2.5rem" : "0.9rem"} 0.7rem ${Icon ? "2.4rem" : "0.9rem"}`,
-            background: "rgba(255,255,255,0.05)",
+            background: "var(--input-surface)",
             border: `1px solid ${error ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
             borderRadius: "var(--radius-lg)",
             color: "var(--text-light)",
@@ -295,7 +295,12 @@ function LoginStep({
           autoComplete="current-password"
           autoFocus
           suffix={
-            <button type="button" onClick={() => setShowPass(!showPass)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+            <button
+              type="button"
+              aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+              onClick={() => setShowPass(!showPass)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
+            >
               {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           }
@@ -427,7 +432,12 @@ function RegisterStep({
           placeholder="Mín. 12 caracteres"
           autoComplete="new-password"
           suffix={
-            <button type="button" onClick={() => setShowPass(!showPass)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+            <button
+              type="button"
+              aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+              onClick={() => setShowPass(!showPass)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
+            >
               {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           }
@@ -770,7 +780,7 @@ export function AuthModal({
           maxHeight: isMobileViewport
             ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
             : "min(860px, 93dvh)",
-          background: "var(--bg-dark)",
+          background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)), var(--bg-dark)",
           border: "1px solid var(--glass-border)",
           borderRadius: "var(--radius-2xl)",
           boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
@@ -817,6 +827,9 @@ export function AuthModal({
 
         {/* Modal Content */}
         <div style={{ padding: isMobileViewport ? "1.25rem 1.3rem 1.35rem" : "1.9rem 2rem 2rem", flex: 1 }}>
+          {(step === "email" || step === "login" || step === "register") && (
+            <p className="auth-modal-note">Acceso protegido · Stripe-ready</p>
+          )}
           {step === "email" && (
             <EmailStep
               onLogin={(e) => { setEmail(e); setStep("login"); }}

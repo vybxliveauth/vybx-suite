@@ -33,18 +33,25 @@ const SOCIAL_ICONS = [
 
 export function Footer() {
   return (
-    <footer style={{ borderTop: "1px solid var(--glass-border)", marginTop: "auto" }}>
+    <footer className="footer-shell">
       {/* Main grid */}
       <div
-        className="footer-grid"
+        className="section-shell"
         style={{
-          display: "grid",
-          gap: "2.5rem",
           padding: "3.5rem var(--page-inline) 3rem",
-          maxWidth: "var(--content-max)",
-          margin: "0 auto",
         }}
       >
+        <div className="footer-cta surface-panel-soft">
+          <div>
+            <p className="footer-cta-title">Listo para tu próxima experiencia en vivo</p>
+            <p className="footer-cta-copy">Explora eventos, compra en segundos y gestiona todo desde tu cuenta.</p>
+          </div>
+          <Link href="/#events" className="btn-primary" style={{ textDecoration: "none", padding: "0.56rem 1.15rem", fontSize: "0.84rem", whiteSpace: "nowrap" }}>
+            Ver eventos
+          </Link>
+        </div>
+
+        <div className="footer-grid" style={{ display: "grid", gap: "2.5rem" }}>
         {/* Brand */}
         <div>
           <div style={{ marginBottom: "1rem" }}>
@@ -94,6 +101,7 @@ export function Footer() {
           <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
             <FooterLink href="mailto:support@vybxlive.com" label="support@vybxlive.com" external />
           </div>
+        </div>
         </div>
       </div>
 

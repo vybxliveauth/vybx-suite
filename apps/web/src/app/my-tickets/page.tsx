@@ -23,6 +23,7 @@ import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { AddToCalendarButton } from "@/components/features/AddToCalendarButton";
 import { TicketsIllustration } from "@/components/features/EmptyStateIllustration";
 import { InlineLoadingState, InlineErrorState } from "@/components/features/StateSurface";
+import { Footer } from "@/components/features/Footer";
 import { api } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -760,18 +761,39 @@ export default function MyTicketsPage() {
 
       <main className="page-main-shell">
         {/* Header */}
-        <div style={{ marginBottom: "2.5rem" }}>
+        <div className="surface-panel" style={{ marginBottom: "1.4rem", padding: "1.1rem 1.15rem" }}>
           <h1 className="page-title" style={{ marginBottom: "0.5rem" }}>
             Mis tickets
           </h1>
           <p className="page-subtitle">
             {loading ? "Cargando tus compras..." : `${counts.ALL} ticket${counts.ALL !== 1 ? "s" : ""} en total`}
           </p>
+
+          {!loading && !error && counts.ALL > 0 && (
+            <div className="tickets-stats-grid" style={{ marginTop: "0.95rem" }}>
+              <article className="tickets-stat-chip">
+                <span className="tickets-stat-chip-label">Válidos</span>
+                <span className="tickets-stat-chip-value">{counts.VALID}</span>
+              </article>
+              <article className="tickets-stat-chip">
+                <span className="tickets-stat-chip-label">Usados</span>
+                <span className="tickets-stat-chip-value">{counts.USED}</span>
+              </article>
+              <article className="tickets-stat-chip">
+                <span className="tickets-stat-chip-label">Cancelados</span>
+                <span className="tickets-stat-chip-value">{counts.CANCELLED}</span>
+              </article>
+              <article className="tickets-stat-chip">
+                <span className="tickets-stat-chip-label">Total</span>
+                <span className="tickets-stat-chip-value">{counts.ALL}</span>
+              </article>
+            </div>
+          )}
         </div>
 
         {/* Filter tabs */}
         {!loading && !error && tickets.length > 0 && (
-          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "2rem", flexWrap: "wrap" }}>
+          <div className="surface-panel-soft tickets-filter-shell">
             {(["ALL", "VALID", "USED", "CANCELLED"] as const).map((f) => (
               <button
                 key={f}
@@ -813,6 +835,8 @@ export default function MyTicketsPage() {
           </div>
         )}
       </main>
+
+      <Footer />
     </>
   );
 }
