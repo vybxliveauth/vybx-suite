@@ -35,6 +35,7 @@ function normalizeAuthUser(input: unknown): AuthUser | null {
 const sessionStore = createAuthSessionStore<AuthUser["role"], AuthUser>({
   baseUrl: BASE_URL,
   validRoles: VALID_ROLES,
+  mePath: "/auth/profile",
   legacyStorageKeys: ["vybx_admin_user"],
   normalizeUser: (input) => normalizeAuthUser(input) as AuthUser | null,
 });
