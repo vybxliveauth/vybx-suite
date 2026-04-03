@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -36,7 +36,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
-import { setUser, displayName, useAuthUser } from "@/lib/auth";
+import { setUser, displayName, useAuthUser, hydrateUserFromSession } from "@/lib/auth";
 import { usePromoters } from "@/lib/queries";
 import {
   readAdminThemePreference,
@@ -64,12 +64,18 @@ type PlatformConfigCache = {
   vipOverrides: VipFeeOverride[];
 };
 
+type OpsConfigState = Pick<
+  PlatformConfigCache,
+  "maintenanceMode" | "waitingRoomMode" | "opsAlertsEnabled"
+>;
+
 const PLATFORM_CONFIG_CACHE_KEY_PREFIX = "vybx.admin.platform-config.v2";
 const CONFIG_KEY_MAINTENANCE_MODE = "MAINTENANCE_MODE";
 const CONFIG_KEY_WAITING_ROOM_MODE = "WAITING_ROOM_MODE";
 const CONFIG_KEY_OPS_ALERTS_ENABLED = "OPS_ALERTS_ENABLED";
 const CONFIG_KEY_PLATFORM_FEE = "PLATFORM_FEE";
 const CONFIG_KEY_VIP_PROMOTER_FEES = "VIP_PROMOTER_FEES";
+const OPS_AUTOSAVE_DELAY_MS = 700;
 
 function parseBoolean(input: unknown, fallback = false): boolean {
   if (typeof input === "boolean") return input;
@@ -120,6 +126,15 @@ function writePlatformConfigCache(storageKey: string, payload: PlatformConfigCac
   window.localStorage.setItem(storageKey, JSON.stringify(payload));
 }
 
+function sameOpsConfig(a: OpsConfigState | null, b: OpsConfigState): boolean {
+  if (!a) return false;
+  return (
+    a.maintenanceMode === b.maintenanceMode &&
+    a.waitingRoomMode === b.waitingRoomMode &&
+    a.opsAlertsEnabled === b.opsAlertsEnabled
+  );
+}
+
 // Password: mínimo 12 chars, una mayúscula, un número y un símbolo (política del backend)
 const profileSchema = z.object({
   firstName: z.string().min(2, "Mínimo 2 caracteres").max(80),
@@ -165,6 +180,9 @@ export default function SettingsPage() {
   const [opsSaving, setOpsSaving] = useState(false);
   const [opsNotice, setOpsNotice] = useState<string | null>(null);
   const [opsError, setOpsError] = useState<string | null>(null);
+  const [opsInitialized, setOpsInitialized] = useState(false);
+  const lastSavedOpsRef = useRef<OpsConfigState | null>(null);
+  const opsAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [feesSaving, setFeesSaving] = useState(false);
   const [feesNotice, setFeesNotice] = useState<string | null>(null);
@@ -217,6 +235,21 @@ export default function SettingsPage() {
     }),
     [maintenanceMode, opsAlertsEnabled, platformFeePercentInput, vipOverrides, waitingRoomMode]
   );
+  const opsSnapshot = useMemo<OpsConfigState>(
+    () => ({
+      maintenanceMode,
+      waitingRoomMode,
+      opsAlertsEnabled,
+    }),
+    [maintenanceMode, opsAlertsEnabled, waitingRoomMode]
+  );
+
+  // Eagerly hydrate the session. React fires effects bottom-up (children before
+  // parents), so this page's effects run before PromoterShell's useAuthGuard.
+  // Without this, user stays null until the parent guard fires.
+  useEffect(() => {
+    void hydrateUserFromSession();
+  }, []);
 
   useEffect(() => {
     setThemePreference(readAdminThemePreference());
@@ -234,6 +267,7 @@ export default function SettingsPage() {
     // so calling the endpoint would fall through to the public /config branch
     // and leave the operation mode controls empty/incorrect.
     if (!user) return;
+    setOpsInitialized(false);
 
     const cached = readPlatformConfigCache(platformConfigCacheKey);
     if (cached) {
@@ -242,6 +276,11 @@ export default function SettingsPage() {
       setOpsAlertsEnabled(cached.opsAlertsEnabled);
       setPlatformFeePercentInput(String(cached.platformFeePercent));
       setVipOverrides(cached.vipOverrides);
+      lastSavedOpsRef.current = {
+        maintenanceMode: cached.maintenanceMode,
+        waitingRoomMode: cached.waitingRoomMode,
+        opsAlertsEnabled: cached.opsAlertsEnabled,
+      };
     }
 
     let cancelled = false;
@@ -303,6 +342,11 @@ export default function SettingsPage() {
         setOpsAlertsEnabled(nextOpsAlerts);
         setPlatformFeePercentInput(String(nextFee));
         setVipOverrides(nextOverrides);
+        lastSavedOpsRef.current = {
+          maintenanceMode: nextMaintenance,
+          waitingRoomMode: nextWaitingRoom,
+          opsAlertsEnabled: nextOpsAlerts,
+        };
 
         writePlatformConfigCache(platformConfigCacheKey, {
           maintenanceMode: nextMaintenance,
@@ -313,6 +357,10 @@ export default function SettingsPage() {
         });
       } catch {
         // Backend may hide non-public settings on GET /config; local cache remains the source of truth.
+      } finally {
+        if (!cancelled) {
+          setOpsInitialized(true);
+        }
       }
     })();
 
@@ -357,12 +405,23 @@ export default function SettingsPage() {
     }
   }
 
-  async function saveOperationsSettings() {
+  async function saveOperationsSettings(options?: {
+    snapshot?: OpsConfigState;
+    autosave?: boolean;
+  }) {
     if (!canManageGlobalOps) {
       setOpsError("Solo ADMIN o SUPER_ADMIN puede guardar estos ajustes operativos.");
       return;
     }
 
+    const snapshot = options?.snapshot ?? opsSnapshot;
+    if (sameOpsConfig(lastSavedOpsRef.current, snapshot)) {
+      return;
+    }
+    if (opsAutosaveTimerRef.current) {
+      clearTimeout(opsAutosaveTimerRef.current);
+      opsAutosaveTimerRef.current = null;
+    }
     setOpsSaving(true);
     setOpsNotice(null);
     setOpsError(null);
@@ -371,29 +430,68 @@ export default function SettingsPage() {
       await Promise.all([
         api.patch("/config/ops", {
           key: CONFIG_KEY_MAINTENANCE_MODE,
-          value: String(maintenanceMode),
+          value: String(snapshot.maintenanceMode),
           description: "Global maintenance mode for public and internal surfaces",
         }),
         api.patch("/config/ops", {
           key: CONFIG_KEY_WAITING_ROOM_MODE,
-          value: String(waitingRoomMode),
+          value: String(snapshot.waitingRoomMode),
           description: "Global waiting-room pre-gate for high traffic windows",
         }),
         api.patch("/config/ops", {
           key: CONFIG_KEY_OPS_ALERTS_ENABLED,
-          value: String(opsAlertsEnabled),
+          value: String(snapshot.opsAlertsEnabled),
           description: "Enable or disable operational alert dispatch channels",
         }),
       ]);
 
-      writePlatformConfigCache(platformConfigCacheKey, platformSnapshot);
-      setOpsNotice("Ajustes de operación global guardados correctamente.");
+      lastSavedOpsRef.current = snapshot;
+      writePlatformConfigCache(platformConfigCacheKey, {
+        ...platformSnapshot,
+        ...snapshot,
+      });
+      setOpsNotice(
+        options?.autosave
+          ? "Cambios de operación guardados automáticamente."
+          : "Ajustes de operación global guardados correctamente."
+      );
     } catch (error) {
       setOpsError((error as Error).message || "No se pudieron guardar los ajustes.");
     } finally {
       setOpsSaving(false);
     }
   }
+
+  useEffect(() => {
+    return () => {
+      if (opsAutosaveTimerRef.current) {
+        clearTimeout(opsAutosaveTimerRef.current);
+        opsAutosaveTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user || !canManageGlobalOps || !opsInitialized || opsSaving) return;
+
+    if (!lastSavedOpsRef.current) {
+      lastSavedOpsRef.current = opsSnapshot;
+      return;
+    }
+    if (sameOpsConfig(lastSavedOpsRef.current, opsSnapshot)) return;
+
+    if (opsAutosaveTimerRef.current) {
+      clearTimeout(opsAutosaveTimerRef.current);
+      opsAutosaveTimerRef.current = null;
+    }
+
+    opsAutosaveTimerRef.current = setTimeout(() => {
+      void saveOperationsSettings({
+        snapshot: opsSnapshot,
+        autosave: true,
+      });
+    }, OPS_AUTOSAVE_DELAY_MS);
+  }, [canManageGlobalOps, opsInitialized, opsSaving, opsSnapshot, user]);
 
   function addOrUpdateVipOverride() {
     setFeesError(null);
@@ -649,7 +747,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={maintenanceMode}
                     onCheckedChange={setMaintenanceMode}
-                    disabled={!canManageGlobalOps || opsSaving}
+                    disabled={!canManageGlobalOps}
                   />
                 </div>
 
@@ -663,7 +761,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={waitingRoomMode}
                     onCheckedChange={setWaitingRoomMode}
-                    disabled={!canManageGlobalOps || opsSaving}
+                    disabled={!canManageGlobalOps}
                   />
                 </div>
 
@@ -677,7 +775,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={opsAlertsEnabled}
                     onCheckedChange={setOpsAlertsEnabled}
-                    disabled={!canManageGlobalOps || opsSaving}
+                    disabled={!canManageGlobalOps}
                   />
                 </div>
 
@@ -697,10 +795,15 @@ export default function SettingsPage() {
                     {opsError}
                   </p>
                 )}
+                {canManageGlobalOps && (
+                  <p className="text-xs text-muted-foreground">
+                    Auto-guardado activo. Los cambios se aplican automáticamente.
+                  </p>
+                )}
 
                 <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
                   {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                  Guardar operación global
+                  {opsSaving ? "Guardando..." : "Guardar ahora"}
                 </Button>
               </>
             )}
