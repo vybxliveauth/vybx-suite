@@ -243,33 +243,15 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "6rem 5% 3.2rem",
+      padding: "6rem 5% 0.5rem",
       overflow: "hidden",
       textAlign: "center",
     }}>
-      {/* ── Animated mesh background ── */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "clip", isolation: "isolate" }}>
-        <div className="hero-bg-radial" style={{
-          position: "absolute", inset: 0,
-          background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,58,237,0.4), transparent)",
-        }} />
-        <div className="orb" style={{ width: 700, height: 700, background: "var(--accent-secondary)", top: "-200px", left: "50%", transform: "translateX(-50%)", opacity: 0.25, animationDelay: "0s" }} />
-        <div className="orb" style={{ width: 400, height: 400, background: "var(--accent-primary)", bottom: "-50px", left: "5%", opacity: 0.18, animationDelay: "-10s" }} />
-        <div className="orb" style={{ width: 350, height: 350, background: "var(--accent-tertiary)", bottom: "10%", right: "5%", opacity: 0.12, animationDelay: "-5s" }} />
-        <div style={{
-          position: "absolute", bottom: 0, left: 0, right: 0, height: "40%",
-          background: "linear-gradient(to bottom, transparent, var(--bg-dark))",
-        }} />
-      </div>
+      {/* ── Clean top glow (kept away from carousel zone) ── */}
+      <div className="hero-top-glow" />
 
       {/* ── Content ── */}
       <div style={{ position: "relative", zIndex: 2, maxWidth: 820, width: "100%" }}>
-
-        {/* Announcement pill */}
-        <div className="hero-pill fade-in-up" style={{ animationDelay: "-0.1s" }}>
-          <span className="pill-dot" />
-          Nuevos eventos cada semana, no te lo pierdas
-        </div>
 
         {/* Headline */}
         <h1 className="fade-in-up text-balance" style={{
@@ -900,9 +882,11 @@ export default function HomePage() {
         onCommandOpen={() => setCommandOpen(true)}
       />
       <main id="main-content" style={{ paddingTop: 0, overflowX: "clip" }}>
-        <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
+        <div className="hero-carousel-stack">
           <HeroSection onSearch={setSearch} />
-          <EventHighlightsCarousel events={events} />
+          <div className="hero-carousel-float">
+            <EventHighlightsCarousel events={events} />
+          </div>
         </div>
         <EventsSection allEvents={events} isLoading={isLoading} isError={isError} search={search} onSearch={setSearch} />
       </main>

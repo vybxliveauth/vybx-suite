@@ -23,7 +23,6 @@ import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { AddToCalendarButton } from "@/components/features/AddToCalendarButton";
 import { TicketsIllustration } from "@/components/features/EmptyStateIllustration";
 import { InlineLoadingState, InlineErrorState } from "@/components/features/StateSurface";
-import { Footer } from "@/components/features/Footer";
 import { api } from "@/lib/api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -840,8 +839,6 @@ export default function MyTicketsPage() {
       </main>
 
       </div>{/* end min-height wrapper */}
-
-      <Footer showCta />
     </>
   );
 }
