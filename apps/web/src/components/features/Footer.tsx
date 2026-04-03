@@ -32,13 +32,17 @@ const SOCIAL_ICONS = [
 ];
 
 export function Footer({ showCta = false }: { showCta?: boolean }) {
+  const showBottomBar = !showCta;
+
   return (
     <footer className={`footer-shell${showCta ? " footer-shell-with-cta" : ""}`}>
       {/* Main grid */}
       <div
         className="section-shell"
         style={{
-          padding: "3.5rem var(--page-inline) 3rem",
+          padding: showCta
+            ? "2.15rem var(--page-inline) 2.35rem"
+            : "3.5rem var(--page-inline) 3rem",
         }}
       >
         {showCta && (
@@ -108,20 +112,20 @@ export function Footer({ showCta = false }: { showCta?: boolean }) {
       </div>
 
       {/* Bottom bar */}
-      <div
-        className="footer-bottom-bar"
-        style={{
-          padding: showCta
-            ? "1.4rem var(--page-inline) calc(1.55rem + env(safe-area-inset-bottom))"
-            : "1.25rem var(--page-inline)",
-          display: "flex",
-          justifyContent: "center",
-        }}
-      >
-        <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
-          © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
-        </p>
-      </div>
+      {showBottomBar && (
+        <div
+          className="footer-bottom-bar"
+          style={{
+            padding: "1.25rem var(--page-inline)",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", textAlign: "center" }}>
+            © {new Date().getFullYear()} Vybx. Todos los derechos reservados.
+          </p>
+        </div>
+      )}
     </footer>
   );
 }
