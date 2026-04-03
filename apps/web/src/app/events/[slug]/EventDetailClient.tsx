@@ -19,7 +19,6 @@ import {
 } from "@/hooks/useSeatSelection";
 import { formatPrice } from "@/lib/utils";
 import { VybxLogo } from "@/components/ui/VybxLogo";
-import { Footer } from "@/components/features/Footer";
 import {
   CalendarDays,
   Clock,
@@ -172,14 +171,6 @@ function EventHero({
           </span>
         </div>
 
-        <div className="event-hero-meta-chips">
-          <span className="event-hero-meta-chip">
-            Entradas desde {formatPrice(fromPrice, currency)}
-          </span>
-          <span className="event-hero-meta-chip">
-            Checkout seguro con Stripe
-          </span>
-        </div>
       </div>
 
       {/* Wishlist */}
@@ -397,7 +388,7 @@ export function EventDetailClient({ event }: { event: Event }) {
           <EventInfoCard event={event} />
 
           {/* About */}
-          <div className="surface-panel-soft event-about-card" style={{ maxWidth: "75ch" }}>
+          <div style={{ maxWidth: "75ch", padding: "0.25rem 0" }}>
             <h2 style={{
               fontSize: "1.2rem",
               fontWeight: 700,
@@ -444,8 +435,6 @@ export function EventDetailClient({ event }: { event: Event }) {
 
       {/* ── Related Events ── */}
       <RelatedEvents currentEvent={event} />
-
-      <Footer />
 
       {/* ── Mobile sticky CTA bar ── */}
       <div
