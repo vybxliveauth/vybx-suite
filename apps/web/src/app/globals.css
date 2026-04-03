@@ -79,27 +79,6 @@
   --focus-ring-color: rgba(124, 58, 237, 0.62);
   --page-inline: clamp(12px, 2.1vw, 34px);
   --content-max: 1460px;
-
-  /* Bridge tokens for @vybx/ui compatibility (non-visual baseline) */
-  --background: 240 29% 5%;
-  --foreground: 0 0% 100%;
-  --card: 240 14% 14%;
-  --card-foreground: 0 0% 100%;
-  --popover: 240 14% 14%;
-  --popover-foreground: 0 0% 100%;
-  --primary: 347 100% 58%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 263 83% 58%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 240 8% 67%;
-  --muted-foreground: 240 8% 67%;
-  --accent: 188 95% 43%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 240 9% 35%;
-  --input: 240 9% 35%;
-  --ring: 347 100% 58%;
 }
 
 /* Light theme — manual toggle via next-themes (data-theme="light") */
@@ -123,27 +102,6 @@
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
   --input-surface: rgba(0, 0, 0, 0.045);
-
-  /* Bridge tokens for @vybx/ui compatibility (light mode) */
-  --background: 210 40% 98%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 347 78% 50%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 262 83% 58%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 215 16% 47%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 191 92% 36%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 347 78% 50%;
 }
 
 /* Light theme body background */
@@ -159,11 +117,7 @@
       rgba(225, 29, 72, 0.07),
       transparent
     ),
-    radial-gradient(
-      ellipse 60% 60% at 10% 90%,
-      rgba(8, 145, 178, 0.07),
-      transparent
-    );
+    transparent;
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center top;
@@ -217,27 +171,6 @@
     --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
     --input-surface: rgba(0, 0, 0, 0.045);
     --nav-bg: rgba(248, 250, 252, 0.92);
-
-    /* Bridge tokens for @vybx/ui compatibility (auto light mode) */
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 347 78% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 262 83% 58%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 215 16% 47%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 191 92% 36%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 347 78% 50%;
   }
 }
 
@@ -247,21 +180,6 @@
   --color-foreground: var(--text-light);
   --color-muted: var(--text-muted);
   --color-accent: var(--accent-primary);
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
   --font-sans: var(--font-body);
   --font-heading: var(--font-heading);
 }
@@ -404,17 +322,6 @@ h6 {
 .image-wrapper {
   position: relative;
   overflow: hidden;
-}
-
-.image-wrapper::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: none;
-  pointer-events: none;
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────────── */
@@ -756,16 +663,6 @@ button[aria-disabled='true'] {
   }
   100% {
     transform: translate(50px, -50px) scale(0.9);
-  }
-}
-
-@keyframes bounceCue {
-  0%,
-  100% {
-    transform: translateX(-50%) translateY(0);
-  }
-  50% {
-    transform: translateX(-50%) translateY(6px);
   }
 }
 
@@ -1344,31 +1241,30 @@ button[aria-disabled='true'] {
   min-height: 100dvh;
 }
 
-.hero-mesh-layer {
+.hero-top-glow {
   position: absolute;
-  inset: 0;
+  top: -16%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1280px, 112vw);
+  height: 68%;
   z-index: 0;
-  overflow: clip;
-  isolation: isolate;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0.96) 58%,
-    rgba(0, 0, 0, 0) 100%
+  border-radius: 9999px;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(124, 58, 237, 0.34) 0%,
+    rgba(255, 42, 95, 0.14) 34%,
+    rgba(6, 182, 212, 0.08) 52%,
+    rgba(10, 10, 18, 0) 74%
   );
-  mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0.96) 58%,
-    rgba(0, 0, 0, 0) 100%
-  );
+  filter: blur(10px);
 }
 
 .hero-carousel-float {
   position: relative;
   z-index: 6;
-  margin-top: -3.8rem;
+  margin-top: -3.4rem;
   padding-bottom: 0;
 }
 
@@ -1501,6 +1397,16 @@ button[aria-disabled='true'] {
 
 [data-theme='light'] .event-carousel-card::after {
   border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-theme='light'] .hero-top-glow {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(109, 40, 217, 0.24) 0%,
+    rgba(225, 29, 72, 0.1) 34%,
+    rgba(8, 145, 178, 0.06) 52%,
+    rgba(248, 250, 252, 0) 74%
+  );
 }
 
 .page-transition-shell {
@@ -1659,44 +1565,9 @@ button[aria-disabled='true'] {
   position: relative;
   border-top: 1px solid var(--glass-border);
   margin-top: auto;
-}
-
-.footer-shell-with-cta {
-  border-top: none;
-}
-
-.footer-shell-with-cta::before {
-  display: none;
-}
-
-.footer-cta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 2.1rem;
-  padding: 1.1rem 1.25rem;
-  border-radius: var(--radius-2xl);
-  background: rgba(255, 255, 255, 0.03);
-  border: none;
-}
-
-.footer-shell-with-cta .footer-cta {
-  margin-top: 0;
-  margin-bottom: 1.6rem;
-}
-
-.footer-cta-title {
-  font-family: var(--font-heading);
-  font-size: 0.98rem;
-  font-weight: 800;
-  color: var(--text-light);
-  margin-bottom: 0.2rem;
-}
-
-.footer-cta-copy {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  background:
+    radial-gradient(70% 50% at 12% -10%, rgba(124, 58, 237, 0.16), transparent),
+    radial-gradient(70% 60% at 90% 0%, rgba(255, 42, 95, 0.1), transparent);
 }
 
 .footer-grid {
@@ -1751,13 +1622,10 @@ button[aria-disabled='true'] {
   border-color: rgba(0, 0, 0, 0.08);
 }
 
-[data-theme='light'] .footer-shell-with-cta {
-  border-top: none;
-}
-
-[data-theme='light'] .footer-cta {
-  background: rgba(0, 0, 0, 0.025);
-  border: none;
+[data-theme='light'] .footer-shell {
+  background:
+    radial-gradient(70% 50% at 12% -10%, rgba(109, 40, 217, 0.1), transparent),
+    radial-gradient(70% 60% at 90% 0%, rgba(225, 29, 72, 0.08), transparent);
 }
 
 .footer-bottom-bar {
@@ -1765,27 +1633,10 @@ button[aria-disabled='true'] {
   border-top: 1px solid var(--glass-border);
 }
 
-.footer-shell-with-cta .footer-bottom-bar {
-  border-top-color: transparent;
-}
-
-.footer-shell-with-cta .footer-bottom-bar::before {
-  display: none;
-}
-
 @media (max-width: 640px) {
   .footer-grid {
     grid-template-columns: 1fr 1fr !important;
     gap: 2rem !important;
-  }
-
-  .footer-cta {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .footer-shell-with-cta .footer-cta {
-    margin-top: 0;
   }
 }
 
@@ -1903,8 +1754,14 @@ button[aria-disabled='true'] {
 }
 
 @media (max-width: 768px) {
+  .hero-top-glow {
+    top: -22%;
+    height: 64%;
+    width: min(980px, 130vw);
+  }
+
   .hero-carousel-float {
-    margin-top: -2.6rem;
+    margin-top: -2.2rem;
   }
 
   .event-carousel-card {
