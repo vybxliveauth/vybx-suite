@@ -978,6 +978,123 @@ button[aria-disabled='true'] {
   font-size: 0.95rem;
 }
 
+/* ─── Shared elevated surfaces ─────────────────────────────────────────────── */
+.surface-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.045),
+    rgba(255, 255, 255, 0.014)
+  );
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.24);
+}
+
+.surface-panel-soft {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.028),
+    rgba(255, 255, 255, 0.01)
+  );
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+}
+
+.checkout-trust-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+  margin-bottom: 0.15rem;
+}
+
+.checkout-trust-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 0.22rem 0.58rem;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.account-mobile-tabs {
+  width: 100%;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.2rem 0.2rem 0.45rem;
+  border-radius: var(--radius-xl);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+}
+
+.account-mobile-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  transition:
+    background 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.account-mobile-tab-btn.active {
+  background: linear-gradient(
+    135deg,
+    var(--accent-primary),
+    var(--accent-secondary)
+  );
+  color: #fff;
+}
+
+.account-mobile-tab-btn:not(.active):hover {
+  border-color: var(--glass-border);
+  color: var(--text-light);
+}
+
+.account-meta-chip {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-pill);
+  padding: 0.24rem 0.6rem;
+}
+
+.account-meta-chip.neutral {
+  color: var(--text-secondary);
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.account-meta-chip.success {
+  color: #86efac;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.account-meta-chip.warning {
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  background: rgba(245, 158, 11, 0.12);
+}
+
 .nav-search-btn {
   white-space: nowrap;
 }
@@ -1020,6 +1137,47 @@ button[aria-disabled='true'] {
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.12),
     0 0 30px rgba(109, 40, 217, 0.08);
+}
+
+[data-theme='light'] .surface-panel,
+[data-theme='light'] .surface-panel-soft {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='light'] .surface-panel {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.88),
+    rgba(255, 255, 255, 0.74)
+  );
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme='light'] .surface-panel-soft {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.82),
+    rgba(255, 255, 255, 0.68)
+  );
+}
+
+[data-theme='light'] .checkout-trust-chip {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme='light'] .account-mobile-tabs {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='light'] .account-mobile-tab-btn {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme='light'] .account-meta-chip.neutral {
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 /* Orbs: screen blend-mode is for dark; multiply works on light */
@@ -1648,7 +1806,8 @@ select:focus-visible {
 .btn-secondary:focus-visible,
 .chip:focus-visible,
 .pagination-btn:focus-visible,
-.profile-nav-btn:focus-visible {
+.profile-nav-btn:focus-visible,
+.account-mobile-tab-btn:focus-visible {
   outline: 2px solid var(--focus-ring-color);
   outline-offset: 2px;
 }

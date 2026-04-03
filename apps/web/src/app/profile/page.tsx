@@ -191,7 +191,12 @@ function SecuritySection() {
         {...register("currentPassword")} error={errors.currentPassword?.message}
         placeholder="••••••••" autoComplete="current-password"
         suffix={
-          <button type="button" onClick={() => setShowCurrent(!showCurrent)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+          <button
+            type="button"
+            aria-label={showCurrent ? "Ocultar contraseña actual" : "Mostrar contraseña actual"}
+            onClick={() => setShowCurrent(!showCurrent)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
+          >
             {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         }
@@ -201,7 +206,12 @@ function SecuritySection() {
         {...register("newPassword")} error={errors.newPassword?.message}
         placeholder="Mín. 12 caracteres" autoComplete="new-password"
         suffix={
-          <button type="button" onClick={() => setShowNew(!showNew)} style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}>
+          <button
+            type="button"
+            aria-label={showNew ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"}
+            onClick={() => setShowNew(!showNew)}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
+          >
             {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
         }
@@ -446,29 +456,12 @@ export default function ProfilePage() {
         {/* ── Sidebar / Mobile Tabs ── */}
         {isMobile ? (
           /* Mobile: horizontal tab bar */
-          <div style={{
-            width: "100%",
-            display: "flex",
-            gap: "0.5rem",
-            overflowX: "auto",
-            padding: "0.2rem 0.2rem 0.45rem",
-            borderRadius: "var(--radius-xl)",
-            background: "rgba(255,255,255,0.02)",
-            border: "1px solid var(--glass-border)",
-          }}>
+          <div className="account-mobile-tabs">
             {NAV_TABS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "0.4rem",
-                  padding: "0.55rem 1rem", borderRadius: "var(--radius-lg)", border: "none",
-                  cursor: "pointer", whiteSpace: "nowrap", fontSize: "0.84rem", fontWeight: 600,
-                  fontFamily: "var(--font-body)",
-                  background: activeTab === id ? "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))" : "rgba(255,255,255,0.05)",
-                  color: activeTab === id ? "#fff" : "var(--text-muted)",
-                  transition: "all 0.2s",
-                }}
+                className={`account-mobile-tab-btn${activeTab === id ? " active" : ""}`}
               >
                 <Icon size={13} /> {label}
               </button>
@@ -478,13 +471,14 @@ export default function ProfilePage() {
           /* Desktop: sidebar */
           <aside style={{ width: 248, flexShrink: 0, position: "sticky", top: 86 }}>
             {/* Avatar card */}
-            <div style={{
-              background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01))",
-              border: "1px solid var(--glass-border)",
-              borderRadius: "var(--radius-2xl)", padding: "1.5rem 1.25rem",
-              marginBottom: "0.75rem", textAlign: "center",
-              boxShadow: "0 16px 40px rgba(0,0,0,0.2)",
-            }}>
+            <div
+              className="surface-panel"
+              style={{
+                padding: "1.5rem 1.25rem",
+                marginBottom: "0.75rem",
+                textAlign: "center",
+              }}
+            >
               <div style={{
                 width: 76, height: 76, borderRadius: "50%", margin: "0 auto 0.85rem",
                 background: "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))",
@@ -505,7 +499,7 @@ export default function ProfilePage() {
             </div>
 
             {/* Nav links */}
-            <nav style={{ background: "var(--card-bg)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-2xl)", overflow: "hidden" }}>
+            <nav className="surface-panel-soft" style={{ overflow: "hidden" }}>
               {NAV_TABS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
@@ -558,14 +552,14 @@ export default function ProfilePage() {
         )}
 
         {/* ── Main Content ── */}
-        <div style={{
-          flex: 1, minWidth: 0,
-          background: "linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012))",
-          border: "1px solid var(--glass-border)",
-          borderRadius: "var(--radius-2xl)",
-          padding: isMobile ? "1.2rem 1rem" : "1.6rem 1.8rem",
-          boxShadow: "0 22px 52px rgba(0,0,0,0.24)",
-        }}>
+        <div
+          className="surface-panel"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: isMobile ? "1.2rem 1rem" : "1.6rem 1.8rem",
+          }}
+        >
           <div style={{
             display: "flex",
             alignItems: isMobile ? "flex-start" : "center",
@@ -585,10 +579,10 @@ export default function ProfilePage() {
               </p>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
-              <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--text-secondary)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius-pill)", padding: "0.24rem 0.6rem", background: "rgba(255,255,255,0.02)" }}>
+              <span className="account-meta-chip neutral">
                 Rol: {user?.role ?? "USER"}
               </span>
-              <span style={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.03em", textTransform: "uppercase", color: user?.emailVerified ? "#86efac" : "#fcd34d", border: `1px solid ${user?.emailVerified ? "rgba(74,222,128,0.35)" : "rgba(245,158,11,0.34)"}`, borderRadius: "var(--radius-pill)", padding: "0.24rem 0.6rem", background: user?.emailVerified ? "rgba(74,222,128,0.1)" : "rgba(245,158,11,0.12)" }}>
+              <span className={`account-meta-chip ${user?.emailVerified ? "success" : "warning"}`}>
                 {user?.emailVerified ? "Verificado" : "Sin verificar"}
               </span>
             </div>

@@ -211,15 +211,15 @@ function OrderSummary({ mobile = false }: { mobile?: boolean }) {
   const isExpired = session.isExpired;
 
   return (
-    <div style={{
-      background: "var(--card-bg)",
-      backdropFilter: "blur(20px)",
-      border: "1px solid var(--glass-border)",
-      borderRadius: "var(--radius-2xl)",
-      overflow: "hidden",
-      position: mobile ? "relative" : "sticky",
-      top: mobile ? undefined : 100,
-    }}>
+    <div
+      className="surface-panel-soft"
+      style={{
+        backdropFilter: "blur(20px)",
+        overflow: "hidden",
+        position: mobile ? "relative" : "sticky",
+        top: mobile ? undefined : 100,
+      }}
+    >
       {/* Header */}
       <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--glass-border)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <Ticket size={16} color="var(--accent-primary)" />
@@ -382,13 +382,14 @@ function LoginForm({ onSuccess }: { onSuccess: (user: AuthUser) => void }) {
   }
 
   return (
-    <div style={{
-      background: "rgba(124,58,237,0.06)",
-      border: "1px solid rgba(124,58,237,0.2)",
-      borderRadius: "var(--radius-2xl)",
-      padding: "1.75rem",
-      marginBottom: "1.5rem",
-    }}>
+    <div
+      className="surface-panel-soft"
+      style={{
+        borderColor: "rgba(124,58,237,0.24)",
+        padding: "1.75rem",
+        marginBottom: "1.5rem",
+      }}
+    >
       <p style={{ fontFamily: "var(--font-heading)", fontSize: "1.05rem", fontWeight: 800, color: "var(--text-light)", marginBottom: "0.35rem" }}>
         Inicia sesión para continuar
       </p>
@@ -582,12 +583,7 @@ const PROVIDER_LABEL = {
 function PaymentMethodCard() {
   const provider = PROVIDER_LABEL;
   return (
-    <div style={{
-      background: "var(--card-bg)",
-      border: "1px solid var(--glass-border)",
-      borderRadius: "var(--radius-2xl)",
-      padding: "1.75rem",
-    }}>
+    <div className="surface-panel-soft" style={{ padding: "1.75rem" }}>
       <h2 style={{
         fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 800,
         marginBottom: "1.25rem", display: "flex", alignItems: "center",
@@ -641,12 +637,7 @@ function BuyerForm({ user, onSubmit, pending }: {
   return (
     <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {/* Buyer info */}
-      <div style={{
-        background: "var(--card-bg)",
-        border: "1px solid var(--glass-border)",
-        borderRadius: "var(--radius-2xl)",
-        padding: "1.75rem",
-      }}>
+      <div className="surface-panel-soft" style={{ padding: "1.75rem" }}>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.1rem", fontWeight: 800, marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--text-light)" }}>
           <User size={16} color="var(--accent-primary)" />
           Datos del comprador
@@ -923,6 +914,20 @@ export default function CheckoutPage() {
         <h1 className="page-title" style={{ marginBottom: "1.75rem" }}>
           Checkout
         </h1>
+        <p className="page-subtitle">
+          Confirma tu compra en un flujo protegido y te redirigimos a Stripe para completar el pago.
+        </p>
+        <div className="checkout-trust-row">
+          <span className="checkout-trust-chip">
+            <ShieldCheck size={12} /> SSL cifrado
+          </span>
+          <span className="checkout-trust-chip">
+            <Lock size={12} /> Stripe Checkout
+          </span>
+          <span className="checkout-trust-chip">
+            <CheckCircle2 size={12} /> Soporte USD
+          </span>
+        </div>
 
         <CheckoutSteps
           currentStep={loadingUser ? 0 : !user ? 0 : checkoutPending ? 2 : 1}
@@ -938,7 +943,18 @@ export default function CheckoutPage() {
             ) : (
               <>
                 {/* Logged in indicator */}
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", padding: "0.65rem 1rem", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: "var(--radius-xl)", marginBottom: "1.5rem" }}>
+                <div
+                  className="surface-panel-soft"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    padding: "0.7rem 1rem",
+                    borderColor: "rgba(34,197,94,0.25)",
+                    background: "rgba(34,197,94,0.08)",
+                    marginBottom: "1.5rem",
+                  }}
+                >
                   <CheckCircle2 size={15} color="#4ade80" />
                   <span style={{ fontSize: "0.82rem", color: "#86efac" }}>
                     Conectado como <strong>{user.email}</strong>
