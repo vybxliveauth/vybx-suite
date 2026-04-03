@@ -149,6 +149,7 @@ type PasswordValues = z.infer<typeof passwordSchema>;
 export default function SettingsPage() {
   const user = useAuthUser();
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const canManageGlobalOps = user?.role === "SUPER_ADMIN" || user?.role === "ADMIN";
 
   const [profileSaved, setProfileSaved] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
@@ -241,7 +242,11 @@ export default function SettingsPage() {
     let cancelled = false;
     (async () => {
       try {
-        const endpoint = isSuperAdmin ? "/config/internal/all" : "/config";
+        const endpoint = isSuperAdmin
+          ? "/config/internal/all"
+          : canManageGlobalOps
+            ? "/config/internal/ops"
+            : "/config";
         const entries = await api.get<ConfigRecord[]>(endpoint);
         if (cancelled || !Array.isArray(entries)) return;
 
@@ -309,7 +314,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin, platformConfigCacheKey]);
+  }, [canManageGlobalOps, isSuperAdmin, platformConfigCacheKey]);
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
@@ -348,8 +353,8 @@ export default function SettingsPage() {
   }
 
   async function saveOperationsSettings() {
-    if (!isSuperAdmin) {
-      setOpsError("Solo SUPER_ADMIN puede guardar estos ajustes globales.");
+    if (!canManageGlobalOps) {
+      setOpsError("Solo ADMIN o SUPER_ADMIN puede guardar estos ajustes operativos.");
       return;
     }
 
@@ -359,17 +364,17 @@ export default function SettingsPage() {
 
     try {
       await Promise.all([
-        api.patch("/config", {
+        api.patch("/config/ops", {
           key: CONFIG_KEY_MAINTENANCE_MODE,
           value: String(maintenanceMode),
           description: "Global maintenance mode for public and internal surfaces",
         }),
-        api.patch("/config", {
+        api.patch("/config/ops", {
           key: CONFIG_KEY_WAITING_ROOM_MODE,
           value: String(waitingRoomMode),
           description: "Global waiting-room pre-gate for high traffic windows",
         }),
-        api.patch("/config", {
+        api.patch("/config/ops", {
           key: CONFIG_KEY_OPS_ALERTS_ENABLED,
           value: String(opsAlertsEnabled),
           description: "Enable or disable operational alert dispatch channels",
@@ -632,7 +637,7 @@ export default function SettingsPage() {
               <Switch
                 checked={maintenanceMode}
                 onCheckedChange={setMaintenanceMode}
-                disabled={!isSuperAdmin || opsSaving}
+                disabled={!canManageGlobalOps || opsSaving}
               />
             </div>
 
@@ -646,7 +651,7 @@ export default function SettingsPage() {
               <Switch
                 checked={waitingRoomMode}
                 onCheckedChange={setWaitingRoomMode}
-                disabled={!isSuperAdmin || opsSaving}
+                disabled={!canManageGlobalOps || opsSaving}
               />
             </div>
 
@@ -660,13 +665,13 @@ export default function SettingsPage() {
               <Switch
                 checked={opsAlertsEnabled}
                 onCheckedChange={setOpsAlertsEnabled}
-                disabled={!isSuperAdmin || opsSaving}
+                disabled={!canManageGlobalOps || opsSaving}
               />
             </div>
 
-            {!isSuperAdmin && (
+            {!canManageGlobalOps && (
               <Badge variant="outline" className="border-amber-500/40 text-amber-300 bg-amber-500/10">
-                Solo SUPER_ADMIN puede guardar cambios globales.
+                Solo ADMIN o SUPER_ADMIN puede guardar cambios de operación.
               </Badge>
             )}
 
@@ -681,7 +686,7 @@ export default function SettingsPage() {
               </p>
             )}
 
-            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!isSuperAdmin || opsSaving}>
+            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
               {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               Guardar operación global
             </Button>
