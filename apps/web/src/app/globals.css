@@ -309,11 +309,6 @@ body {
       ellipse 70% 50% at 90% 60%,
       rgba(255, 42, 95, 0.15),
       transparent
-    ),
-    radial-gradient(
-      ellipse 60% 60% at 10% 90%,
-      rgba(6, 182, 212, 0.15),
-      transparent
     );
   background-attachment: scroll;
   background-repeat: no-repeat;
@@ -1349,25 +1344,32 @@ button[aria-disabled='true'] {
   min-height: 100dvh;
 }
 
+.hero-mesh-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: clip;
+  isolation: isolate;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.96) 58%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.96) 58%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
 .hero-carousel-float {
   position: relative;
   z-index: 6;
-  margin-top: -3.1rem;
-  padding-bottom: 0.2rem;
-}
-
-.hero-to-catalog-fade {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 46%;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(10, 10, 18, 0.72) 68%,
-    var(--bg-dark) 100%
-  );
+  margin-top: -3.8rem;
+  padding-bottom: 0;
 }
 
 .showcase-shell {
@@ -1414,7 +1416,7 @@ button[aria-disabled='true'] {
 }
 
 .event-highlights-floating {
-  padding: 0 var(--page-inline) 0.2rem;
+  padding: 0 var(--page-inline) 0;
   border-top: none;
   border-bottom: none;
   background: transparent;
@@ -1499,15 +1501,6 @@ button[aria-disabled='true'] {
 
 [data-theme='light'] .event-carousel-card::after {
   border-color: rgba(15, 23, 42, 0.12);
-}
-
-[data-theme='light'] .hero-to-catalog-fade {
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(248, 250, 252, 0.78) 68%,
-    var(--bg-dark) 100%
-  );
 }
 
 .page-transition-shell {
@@ -1666,16 +1659,10 @@ button[aria-disabled='true'] {
   position: relative;
   border-top: 1px solid var(--glass-border);
   margin-top: auto;
-  background:
-    radial-gradient(70% 50% at 12% -10%, rgba(124, 58, 237, 0.16), transparent),
-    radial-gradient(70% 60% at 90% 0%, rgba(255, 42, 95, 0.1), transparent);
 }
 
 .footer-shell-with-cta {
   border-top: none;
-  background:
-    radial-gradient(70% 50% at 12% -10%, rgba(124, 58, 237, 0.16), transparent),
-    radial-gradient(70% 60% at 90% 0%, rgba(255, 42, 95, 0.1), transparent);
 }
 
 .footer-shell-with-cta::before {
@@ -1764,17 +1751,8 @@ button[aria-disabled='true'] {
   border-color: rgba(0, 0, 0, 0.08);
 }
 
-[data-theme='light'] .footer-shell {
-  background:
-    radial-gradient(70% 50% at 12% -10%, rgba(109, 40, 217, 0.1), transparent),
-    radial-gradient(70% 60% at 90% 0%, rgba(225, 29, 72, 0.08), transparent);
-}
-
 [data-theme='light'] .footer-shell-with-cta {
   border-top: none;
-  background:
-    radial-gradient(70% 50% at 12% -10%, rgba(109, 40, 217, 0.1), transparent),
-    radial-gradient(70% 60% at 90% 0%, rgba(225, 29, 72, 0.08), transparent);
 }
 
 [data-theme='light'] .footer-cta {
@@ -1926,11 +1904,7 @@ button[aria-disabled='true'] {
 
 @media (max-width: 768px) {
   .hero-carousel-float {
-    margin-top: -2.25rem;
-  }
-
-  .hero-to-catalog-fade {
-    height: 50%;
+    margin-top: -2.6rem;
   }
 
   .event-carousel-card {
@@ -1949,17 +1923,6 @@ button[aria-disabled='true'] {
 
   .checkout-summary-mobile {
     padding-inline: 0.7rem;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  html:not([data-theme]) .hero-to-catalog-fade {
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      rgba(248, 250, 252, 0.78) 68%,
-      var(--bg-dark) 100%
-    );
   }
 }
 
