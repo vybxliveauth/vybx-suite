@@ -41,7 +41,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       try {
         const response = await fetch(maintenanceEndpoint, {
           cache: "no-store",
-          credentials: "include",
+          mode: "cors",
+          credentials: "omit",
+          headers: {
+            accept: "application/json",
+          },
         });
         if (!response.ok) return;
 

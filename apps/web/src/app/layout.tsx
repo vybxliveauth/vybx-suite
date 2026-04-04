@@ -102,6 +102,11 @@ async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
     const response = await fetch(`${API_BASE_URL}/config/MAINTENANCE_MODE`, {
       cache: "no-store",
       next: { revalidate: 0 },
+      headers: {
+        accept: "application/json",
+        origin: "https://www.vybxlive.com",
+        referer: "https://www.vybxlive.com/",
+      },
     });
 
     if (!response.ok) {
