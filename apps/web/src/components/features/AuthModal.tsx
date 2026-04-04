@@ -87,7 +87,7 @@ function Field({
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-      <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+      <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-secondary)" }}>
         {label}
       </label>
       <div style={{ position: "relative" }}>
@@ -99,8 +99,8 @@ function Field({
           style={{
             width: "100%",
             padding: `0.7rem ${suffix ? "2.5rem" : "0.9rem"} 0.7rem ${Icon ? "2.4rem" : "0.9rem"}`,
-            background: "var(--input-surface)",
-            border: `1px solid ${error ? "rgba(244,63,94,0.6)" : "var(--glass-border)"}`,
+            background: "color-mix(in oklab, var(--input-surface) 84%, transparent)",
+            border: `1px solid ${error ? "rgba(244,63,94,0.56)" : "color-mix(in oklab, var(--glass-border) 82%, transparent)"}`,
             borderRadius: "var(--radius-lg)",
             color: "var(--text-light)",
             fontSize: "0.92rem",
@@ -109,8 +109,8 @@ function Field({
             transition: "border-color 0.2s, box-shadow 0.2s",
           }}
           onFocus={e => {
-            e.target.style.borderColor = "rgba(124,58,237,0.7)";
-            e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.12)";
+            e.target.style.borderColor = "rgba(124,58,237,0.52)";
+            e.target.style.boxShadow = "0 0 0 3px rgba(124,58,237,0.10)";
           }}
           onBlur={e => {
             e.target.style.borderColor = error ? "rgba(244,63,94,0.6)" : "var(--glass-border)";
@@ -124,33 +124,10 @@ function Field({
         )}
       </div>
       {error && (
-        <span style={{ fontSize: "0.72rem", color: "#f43f5e", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+        <span style={{ fontSize: "0.72rem", color: "#fb7185", display: "flex", alignItems: "center", gap: "0.3rem" }}>
           <AlertCircle size={11} /> {error}
         </span>
       )}
-    </div>
-  );
-}
-
-// ─── Step Indicator ───────────────────────────────────────────────────────────
-
-function StepDots({ current }: { current: 1 | 2 }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-      {[1, 2].map((n) => (
-        <div
-          key={n}
-          style={{
-            width: n === current ? 20 : 7,
-            height: 7,
-            borderRadius: 999,
-            background: n === current
-              ? "linear-gradient(90deg, var(--accent-primary), var(--accent-secondary))"
-              : "rgba(255,255,255,0.15)",
-            transition: "all 0.3s ease",
-          }}
-        />
-      ))}
     </div>
   );
 }
@@ -175,7 +152,7 @@ function EmailStep({
           Bienvenido a vybx
         </h2>
         <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-          Ingresa tu correo para continuar
+          Inicia sesión o crea tu cuenta con tu correo
         </p>
       </div>
 
@@ -203,22 +180,26 @@ function EmailStep({
         </button>
       </form>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <div style={{ flex: 1, height: 1, background: "var(--glass-border)" }} />
-        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>o</span>
-        <div style={{ flex: 1, height: 1, background: "var(--glass-border)" }} />
-      </div>
-
       <button
         type="button"
         onClick={handleSubmit((d) => onRegister(d.email))}
-        className="btn-secondary"
-        style={{ justifyContent: "center", padding: "0.8rem", width: "100%", fontSize: "0.9rem" }}
+        style={{
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          fontSize: "0.84rem",
+          color: "var(--text-muted)",
+          cursor: "pointer",
+          textDecoration: "underline",
+          textUnderlineOffset: "3px",
+          width: "fit-content",
+          margin: "0 auto",
+        }}
       >
         Crear cuenta nueva
       </button>
 
-      <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5 }}>
+      <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5, marginTop: "-0.15rem" }}>
         Al continuar aceptas nuestros{" "}
         <Link href="/terminos" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Términos</Link>
         {" "}y{" "}
@@ -741,8 +722,6 @@ export function AuthModal({
     setStep("verify");
   }
 
-  const stepNumber = step === "email" ? 1 : (step === "login" || step === "register") ? 2 : null;
-
   return (
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -753,8 +732,8 @@ export function AuthModal({
         aria-hidden="true"
         style={{
           position: "fixed", inset: 0, zIndex: 1300,
-          background: "rgba(0,0,0,0.65)",
-          backdropFilter: "blur(8px)",
+          background: "rgba(0,0,0,0.52)",
+          backdropFilter: "blur(4px)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -776,14 +755,14 @@ export function AuthModal({
             ? `translate(-50%, ${open ? "0" : "10px"})`
             : `translate(-50%, ${open ? "-50%" : "-46%"})`,
           zIndex: 1400,
-          width: isMobileViewport ? "min(460px, 96vw)" : "min(560px, 94vw)",
+          width: isMobileViewport ? "min(460px, 96vw)" : "min(520px, 94vw)",
           maxHeight: isMobileViewport
             ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
             : "min(860px, 93dvh)",
-          background: "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)), var(--bg-dark)",
-          border: "1px solid var(--glass-border)",
+          background: "color-mix(in oklab, var(--bg-dark) 92%, transparent)",
+          border: "1px solid color-mix(in oklab, var(--glass-border) 78%, transparent)",
           borderRadius: "var(--radius-2xl)",
-          boxShadow: "0 40px 100px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
+          boxShadow: "0 26px 70px rgba(0,0,0,0.52)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1)",
@@ -796,22 +775,20 @@ export function AuthModal({
       >
         {/* Modal Header */}
         <div style={{
-          padding: isMobileViewport ? "1.2rem 1.3rem 0.95rem" : "1.4rem 2rem 1.05rem",
-          borderBottom: step !== "email" && step !== "verify" && step !== "2fa" ? "1px solid var(--glass-border)" : "none",
+          padding: isMobileViewport ? "1.05rem 1.2rem 0.9rem" : "1.15rem 1.45rem 0.9rem",
+          borderBottom: "1px solid color-mix(in oklab, var(--glass-border) 78%, transparent)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          background: "linear-gradient(180deg, rgba(124,58,237,0.06) 0%, transparent 100%)",
           flexShrink: 0,
         }}>
           <VybxLogo size={22} textSize="1.1rem" />
           <div style={{ display: "flex", alignItems: "center", gap: "0.9rem" }}>
-            {stepNumber && <StepDots current={stepNumber as 1 | 2} />}
             <button
               onClick={onClose}
               aria-label="Cerrar"
               style={{
-                background: "var(--glass-bg)", border: "1px solid var(--glass-border)",
+                background: "transparent", border: "1px solid var(--glass-border)",
                 borderRadius: "50%", width: 32, height: 32,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", color: "var(--text-muted)",
@@ -826,10 +803,7 @@ export function AuthModal({
         </div>
 
         {/* Modal Content */}
-        <div style={{ padding: isMobileViewport ? "1.25rem 1.3rem 1.35rem" : "1.9rem 2rem 2rem", flex: 1 }}>
-          {(step === "email" || step === "login" || step === "register") && (
-            <p className="auth-modal-note">Acceso protegido · Stripe-ready</p>
-          )}
+        <div style={{ padding: isMobileViewport ? "1.15rem 1.2rem 1.25rem" : "1.45rem 1.45rem 1.55rem", flex: 1 }}>
           {step === "email" && (
             <EmailStep
               onLogin={(e) => { setEmail(e); setStep("login"); }}
