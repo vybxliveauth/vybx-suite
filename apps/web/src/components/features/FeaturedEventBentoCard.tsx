@@ -100,10 +100,7 @@ export function FeaturedEventBentoCard({
               boxShadow: isTrending
                 ? "0 8px 20px rgba(249,115,22,0.28)"
                 : "0 8px 20px rgba(255,42,95,0.34)",
-              maxWidth: "66%",
               whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
             }}
           >
             {isTrending ? (
