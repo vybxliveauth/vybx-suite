@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame, Star } from "lucide-react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { Event } from "@/types";
 
@@ -87,7 +87,11 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
       {/* Carousel viewport */}
       <div ref={emblaRef} className="event-carousel-viewport" style={{ overflow: "hidden" }}>
         <div className="event-carousel-track">
-          {slides.map((event) => (
+          {slides.map((event) => {
+            const isFeatured = event.isFeatured;
+            const HighlightIcon = isFeatured ? Star : Flame;
+            const highlightLabel = isFeatured ? "Destacado" : "Tendencia";
+            return (
             <div key={event.id} className="event-carousel-slide">
               <Link
                 href={`/events/${event.slug}`}
@@ -125,48 +129,62 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
                       left: 14,
                       right: 14,
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+                      alignItems: "flex-start",
                       gap: "0.5rem",
                     }}
                   >
-                    {event.isFeatured ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.3rem",
-                          borderRadius: "var(--radius-pill)",
-                          fontSize: "0.68rem",
-                          letterSpacing: "0.05em",
-                          textTransform: "uppercase",
-                          padding: "0.25rem 0.6rem",
-                          fontWeight: 700,
-                          color: "#fff",
-                          background: "var(--accent-primary)",
-                          boxShadow: "0 0 14px rgba(255,42,95,0.5)",
-                        }}
-                      >
-                        <Star size={9} fill="currentColor" />
-                        Destacado
-                      </span>
-                    ) : (
-                      <span />
-                    )}
                     <span
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
+                        gap: "0.3rem",
                         borderRadius: "var(--radius-pill)",
-                        fontSize: "0.7rem",
-                        letterSpacing: "0.02em",
-                        padding: "0.25rem 0.6rem",
-                        fontWeight: 700,
-                        color: "rgba(255,255,255,0.95)",
-                        background: "rgba(8,8,12,0.65)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        backdropFilter: "blur(8px)",
-                        WebkitBackdropFilter: "blur(8px)",
+                        fontSize: "0.64rem",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        padding: "0.28rem 0.64rem",
+                        fontWeight: 800,
+                        color: "#fff",
+                        background: isFeatured
+                          ? "linear-gradient(120deg, rgba(255,42,95,0.96), rgba(124,58,237,0.9))"
+                          : "linear-gradient(120deg, rgba(249,115,22,0.93), rgba(244,63,94,0.88))",
+                        border: isFeatured
+                          ? "1px solid rgba(255,141,179,0.62)"
+                          : "1px solid rgba(253,186,116,0.56)",
+                        boxShadow: isFeatured
+                          ? "0 8px 20px rgba(255,42,95,0.34)"
+                          : "0 8px 20px rgba(249,115,22,0.28)",
+                        maxWidth: "66%",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        position: "relative",
+                        zIndex: 2,
+                      }}
+                    >
+                      <HighlightIcon size={10} {...(isFeatured ? { fill: "currentColor" } : {})} />
+                      {highlightLabel}
+                    </span>
+                    <span
+                      style={{
+                        marginLeft: "auto",
+                        flexShrink: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        borderRadius: "var(--radius-pill)",
+                        fontSize: "0.66rem",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        padding: "0.28rem 0.62rem",
+                        fontWeight: 800,
+                        color: "rgba(255,255,255,0.96)",
+                        background: "linear-gradient(180deg, rgba(8,10,18,0.78), rgba(8,10,18,0.62))",
+                        border: "1px solid rgba(255,255,255,0.24)",
+                        boxShadow: "0 6px 18px rgba(0,0,0,0.34)",
+                        backdropFilter: "blur(10px)",
+                        WebkitBackdropFilter: "blur(10px)",
+                        position: "relative",
+                        zIndex: 1,
                       }}
                     >
                       {formatEventDate(event.startDate)}
@@ -219,7 +237,8 @@ export function EventHighlightsCarousel({ events }: { events: Event[] }) {
                 </article>
               </Link>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

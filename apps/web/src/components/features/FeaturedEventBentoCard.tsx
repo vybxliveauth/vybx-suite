@@ -31,6 +31,11 @@ export function FeaturedEventBentoCard({
   const startDate = new Date(event.startDate);
   const badgeType = highlight ?? (event.isFeatured ? "featured" : "trending");
   const isTrending = badgeType === "trending" || (event.trendingScore ?? 0) > 0;
+  const dateShort = startDate.toLocaleDateString("es-DO", {
+    day: "2-digit",
+    month: "short",
+  });
+  const dateYear = startDate.getFullYear();
 
   function handleMouseMove(ev: MouseEvent<HTMLAnchorElement>) {
     const rect = ev.currentTarget.getBoundingClientRect();
@@ -73,26 +78,36 @@ export function FeaturedEventBentoCard({
             className="block h-full w-full rounded-[inherit] object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06] [backface-visibility:hidden] [transform:translateZ(0)]"
           />
 
-          <div className="absolute left-4 top-4 z-30 inline-flex items-center gap-2.5 rounded-full border border-white/24 bg-black/46 px-3.5 py-1.5 text-[0.84rem] font-bold tracking-[0.01em] shadow-[0_8px_18px_rgba(0,0,0,0.4)] backdrop-blur-md">
-            {isTrending ? (
-              <>
-                <Flame className="size-4 text-rose-300" />
-                Tendencia
-              </>
-            ) : (
-              <>
-                <Star className="size-4 text-[var(--accent-primary)]" />
-                Destacado
-              </>
-            )}
-          </div>
+          <div className="absolute inset-x-4 top-4 z-30 flex items-start gap-2.5">
+            <div
+              className={cn(
+                "inline-flex max-w-[64%] items-center gap-2 rounded-full border px-3.5 py-1.5 text-[0.72rem] font-extrabold tracking-[0.09em] uppercase text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-md",
+                isTrending
+                  ? "border-orange-300/55 bg-[linear-gradient(135deg,rgba(249,115,22,0.92),rgba(244,63,94,0.86))]"
+                  : "border-rose-300/55 bg-[linear-gradient(135deg,rgba(255,42,95,0.95),rgba(124,58,237,0.88))]",
+              )}
+            >
+              {isTrending ? (
+                <>
+                  <Flame className="size-3.5" />
+                  Tendencia
+                </>
+              ) : (
+                <>
+                  <Star className="size-3.5 fill-current" />
+                  Destacado
+                </>
+              )}
+            </div>
 
-          <div className="absolute right-4 top-4 z-30 rounded-full border border-white/40 bg-black/74 px-4 py-1.5 text-center text-[0.82rem] font-extrabold tracking-[0.015em] text-white shadow-[0_8px_22px_rgba(0,0,0,0.46)] backdrop-blur-md">
-            {startDate.toLocaleDateString("es-DO", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
+            <div className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/32 bg-[linear-gradient(180deg,rgba(7,9,18,0.78),rgba(7,9,18,0.62))] px-3 py-1.5 text-white shadow-[0_8px_20px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              <span className="text-[0.7rem] font-extrabold tracking-[0.08em] uppercase leading-none">
+                {dateShort}
+              </span>
+              <span className="text-[0.64rem] font-bold text-white/72 leading-none">
+                {dateYear}
+              </span>
+            </div>
           </div>
 
           <div className="absolute bottom-4 left-4 right-4 z-30 md:bottom-5 md:left-5 md:right-5">

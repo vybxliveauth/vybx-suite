@@ -457,7 +457,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
             </div>
           )}
           {event.isFeatured && (
-            <div className="badge-featured" style={{ position: "absolute", top: "0.75rem", right: "0.75rem", fontSize: "0.65rem", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+            <div className="badge-featured" style={{ position: "absolute", top: "0.75rem", left: "0.75rem", fontSize: "0.65rem", display: "flex", alignItems: "center", gap: "0.3rem", zIndex: 11 }}>
               <Star size={10} /> Destacado
             </div>
           )}
