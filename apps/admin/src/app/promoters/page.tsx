@@ -457,6 +457,11 @@ export default function PromotersPage() {
           </p>
         </div>
 
+        {(pendingQuery.isError || rejectedQuery.isError || approvedQuery.isError) && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Error al cargar promotores: {(pendingQuery.error ?? rejectedQuery.error ?? approvedQuery.error) instanceof Error ? (pendingQuery.error ?? rejectedQuery.error ?? approvedQuery.error)?.message : "No se pudo conectar con el servidor."}
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-4">
           <Card className="kpi-card">
             <CardHeader className="pb-2">

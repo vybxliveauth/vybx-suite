@@ -375,6 +375,15 @@ export default function CategoriesPage() {
                       </TableCell>
                     </TableRow>
                   ))
+                ) : categoriesQuery.isError ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-10 text-center">
+                      <p className="text-sm text-destructive font-medium">Error al cargar categorías</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {categoriesQuery.error instanceof Error ? categoriesQuery.error.message : "No se pudo conectar con el servidor."}
+                      </p>
+                    </TableCell>
+                  </TableRow>
                 ) : categories.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">

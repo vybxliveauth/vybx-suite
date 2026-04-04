@@ -176,6 +176,11 @@ export default function SecurityPage() {
             {actionError}
           </div>
         )}
+        {fraudQuery.isError && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Error al cargar señales de seguridad: {fraudQuery.error instanceof Error ? fraudQuery.error.message : "No se pudo conectar con el servidor."}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="kpi-card">

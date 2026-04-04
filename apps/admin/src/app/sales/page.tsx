@@ -101,6 +101,12 @@ export default function SalesPage() {
           <p className="text-sm text-muted-foreground">Ingresos y actividad de toda la plataforma.</p>
         </div>
 
+        {(statsQuery.isError || transactionsQuery.isError) && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Error al cargar datos de ventas: {(statsQuery.error ?? transactionsQuery.error) instanceof Error ? (statsQuery.error ?? transactionsQuery.error)?.message : "No se pudo conectar con el servidor."}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statsQuery.isLoading
             ? Array.from({ length: 4 }).map((_, i) => (

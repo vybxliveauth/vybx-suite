@@ -282,6 +282,11 @@ export default function EventDetailPage() {
           <div className="lg:col-span-2 space-y-6">
 
             {/* KPI cards */}
+            {analyticsQuery.isError && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                Error al cargar analíticas: {analyticsQuery.error instanceof Error ? analyticsQuery.error.message : "No se pudo conectar."}
+              </div>
+            )}
             {analytics && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[

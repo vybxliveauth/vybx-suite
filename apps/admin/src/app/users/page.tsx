@@ -446,6 +446,18 @@ export default function UsersPage() {
                         </TableCell>
                       </TableRow>
                     ))
+                  ) : usersQuery.isError ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="py-10 text-center">
+                        <p className="text-sm text-destructive font-medium">Error al cargar usuarios</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {usersQuery.error instanceof Error ? usersQuery.error.message : "No se pudo conectar con el servidor."}
+                        </p>
+                        <Button variant="outline" size="sm" className="mt-3" onClick={() => void usersQuery.refetch()}>
+                          <RefreshCw className="size-3.5 mr-1.5" /> Reintentar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ) : users.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="py-10 text-center text-sm text-muted-foreground">

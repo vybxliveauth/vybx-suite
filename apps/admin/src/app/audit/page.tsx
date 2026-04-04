@@ -101,6 +101,11 @@ export default function AuditPage() {
           </p>
         </div>
 
+        {auditQuery.isError && (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Error al cargar audit logs: {auditQuery.error instanceof Error ? auditQuery.error.message : "No se pudo conectar con el servidor."}
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-2">
           <AuditTimeline title="Timeline Operativa" items={timelineItems} />
           <ProDataTable
