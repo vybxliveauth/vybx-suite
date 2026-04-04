@@ -42,6 +42,7 @@ import { fmtDateTimeSafe } from "@/lib/format";
 
 const ALL_ROLES: UserRole[] = ["USER", "PROMOTER", "ADMIN", "SUPER_ADMIN"];
 const SAFE_ROLES: UserRole[] = ["USER", "PROMOTER"];
+const USERS_PAGE_SIZE = 100;
 
 function roleBadge(role: string) {
   if (role === "SUPER_ADMIN") {
@@ -81,7 +82,7 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<UserRole>(assignableRoles[0] ?? "USER");
   const actionDialog = useAdminActionDialog();
 
-  const usersQuery = useUsers(page, 30, roleFilter, search);
+  const usersQuery = useUsers(page, USERS_PAGE_SIZE, roleFilter, search);
   const fraudQuery = useAdminFraudSignals(200, "ALL");
 
   const createUser = useCreateUser();
@@ -93,7 +94,7 @@ export default function UsersPage() {
 
   const users = usersQuery.data?.data ?? [];
   const total = usersQuery.data?.total ?? 0;
-  const pageSize = usersQuery.data?.pageSize ?? 30;
+  const pageSize = usersQuery.data?.pageSize ?? USERS_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const blockedSet = useMemo(
     () => new Set((fraudQuery.data?.blockedUsers ?? []).map((row) => row.userId)),
@@ -575,7 +576,7 @@ export default function UsersPage() {
 
             <div className="flex items-center justify-between text-sm">
               <p className="text-muted-foreground">
-                Pagina {page} de {totalPages} · {total} registros
+                Pagina {page} de {totalPages} · mostrando {users.length} de {total} registros
               </p>
               <div className="flex items-center gap-2">
                 <Button

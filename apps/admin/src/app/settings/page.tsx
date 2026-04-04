@@ -263,6 +263,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setOpsInitialized(false);
+    setOpsError(null);
 
     const cached = readPlatformConfigCache(platformConfigCacheKey);
     if (cached) {
@@ -346,8 +347,12 @@ export default function SettingsPage() {
           platformFeePercent: nextFee,
           vipOverrides: nextOverrides,
         });
-      } catch {
-        // Backend may hide non-public settings on GET /config; local cache remains the source of truth.
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message.trim().length > 0
+            ? error.message
+            : "No se pudo cargar la configuración remota de operación.";
+        setOpsError(message);
       } finally {
         if (!cancelled) {
           setOpsInitialized(true);
