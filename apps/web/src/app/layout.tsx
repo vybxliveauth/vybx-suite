@@ -94,7 +94,13 @@ function parseBoolean(value: unknown, fallback = false): boolean {
   return fallback;
 }
 
-async function getMaintenanceModeEnabled(): Promise<boolean> {
+type MaintenanceProbe = {
+  enabled: boolean;
+  source: "ok" | "http_error" | "invalid_payload" | "fetch_error";
+  statusCode?: number;
+};
+
+async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
   try {
     const baseUrl = resolveApiBaseUrl(API_BASE_URL);
     const response = await fetch(`${baseUrl}/config/MAINTENANCE_MODE`, {
@@ -102,11 +108,30 @@ async function getMaintenanceModeEnabled(): Promise<boolean> {
       next: { revalidate: 0 },
     });
 
-    if (!response.ok) return false;
+    if (!response.ok) {
+      return {
+        enabled: false,
+        source: "http_error",
+        statusCode: response.status,
+      };
+    }
     const payload = (await response.json()) as { value?: string | boolean };
-    return parseBoolean(payload?.value, false);
+    if (!Object.prototype.hasOwnProperty.call(payload ?? {}, "value")) {
+      return {
+        enabled: false,
+        source: "invalid_payload",
+      };
+    }
+    return {
+      enabled: parseBoolean(payload?.value, false),
+      source: "ok",
+      statusCode: response.status,
+    };
   } catch {
-    return false;
+    return {
+      enabled: false,
+      source: "fetch_error",
+    };
   }
 }
 
@@ -115,7 +140,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const maintenanceModeEnabled = await getMaintenanceModeEnabled();
+  const maintenanceProbe = await getMaintenanceModeProbe();
+  const maintenanceModeEnabled = maintenanceProbe.enabled;
 
   return (
     <html
@@ -123,7 +149,12 @@ export default async function RootLayout({
       className={`${outfit.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body
+        className="min-h-full flex flex-col"
+        data-maintenance-mode={maintenanceModeEnabled ? "on" : "off"}
+        data-maintenance-source={maintenanceProbe.source}
+        data-maintenance-status={maintenanceProbe.statusCode ?? "na"}
+      >
         <a
           href="#main-content"
           className="skip-to-main"
