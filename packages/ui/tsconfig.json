@@ -2,7 +2,6 @@
   "extends": "@vybx/tsconfig/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
       "@vybx/ui": ["./src/index.ts"],
       "@vybx/ui/*": ["./src/*"]

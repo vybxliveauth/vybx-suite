@@ -102,12 +102,8 @@ function Navbar({ onCartOpen, eventTitle }: { onCartOpen: () => void; eventTitle
 
 function EventHero({
   event,
-  fromPrice,
-  currency,
 }: {
   event: Event;
-  fromPrice: number;
-  currency: string;
 }) {
   return (
     <div style={{
@@ -368,7 +364,7 @@ export function EventDetailClient({ event }: { event: Event }) {
         </div>
       )}
 
-      <EventHero event={event} fromPrice={displayFromPrice} currency={displayCurrency} />
+      <EventHero event={event} />
 
       <div className="event-detail-grid">
         {/* ── Left: Content ── */}

@@ -1,7 +1,6 @@
 {
   "extends": "@vybx/tsconfig/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@vybx/permissions": ["./src/index.ts"],
       "@vybx/permissions/*": ["./src/*"]
