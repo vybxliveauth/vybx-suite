@@ -21,6 +21,10 @@ function parseBoolean(value: unknown, fallback = false): boolean {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const queryClient = getQueryClient();
+  const forcedMaintenance = parseBoolean(
+    process.env.NEXT_PUBLIC_FORCE_MAINTENANCE_MODE,
+    false,
+  );
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceResolved, setMaintenanceResolved] = useState(false);
   const maintenanceEndpoint = useMemo(() => {
@@ -33,6 +37,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const run = async () => {
+      if (forcedMaintenance) {
+        setMaintenanceMode(true);
+        setMaintenanceResolved(true);
+        return;
+      }
+
       if (!maintenanceEndpoint) {
         setMaintenanceResolved(true);
         return;
@@ -66,7 +76,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [maintenanceEndpoint]);
+  }, [forcedMaintenance, maintenanceEndpoint]);
 
   return (
     <ThemeProvider
@@ -77,7 +87,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange={false}
     >
       <QueryClientProvider client={queryClient}>
-        {maintenanceResolved && maintenanceMode ? (
+        {forcedMaintenance || (maintenanceResolved && maintenanceMode) ? (
           <main
             id="main-content"
             className="flex min-h-screen flex-1 items-center justify-center px-6 py-24"

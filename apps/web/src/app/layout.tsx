@@ -93,13 +93,25 @@ function parseBoolean(value: unknown, fallback = false): boolean {
 
 type MaintenanceProbe = {
   enabled: boolean;
-  source: "ok" | "http_error" | "invalid_payload" | "fetch_error";
+  source: "ok" | "http_error" | "invalid_payload" | "fetch_error" | "forced_env";
   statusCode?: number;
   baseUrl?: string;
   detail?: string;
 };
 
 async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
+  if (
+    parseBoolean(process.env.NEXT_PUBLIC_FORCE_MAINTENANCE_MODE, false) ||
+    parseBoolean(process.env.FORCE_MAINTENANCE_MODE, false)
+  ) {
+    return {
+      enabled: true,
+      source: "forced_env",
+      baseUrl: API_BASE_URL,
+      detail: "forced_by_env",
+    };
+  }
+
   const baseUrl = API_BASE_URL;
   try {
     const response = await fetch(`${baseUrl}/config/MAINTENANCE_MODE`, {
