@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Footer } from "@/components/features/Footer";
-import { resolveApiBaseUrl } from "@vybx/api-client";
+import { resolveServerApiBaseUrl } from "@/lib/api-base-url";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -79,10 +79,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const API_BASE_URL =
-  process.env.API_URL?.trim() ??
-  process.env.NEXT_PUBLIC_API_URL?.trim() ??
-  "http://localhost:3004/api/v1";
+const API_BASE_URL = resolveServerApiBaseUrl();
 
 function parseBoolean(value: unknown, fallback = false): boolean {
   if (typeof value === "boolean") return value;
@@ -102,8 +99,7 @@ type MaintenanceProbe = {
 
 async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
   try {
-    const baseUrl = resolveApiBaseUrl(API_BASE_URL);
-    const response = await fetch(`${baseUrl}/config/MAINTENANCE_MODE`, {
+    const response = await fetch(`${API_BASE_URL}/config/MAINTENANCE_MODE`, {
       cache: "no-store",
       next: { revalidate: 0 },
     });

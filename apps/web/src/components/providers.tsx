@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "sonner";
-import { resolveApiBaseUrl } from "@vybx/api-client";
 import { getQueryClient } from "@/lib/query-client";
+import { resolveClientApiBaseUrl } from "@/lib/api-base-url";
 import { PageTransitions } from "@/components/layout/PageTransitions";
 import { OfflineBanner } from "@/components/features/OfflineBanner";
 
@@ -25,10 +25,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [maintenanceResolved, setMaintenanceResolved] = useState(false);
   const maintenanceEndpoint = useMemo(() => {
     if (typeof window === "undefined") return "";
-    const base =
-      process.env.NEXT_PUBLIC_API_URL?.trim() ||
-      `${window.location.origin.replace(/\/$/, "")}/api/v1`;
-    return `${resolveApiBaseUrl(base)}/config/MAINTENANCE_MODE`;
+    const base = resolveClientApiBaseUrl(window.location.origin);
+    return `${base}/config/MAINTENANCE_MODE`;
   }, []);
 
   useEffect(() => {
