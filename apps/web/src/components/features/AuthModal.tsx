@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/store/useAuthStore";
-import { fetchProfile, login, verifyLoginTwoFactor, type AuthUser } from "@/lib/api";
+import { api, fetchProfile, login, verifyLoginTwoFactor, type AuthUser } from "@/lib/api";
 import { resolveApiBaseUrl } from "@vybx/api-client";
 import {
   actionErrorState,
@@ -30,6 +30,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
+  Send,
   ArrowRight,
   ArrowLeft,
   Globe,
@@ -71,8 +72,9 @@ const registerSchema = z.object({
 type EmailFields = z.infer<typeof emailSchema>;
 type LoginFields = z.infer<typeof loginSchema>;
 type RegisterFields = z.infer<typeof registerSchema>;
+type ForgotPasswordFields = z.infer<typeof emailSchema>;
 
-type Step = "email" | "login" | "register" | "verify" | "2fa";
+type Step = "email" | "login" | "register" | "verify" | "2fa" | "forgot";
 type EmailIntent = "login" | "register";
 
 function toRecord(value: unknown): Record<string, unknown> | null {
@@ -104,6 +106,7 @@ function getCsrfTokenFromCookie(): string {
 async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
   const encoded = encodeURIComponent(email);
   const candidates = [
+    `/auth/email-intent?email=${encoded}`,
     `/auth/email-status?email=${encoded}`,
     `/auth/email-exists?email=${encoded}`,
     `/auth/check-email?email=${encoded}`,
@@ -139,6 +142,11 @@ async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
       if (!postData) continue;
       const exists = readBooleanKey(postData, ["exists", "registered", "hasAccount", "userExists"]);
       if (typeof exists === "boolean") return exists ? "login" : "register";
+      if (typeof postData.intent === "string") {
+        const intent = postData.intent.toLowerCase();
+        if (intent.includes("register") || intent.includes("signup")) return "register";
+        if (intent.includes("login") || intent.includes("signin")) return "login";
+      }
       if (typeof postData.flow === "string") {
         const flow = postData.flow.toLowerCase();
         if (flow.includes("register") || flow.includes("signup")) return "register";
@@ -157,6 +165,11 @@ async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
     if (!data) continue;
     const exists = readBooleanKey(data, ["exists", "registered", "hasAccount", "userExists"]);
     if (typeof exists === "boolean") return exists ? "login" : "register";
+    if (typeof data.intent === "string") {
+      const intent = data.intent.toLowerCase();
+      if (intent.includes("register") || intent.includes("signup")) return "register";
+      if (intent.includes("login") || intent.includes("signin")) return "login";
+    }
     if (typeof data.flow === "string") {
       const flow = data.flow.toLowerCase();
       if (flow.includes("register") || flow.includes("signup")) return "register";
@@ -517,12 +530,14 @@ function EmailStep({
 function LoginStep({
   email,
   onBack,
+  onForgotPassword,
   onCreateAccount,
   onSuccess,
   onTwoFactor,
 }: {
   email: string;
   onBack: () => void;
+  onForgotPassword: () => void;
   onCreateAccount: () => void;
   onSuccess: (user: AuthUser) => void;
   onTwoFactor: (challengeId: string, expiresIn: number, message: string) => void;
@@ -604,14 +619,15 @@ function LoginStep({
         </button>
 
         <div style={{ textAlign: "center" }}>
-          <Link
-            href="/forgot-password"
+          <button
+            type="button"
+            onClick={onForgotPassword}
             style={{ fontSize: "0.8rem", color: "var(--text-muted)", textDecoration: "none" }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--accent-secondary)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
           >
             ¿Olvidaste tu contraseña?
-          </Link>
+          </button>
         </div>
 
         <button
@@ -629,6 +645,103 @@ function LoginStep({
           }}
         >
           ¿No tienes cuenta? Crear una
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Forgot Password Step ─────────────────────────────────────────────────────
+
+function ForgotPasswordStep({
+  email,
+  onBack,
+}: {
+  email: string;
+  onBack: () => void;
+}) {
+  const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFields>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { email },
+  });
+
+  const [state, action, pending] = useActionState<UiActionState, ForgotPasswordFields>(
+    async (_prev, data) => {
+      try {
+        await api.post("/auth/request-password-reset", { email: data.email });
+        return actionSuccessState(
+          "Si existe una cuenta con ese email, recibirás un enlace para restablecer tu contraseña.",
+        );
+      } catch (err) {
+        return actionErrorState(err, "No pudimos enviar el enlace ahora mismo.");
+      }
+    },
+    uiActionInitialState,
+  );
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", padding: 0, marginBottom: "0.75rem" }}
+        >
+          <ArrowLeft size={14} /> Volver al login
+        </button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.3rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.35rem" }}>
+          Restablecer contraseña
+        </h2>
+        <p style={{ fontSize: "0.83rem", color: "var(--text-muted)", lineHeight: 1.55 }}>
+          Te enviaremos un enlace seguro para crear una nueva contraseña.
+        </p>
+      </div>
+
+      {state.status === "success" && (
+        <div style={{
+          border: "1px solid rgba(74,222,128,0.34)",
+          background: "rgba(34,197,94,0.14)",
+          borderRadius: "var(--radius-lg)",
+          padding: "0.7rem 0.8rem",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.55rem",
+        }}>
+          <CheckCircle2 size={16} color="#4ade80" style={{ marginTop: 1, flexShrink: 0 }} />
+          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-light)", lineHeight: 1.5 }}>
+            {state.message} El enlace expira en 30 minutos.
+          </p>
+        </div>
+      )}
+
+      <form
+        onSubmit={handleSubmit((data) => action(data))}
+        style={{ display: "flex", flexDirection: "column", gap: "0.95rem" }}
+      >
+        <Field
+          label="Correo electrónico"
+          icon={Mail}
+          type="email"
+          {...register("email")}
+          error={errors.email?.message}
+          placeholder="tu@email.com"
+          autoComplete="email"
+          autoFocus
+        />
+
+        {state.status !== "success" && (
+          <ActionFeedback status={state.status} message={state.message} />
+        )}
+
+        <button
+          type="submit"
+          disabled={pending}
+          className="btn-primary"
+          style={{ justifyContent: "center", padding: "0.85rem", width: "100%", fontSize: "0.92rem", gap: "0.45rem" }}
+        >
+          {pending
+            ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Enviando...</>
+            : <><Send size={15} /> Enviar enlace</>}
         </button>
       </form>
     </div>
@@ -1296,9 +1409,16 @@ export function AuthModal({
             <LoginStep
               email={email}
               onBack={() => setStep("email")}
+              onForgotPassword={() => setStep("forgot")}
               onCreateAccount={() => setStep("register")}
               onSuccess={handleLoginSuccess}
               onTwoFactor={handleTwoFactor}
+            />
+          )}
+          {step === "forgot" && (
+            <ForgotPasswordStep
+              email={email}
+              onBack={() => setStep("login")}
             />
           )}
           {step === "register" && (
