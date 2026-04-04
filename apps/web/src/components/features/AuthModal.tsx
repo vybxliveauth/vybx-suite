@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/store/useAuthStore";
-import { login, verifyLoginTwoFactor, type AuthUser } from "@/lib/api";
+import { fetchProfile, login, verifyLoginTwoFactor, type AuthUser } from "@/lib/api";
 import { resolveApiBaseUrl } from "@vybx/api-client";
 import {
   actionErrorState,
@@ -32,6 +32,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Globe,
+  KeyRound,
+  Sparkles,
 } from "lucide-react";
 
 const API_BASE_URL = resolveApiBaseUrl(
@@ -70,6 +72,182 @@ type LoginFields = z.infer<typeof loginSchema>;
 type RegisterFields = z.infer<typeof registerSchema>;
 
 type Step = "email" | "login" | "register" | "verify" | "2fa";
+type EmailIntent = "login" | "register";
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readBooleanKey(record: Record<string, unknown>, keys: string[]): boolean | null {
+  for (const key of keys) {
+    if (typeof record[key] === "boolean") return record[key] as boolean;
+  }
+  return null;
+}
+
+function getErrorMessage(payload: unknown, fallback: string): string {
+  const record = toRecord(payload);
+  if (!record) return fallback;
+  const message = record.message;
+  if (typeof message === "string" && message.trim().length > 0) return message;
+  if (Array.isArray(message) && message.length > 0) return message.map((item) => String(item)).join(", ");
+  return fallback;
+}
+
+function getCsrfTokenFromCookie(): string {
+  return document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] ?? "";
+}
+
+async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
+  const encoded = encodeURIComponent(email);
+  const candidates = [
+    `/auth/email-status?email=${encoded}`,
+    `/auth/email-exists?email=${encoded}`,
+    `/auth/check-email?email=${encoded}`,
+    `/auth/lookup-email?email=${encoded}`,
+  ];
+
+  for (const path of candidates) {
+    const getRes = await fetch(`${API_BASE_URL}${path}`, {
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+
+    if (getRes.status === 404) continue;
+    if (getRes.status === 405) {
+      const postRes = await fetch(`${API_BASE_URL}${path.split("?")[0]}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfTokenFromCookie(),
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      if (postRes.status === 404 || postRes.status === 405) continue;
+      const postPayload = await postRes.json().catch(() => null);
+      if (!postRes.ok) {
+        if (postRes.status === 409) return "login";
+        throw new Error(getErrorMessage(postPayload, "No pudimos validar el correo ahora mismo."));
+      }
+      const postData = toRecord(postPayload);
+      if (!postData) continue;
+      const exists = readBooleanKey(postData, ["exists", "registered", "hasAccount", "userExists"]);
+      if (typeof exists === "boolean") return exists ? "login" : "register";
+      if (typeof postData.flow === "string") {
+        const flow = postData.flow.toLowerCase();
+        if (flow.includes("register") || flow.includes("signup")) return "register";
+        if (flow.includes("login") || flow.includes("signin")) return "login";
+      }
+      continue;
+    }
+
+    const payload = await getRes.json().catch(() => null);
+    if (!getRes.ok) {
+      if (getRes.status === 409) return "login";
+      throw new Error(getErrorMessage(payload, "No pudimos validar el correo ahora mismo."));
+    }
+
+    const data = toRecord(payload);
+    if (!data) continue;
+    const exists = readBooleanKey(data, ["exists", "registered", "hasAccount", "userExists"]);
+    if (typeof exists === "boolean") return exists ? "login" : "register";
+    if (typeof data.flow === "string") {
+      const flow = data.flow.toLowerCase();
+      if (flow.includes("register") || flow.includes("signup")) return "register";
+      if (flow.includes("login") || flow.includes("signin")) return "login";
+    }
+  }
+
+  return null;
+}
+
+function decodeBase64Url(value: string): ArrayBuffer {
+  const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function encodeBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function buildPublicKeyRequestOptions(payload: unknown): PublicKeyCredentialRequestOptions | null {
+  const raw = toRecord(payload);
+  if (!raw) return null;
+  const source = toRecord(raw.publicKey ?? raw.requestOptions ?? raw.options ?? raw);
+  if (!source || typeof source.challenge !== "string") return null;
+
+  const allowCredentialsRaw = Array.isArray(source.allowCredentials)
+    ? source.allowCredentials
+    : [];
+
+  const validTransports: AuthenticatorTransport[] = [
+    "ble",
+    "hybrid",
+    "internal",
+    "nfc",
+    "usb",
+  ];
+  const allowCredentials: PublicKeyCredentialDescriptor[] = [];
+  allowCredentialsRaw.forEach((item) => {
+    const cred = toRecord(item);
+    if (!cred || typeof cred.id !== "string") return;
+    const transportList = Array.isArray(cred.transports)
+      ? cred.transports.filter(
+          (value): value is AuthenticatorTransport =>
+            typeof value === "string" && validTransports.includes(value as AuthenticatorTransport),
+        )
+      : undefined;
+    allowCredentials.push({
+      type: "public-key",
+      id: decodeBase64Url(cred.id),
+      transports: transportList,
+    });
+  });
+
+  const options: PublicKeyCredentialRequestOptions = {
+    challenge: decodeBase64Url(source.challenge),
+    timeout: typeof source.timeout === "number" ? source.timeout : undefined,
+    rpId: typeof source.rpId === "string" ? source.rpId : undefined,
+    userVerification:
+      source.userVerification === "required" ||
+      source.userVerification === "preferred" ||
+      source.userVerification === "discouraged"
+        ? source.userVerification
+        : "preferred",
+    allowCredentials: allowCredentials.length > 0 ? allowCredentials : undefined,
+  };
+
+  return options;
+}
+
+function serializeAssertionCredential(credential: PublicKeyCredential) {
+  const response = credential.response as AuthenticatorAssertionResponse;
+  return {
+    id: credential.id,
+    rawId: encodeBase64Url(credential.rawId),
+    type: credential.type,
+    response: {
+      authenticatorData: encodeBase64Url(response.authenticatorData),
+      clientDataJSON: encodeBase64Url(response.clientDataJSON),
+      signature: encodeBase64Url(response.signature),
+      userHandle: response.userHandle ? encodeBase64Url(response.userHandle) : null,
+    },
+  };
+}
 
 // ─── Input Field ──────────────────────────────────────────────────────────────
 
@@ -135,29 +313,55 @@ function Field({
 // ─── Email Step ───────────────────────────────────────────────────────────────
 
 function EmailStep({
-  onLogin,
-  onRegister,
+  onContinue,
+  onPasskey,
+  pending,
+  passkeyPending,
+  notice,
+  error,
 }: {
-  onLogin: (email: string) => void;
-  onRegister: (email: string) => void;
+  onContinue: (email: string) => Promise<void>;
+  onPasskey: (email: string) => Promise<void>;
+  pending: boolean;
+  passkeyPending: boolean;
+  notice: string | null;
+  error: string | null;
 }) {
   const { register, handleSubmit, formState: { errors } } = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
       <div>
+        <span style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          borderRadius: "9999px",
+          padding: "0.24rem 0.62rem",
+          fontSize: "0.68rem",
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+          fontWeight: 800,
+          color: "var(--accent-secondary)",
+          background: "rgba(255,42,95,0.12)",
+          border: "1px solid rgba(255,42,95,0.28)",
+          marginBottom: "0.7rem",
+        }}>
+          <Sparkles size={12} />
+          Secure Access
+        </span>
         <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.3rem" }}>
           Bienvenido a vybx
         </h2>
         <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-          Inicia sesión o crea tu cuenta con tu correo
+          Escribe tu correo y te llevamos al siguiente paso automáticamente.
         </p>
       </div>
 
       <form
-        onSubmit={handleSubmit((d) => onLogin(d.email))}
+        onSubmit={handleSubmit((d) => onContinue(d.email))}
         style={{ display: "flex", flexDirection: "column", gap: "1rem" }}
       >
         <Field
@@ -173,31 +377,47 @@ function EmailStep({
 
         <button
           type="submit"
+          disabled={pending || passkeyPending}
           className="btn-primary"
           style={{ justifyContent: "center", padding: "0.85rem", width: "100%", fontSize: "0.95rem", gap: "0.5rem" }}
         >
-          Continuar <ArrowRight size={16} />
+          {pending
+            ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Validando...</>
+            : <>Continuar <ArrowRight size={16} /></>}
         </button>
       </form>
 
       <button
         type="button"
-        onClick={handleSubmit((d) => onRegister(d.email))}
+        onClick={handleSubmit((d) => onPasskey(d.email))}
+        disabled={pending || passkeyPending}
         style={{
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          fontSize: "0.84rem",
-          color: "var(--text-muted)",
+          width: "100%",
+          padding: "0.72rem 0.95rem",
+          borderRadius: "var(--radius-lg)",
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid color-mix(in oklab, var(--glass-border) 82%, transparent)",
+          color: "var(--text-light)",
+          fontSize: "0.86rem",
+          fontWeight: 700,
           cursor: "pointer",
-          textDecoration: "underline",
-          textUnderlineOffset: "3px",
-          width: "fit-content",
-          margin: "0 auto",
+          display: "inline-flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "0.45rem",
         }}
       >
-        Crear cuenta nueva
+        {passkeyPending
+          ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Preparando passkey...</>
+          : <><KeyRound size={15} /> Sign in with Passkey</>}
       </button>
+
+      {notice && (
+        <p style={{ margin: 0, fontSize: "0.78rem", color: "#bfdbfe", lineHeight: 1.45 }}>{notice}</p>
+      )}
+      {error && (
+        <p style={{ margin: 0, fontSize: "0.78rem", color: "#fda4af", lineHeight: 1.45 }}>{error}</p>
+      )}
 
       <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5, marginTop: "-0.15rem" }}>
         Al continuar aceptas nuestros{" "}
@@ -214,11 +434,13 @@ function EmailStep({
 function LoginStep({
   email,
   onBack,
+  onCreateAccount,
   onSuccess,
   onTwoFactor,
 }: {
   email: string;
   onBack: () => void;
+  onCreateAccount: () => void;
   onSuccess: (user: AuthUser) => void;
   onTwoFactor: (challengeId: string, expiresIn: number, message: string) => void;
 }) {
@@ -308,6 +530,23 @@ function LoginStep({
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
+
+        <button
+          type="button"
+          onClick={onCreateAccount}
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            fontSize: "0.8rem",
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            textDecoration: "underline",
+            textUnderlineOffset: "3px",
+          }}
+        >
+          ¿No tienes cuenta? Crear una
+        </button>
       </form>
     </div>
   );
@@ -642,6 +881,10 @@ export function AuthModal({
 }) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [resolvingEmail, setResolvingEmail] = useState(false);
+  const [passkeyPending, setPasskeyPending] = useState(false);
   const [twoFactorData, setTwoFactorData] = useState<{ challengeId: string; expiresIn: number; message: string } | null>(null);
   const [verifiedEmail, setVerifiedEmail] = useState("");
   const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -654,6 +897,10 @@ export function AuthModal({
     if (open) {
       setStep(defaultTab === "register" ? "email" : "email");
       setEmail("");
+      setEmailNotice(null);
+      setEmailError(null);
+      setResolvingEmail(false);
+      setPasskeyPending(false);
       setTwoFactorData(null);
       setVerifiedEmail("");
     }
@@ -722,6 +969,128 @@ export function AuthModal({
     setStep("verify");
   }
 
+  async function handleEmailContinue(nextEmail: string) {
+    const normalizedEmail = nextEmail.trim().toLowerCase();
+    setEmail(normalizedEmail);
+    setEmailNotice(null);
+    setEmailError(null);
+    setResolvingEmail(true);
+
+    try {
+      const intent = await lookupEmailIntent(normalizedEmail);
+      if (intent === "register") {
+        setEmailNotice("No encontramos una cuenta con ese correo. Te ayudamos a crearla.");
+        setStep("register");
+        return;
+      }
+      if (intent === "login") {
+        setStep("login");
+        return;
+      }
+
+      // Backend sin endpoint de lookup: fallback seguro a contraseña.
+      setEmailNotice("Continuemos con tu acceso. Si no tienes cuenta, te la creamos después.");
+      setStep("login");
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "No pudimos validar el correo.");
+    } finally {
+      setResolvingEmail(false);
+    }
+  }
+
+  async function handlePasskeySignIn(nextEmail: string) {
+    const normalizedEmail = nextEmail.trim().toLowerCase();
+    setEmail(normalizedEmail);
+    setEmailNotice(null);
+    setEmailError(null);
+
+    if (
+      typeof window === "undefined" ||
+      typeof navigator === "undefined" ||
+      typeof window.PublicKeyCredential === "undefined" ||
+      typeof navigator.credentials?.get !== "function"
+    ) {
+      setEmailError("Este dispositivo o navegador no soporta passkeys.");
+      return;
+    }
+
+    const passkeyEndpoints = [
+      { optionsPath: "/auth/passkey/login/options", verifyPath: "/auth/passkey/login/verify" },
+      { optionsPath: "/auth/passkeys/login/options", verifyPath: "/auth/passkeys/login/verify" },
+    ];
+
+    setPasskeyPending(true);
+    try {
+      let selected:
+        | { payload: unknown; verifyPath: string }
+        | null = null;
+
+      for (const candidate of passkeyEndpoints) {
+        const response = await fetch(`${API_BASE_URL}${candidate.optionsPath}`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "x-csrf-token": getCsrfTokenFromCookie(),
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ email: normalizedEmail }),
+        });
+
+        if (response.status === 404 || response.status === 405) continue;
+        const payload = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(getErrorMessage(payload, "No pudimos iniciar passkey ahora mismo."));
+        }
+        selected = { payload, verifyPath: candidate.verifyPath };
+        break;
+      }
+
+      if (!selected) {
+        setEmailError("Passkeys todavía no están habilitadas en esta plataforma.");
+        return;
+      }
+
+      const publicKey = buildPublicKeyRequestOptions(selected.payload);
+      if (!publicKey) {
+        setEmailError("La configuración de passkey no es válida en este momento.");
+        return;
+      }
+
+      const assertion = await navigator.credentials.get({ publicKey });
+      if (!(assertion instanceof PublicKeyCredential)) {
+        setEmailError("No se pudo completar la autenticación con passkey.");
+        return;
+      }
+
+      const verifyResponse = await fetch(`${API_BASE_URL}${selected.verifyPath}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfTokenFromCookie(),
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          assertion: serializeAssertionCredential(assertion),
+        }),
+      });
+
+      const verifyPayload = await verifyResponse.json().catch(() => null);
+      if (!verifyResponse.ok) {
+        throw new Error(getErrorMessage(verifyPayload, "No pudimos verificar tu passkey."));
+      }
+
+      const user = await fetchProfile();
+      handleLoginSuccess(user);
+    } catch (err) {
+      setEmailError(err instanceof Error ? err.message : "Falló la autenticación con passkey.");
+    } finally {
+      setPasskeyPending(false);
+    }
+  }
+
   return (
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -732,8 +1101,8 @@ export function AuthModal({
         aria-hidden="true"
         style={{
           position: "fixed", inset: 0, zIndex: 1300,
-          background: "rgba(0,0,0,0.52)",
-          backdropFilter: "blur(4px)",
+          background: "rgba(2,6,23,0.58)",
+          backdropFilter: "blur(7px)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -759,10 +1128,11 @@ export function AuthModal({
           maxHeight: isMobileViewport
             ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
             : "min(860px, 93dvh)",
-          background: "color-mix(in oklab, var(--bg-dark) 92%, transparent)",
+          background:
+            "linear-gradient(160deg, color-mix(in oklab, var(--bg-dark) 90%, transparent), color-mix(in oklab, #070b16 94%, transparent))",
           border: "1px solid color-mix(in oklab, var(--glass-border) 78%, transparent)",
           borderRadius: "var(--radius-2xl)",
-          boxShadow: "0 26px 70px rgba(0,0,0,0.52)",
+          boxShadow: "0 34px 90px rgba(0,0,0,0.58)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1)",
@@ -773,8 +1143,23 @@ export function AuthModal({
           flexDirection: "column",
         }}
       >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: "-34% -12% auto",
+            height: 220,
+            background:
+              "radial-gradient(ellipse at top, rgba(124,58,237,0.3) 0%, rgba(255,42,95,0.16) 34%, rgba(8,145,178,0.1) 50%, rgba(7,11,22,0) 74%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+
         {/* Modal Header */}
         <div style={{
+          position: "relative",
+          zIndex: 1,
           padding: isMobileViewport ? "1.05rem 1.2rem 0.9rem" : "1.15rem 1.45rem 0.9rem",
           borderBottom: "1px solid color-mix(in oklab, var(--glass-border) 78%, transparent)",
           display: "flex",
@@ -788,14 +1173,14 @@ export function AuthModal({
               onClick={onClose}
               aria-label="Cerrar"
               style={{
-                background: "transparent", border: "1px solid var(--glass-border)",
+                background: "rgba(255,255,255,0.04)", border: "1px solid var(--glass-border)",
                 borderRadius: "50%", width: 32, height: 32,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", color: "var(--text-muted)",
                 transition: "background 0.2s",
               }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "var(--glass-bg)")}
+              onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
             >
               <X size={15} />
             </button>
@@ -803,17 +1188,22 @@ export function AuthModal({
         </div>
 
         {/* Modal Content */}
-        <div style={{ padding: isMobileViewport ? "1.15rem 1.2rem 1.25rem" : "1.45rem 1.45rem 1.55rem", flex: 1 }}>
+        <div style={{ position: "relative", zIndex: 1, padding: isMobileViewport ? "1.15rem 1.2rem 1.25rem" : "1.45rem 1.45rem 1.55rem", flex: 1 }}>
           {step === "email" && (
             <EmailStep
-              onLogin={(e) => { setEmail(e); setStep("login"); }}
-              onRegister={(e) => { setEmail(e); setStep("register"); }}
+              onContinue={handleEmailContinue}
+              onPasskey={handlePasskeySignIn}
+              pending={resolvingEmail}
+              passkeyPending={passkeyPending}
+              notice={emailNotice}
+              error={emailError}
             />
           )}
           {step === "login" && (
             <LoginStep
               email={email}
               onBack={() => setStep("email")}
+              onCreateAccount={() => setStep("register")}
               onSuccess={handleLoginSuccess}
               onTwoFactor={handleTwoFactor}
             />
