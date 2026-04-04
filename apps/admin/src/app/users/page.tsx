@@ -354,7 +354,7 @@ export default function UsersPage() {
             </CardTitle>
             <CardDescription>Alta manual para operaciones, soporte o cuentas de prueba internas.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <Input
               placeholder="correo@empresa.com"
               value={newEmail}

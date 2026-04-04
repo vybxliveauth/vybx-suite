@@ -564,7 +564,7 @@ export default function RefundsPage() {
                           return Array.from(current);
                         });
                       }}
-                      className="size-4 accent-blue-500"
+                      className="size-4 accent-primary"
                     />
                   </TableHead>
                   <TableHead>Evento / Tier</TableHead>
@@ -620,7 +620,7 @@ export default function RefundsPage() {
                                 return prev.filter((id) => id !== r.id);
                               });
                             }}
-                            className="size-4 accent-blue-500"
+                            className="size-4 accent-primary"
                           />
                         </TableCell>
                         <TableCell>

@@ -303,7 +303,7 @@ export default function NewEventPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="date">Fecha *</Label>
                 <Input id="date" type="date" {...register("date")} />
@@ -355,7 +355,7 @@ export default function NewEventPage() {
             {fields.map((field, i) => (
               <div key={field.id}>
                 {i > 0 && <Separator className="mb-4" />}
-                <div className="grid grid-cols-[1fr_100px_100px_auto] gap-3 items-end">
+                <div className="grid grid-cols-2 sm:grid-cols-[1fr_100px_100px_auto] gap-3 items-end">
                   <div className="space-y-1.5">
                     <Label>Nombre</Label>
                     <Input placeholder="General, VIP..." {...register(`tiers.${i}.name`)} />
@@ -391,7 +391,7 @@ export default function NewEventPage() {
         </Card>
 
         {serverError && (
-          <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
+          <p className="text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3">
             {serverError}
           </p>
         )}

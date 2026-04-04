@@ -288,7 +288,7 @@ export default function EventDetailPage() {
               </div>
             )}
             {analytics && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   { label: "Ingresos", value: fmtCurrency(analytics.grossRevenue), icon: TrendingUp, color: "text-primary" },
                   { label: "Vendidos", value: `${totalSold} / ${totalCapacity}`, icon: Ticket, color: "text-cyan-400" },

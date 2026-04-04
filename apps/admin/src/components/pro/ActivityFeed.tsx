@@ -60,7 +60,7 @@ export function ActivityFeed({
         <CardTitle className="text-base flex items-center gap-2">
           <Radio className="size-4 text-primary" /> Activity Feed
         </CardTitle>
-        <span className="text-[11px] text-emerald-400">Live (polling)</span>
+        <span className="text-xs text-emerald-400">Live (polling)</span>
       </CardHeader>
       <CardContent className="space-y-2">
         <AnimatePresence initial={false}>
@@ -83,7 +83,7 @@ export function ActivityFeed({
                 <p className="text-sm font-medium truncate">{item.title}</p>
                 <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
               </div>
-              <span className="text-[11px] text-muted-foreground shrink-0">
+              <span className="text-xs text-muted-foreground shrink-0">
                 {new Date(item.at).toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" })}
               </span>
             </motion.div>

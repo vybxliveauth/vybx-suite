@@ -245,7 +245,7 @@ export default function CategoriesPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           <Card className="kpi-card">
             <CardHeader className="pb-2">
               <CardDescription>Total</CardDescription>
@@ -274,7 +274,7 @@ export default function CategoriesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreateCategory} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <form onSubmit={handleCreateCategory} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
               <div className="space-y-1.5 md:col-span-2">
                 <Label htmlFor="category-name">Nombre *</Label>
                 <Input

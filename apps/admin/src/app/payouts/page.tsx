@@ -131,7 +131,7 @@ export default function PayoutsPage() {
             aria-label="Seleccionar todos"
             checked={table.getIsAllPageRowsSelected()}
             onChange={table.getToggleAllPageRowsSelectedHandler()}
-            className="size-4 accent-blue-500"
+            className="size-4 accent-primary"
           />
         ),
         cell: ({ row }) => (
@@ -140,7 +140,7 @@ export default function PayoutsPage() {
             aria-label="Seleccionar fila"
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
-            className="size-4 accent-blue-500"
+            className="size-4 accent-primary"
           />
         ),
       },
@@ -552,8 +552,8 @@ export default function PayoutsPage() {
         </Card>
 
         {payoutQuery.isLoading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-4 animate-spin" /> Cargando liquidaciones...
+          <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
+            <Loader2 className="size-5 animate-spin" /> Cargando liquidaciones...
           </div>
         ) : (
           <ProDataTable

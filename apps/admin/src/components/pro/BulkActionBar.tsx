@@ -25,7 +25,7 @@ export function BulkActionBar({ selectedCount, actions, onClear }: BulkActionBar
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-4 left-1/2 z-40 w-[min(92vw,920px)] -translate-x-1/2 rounded-xl border border-white/10 bg-[#071024]/95 px-4 py-3 shadow-2xl backdrop-blur"
+          className="fixed bottom-4 left-1/2 z-40 w-[min(92vw,920px)] -translate-x-1/2 rounded-xl border border-border/60 bg-background/95 px-4 py-3 shadow-2xl backdrop-blur"
         >
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <p className="text-sm">

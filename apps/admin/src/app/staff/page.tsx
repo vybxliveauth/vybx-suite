@@ -324,7 +324,7 @@ export default function StaffPage() {
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="hidden md:table-cell">Asignado por</TableHead>
-                  <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                  <TableHead className="hidden sm:table-cell">Fecha</TableHead>
                   <TableHead className="text-right">Acción</TableHead>
                 </TableRow>
               </TableHeader>
@@ -370,7 +370,7 @@ export default function StaffPage() {
                       <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                         {displayName(a.createdBy)}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
                         {fmtDate(a.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">

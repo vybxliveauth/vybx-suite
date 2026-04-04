@@ -56,7 +56,7 @@ export function AuditTimeline({ title = "Audit Logs", items }: { title?: string;
                 <p className="text-xs text-muted-foreground mt-0.5">
                   <span className="font-medium text-foreground/90">{item.actor}</span> · {item.target}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {new Date(item.at).toLocaleString("es-DO", {
                     day: "2-digit",
                     month: "short",

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function PrivacyPage() {
   return (
-    <main style={{ maxWidth: 840, margin: "0 auto", padding: "5rem 5% 6rem" }}>
+    <main style={{ maxWidth: 840, margin: "0 auto", padding: "5rem var(--page-inline) 6rem" }}>
       <Link href="/" className="btn-secondary" style={{ textDecoration: "none", marginBottom: "1.5rem" }}>
         Volver al inicio
       </Link>

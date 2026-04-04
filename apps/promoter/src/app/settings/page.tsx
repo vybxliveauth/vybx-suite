@@ -149,7 +149,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="firstName">Nombre</Label>
                   <Input id="firstName" {...profileForm.register("firstName")} />

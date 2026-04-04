@@ -302,7 +302,7 @@ export default function EditEventPage() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="date">Fecha *</Label>
                 <Input id="date" type="date" {...register("date")} />
@@ -396,7 +396,7 @@ export default function EditEventPage() {
                         {sold} boletos vendidos — la cantidad no puede bajar de {sold}.
                       </div>
                     )}
-                    <div className="grid grid-cols-[1fr_100px_120px_auto] gap-3 items-end">
+                    <div className="grid grid-cols-2 sm:grid-cols-[1fr_100px_120px_auto] gap-3 items-end">
                       <div className="space-y-1.5">
                         <Label>Nombre</Label>
                         <Input placeholder="General, VIP…" {...register(`tiers.${i}.name`)} />
@@ -472,7 +472,7 @@ export default function EditEventPage() {
 
         {/* Server error */}
         {serverError && (
-          <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2.5">
+          <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3">
             <AlertTriangle className="size-4 mt-0.5 shrink-0" />
             {serverError}
           </div>

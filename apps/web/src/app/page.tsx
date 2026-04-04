@@ -242,7 +242,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "6rem 5% 4rem",
+      padding: "6rem var(--page-inline) 4rem",
       overflow: "hidden",
       textAlign: "center",
     }}>

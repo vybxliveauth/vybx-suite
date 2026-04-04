@@ -98,7 +98,7 @@ export default function EventsPage() {
             aria-label="Seleccionar todos"
             checked={table.getIsAllPageRowsSelected()}
             onChange={table.getToggleAllPageRowsSelectedHandler()}
-            className="size-4 accent-blue-500"
+            className="size-4 accent-primary"
           />
         ),
         cell: ({ row }) => (
@@ -107,7 +107,7 @@ export default function EventsPage() {
             aria-label="Seleccionar fila"
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
-            className="size-4 accent-blue-500"
+            className="size-4 accent-primary"
           />
         ),
       },
@@ -386,7 +386,7 @@ export default function EventsPage() {
 
   return (
     <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Eventos" }]} />}>
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl font-semibold">Oversight de Eventos</h1>

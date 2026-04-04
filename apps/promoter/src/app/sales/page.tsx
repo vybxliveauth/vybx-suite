@@ -93,24 +93,24 @@ export default function SalesPage() {
                     <stop offset="95%" stopColor="hsl(262.1 83.3% 57.8%)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 27.9% 16.9%)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tickFormatter={fmtDate}
-                  tick={{ fontSize: 11, fill: "hsl(240 5% 64.9%)" }}
+                  tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
                   axisLine={false} tickLine={false}
                 />
                 <YAxis
                   tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: "hsl(240 5% 64.9%)" }}
+                  tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
                   axisLine={false} tickLine={false} width={42}
                 />
                 <Tooltip
                   formatter={(v: number) => [fmtCurrency(v), "Ingresos"]}
                   labelFormatter={fmtDate}
                   contentStyle={{
-                    background: "rgba(20,20,25,0.9)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    background: "hsl(224 71.4% 6%)",
+                    border: "1px solid hsl(215 27.9% 16.9%)",
                     borderRadius: "0.5rem",
                     fontSize: 12,
                   }}

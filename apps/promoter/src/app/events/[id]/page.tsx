@@ -109,7 +109,7 @@ function OccupancyBar({ value, max, label }: { value: number; max: number; label
           style={{ width: `${pct}%`, background: color, height: "100%", borderRadius: 9999, transition: "width 0.6s ease" }}
         />
       </div>
-      <p className="text-right text-[11px] text-muted-foreground">{pct}% ocupado</p>
+      <p className="text-right text-xs text-muted-foreground">{pct}% ocupado</p>
     </div>
   );
 }
@@ -223,7 +223,7 @@ export default function EventDetailPage() {
               {event.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {event.tags.map((tag) => (
-                    <span key={tag} className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-white/20 text-white/70 bg-white/5">
+                    <span key={tag} className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-white/20 text-white/70 bg-white/5">
                       <Tag className="size-2.5" />{tag}
                     </span>
                   ))}
@@ -283,7 +283,7 @@ export default function EventDetailPage() {
 
             {/* KPI cards */}
             {analytics && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {[
                   { label: "Ingresos", value: fmtCurrency(analytics.grossRevenue), icon: TrendingUp, color: "text-primary" },
                   { label: "Vendidos", value: `${totalSold} / ${totalCapacity}`, icon: Ticket, color: "text-cyan-400" },
@@ -292,7 +292,7 @@ export default function EventDetailPage() {
                 ].map(({ label, value, icon: Icon, color }) => (
                   <Card key={label}>
                     <CardHeader className="pb-1 flex flex-row items-center justify-between">
-                      <CardTitle className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</CardTitle>
+                      <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</CardTitle>
                       <Icon className={`size-3.5 ${color}`} />
                     </CardHeader>
                     <CardContent>
@@ -420,7 +420,7 @@ export default function EventDetailPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm">Reembolsos</CardTitle>
                     {analytics.refundSummary.pending > 0 && (
-                      <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-[11px]">
+                      <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-xs">
                         {analytics.refundSummary.pending} pendientes
                       </Badge>
                     )}
@@ -470,7 +470,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Estado</span>
-                  <Badge variant={st.variant} className="text-[11px]">{st.label}</Badge>
+                  <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Visibilidad</span>

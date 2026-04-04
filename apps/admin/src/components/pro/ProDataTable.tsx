@@ -75,7 +75,7 @@ export function ProDataTable<TData>({
         className="max-w-sm"
       />
 
-      <div className="rounded-xl border border-white/10 overflow-x-auto">
+      <div className="rounded-xl border border-border/60 overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

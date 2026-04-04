@@ -81,7 +81,7 @@ export default function EventsPage() {
         </div>
 
         <Card>
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 overflow-x-auto">
             <div className="relative mb-4 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input

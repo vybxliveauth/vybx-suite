@@ -174,7 +174,7 @@ export default function PromotersPage() {
             aria-label="Seleccionar todos"
             checked={table.getIsAllPageRowsSelected()}
             onChange={table.getToggleAllPageRowsSelectedHandler()}
-            className="size-4 accent-blue-500"
+            className="size-4 accent-primary"
           />
         ),
         cell: ({ row }) => (
@@ -183,7 +183,7 @@ export default function PromotersPage() {
             aria-label="Seleccionar fila"
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
-            className="size-4 accent-blue-500"
+            className="size-4 accent-primary"
           />
         ),
       },
@@ -462,7 +462,7 @@ export default function PromotersPage() {
             Error al cargar promotores: {(pendingQuery.error ?? rejectedQuery.error ?? approvedQuery.error) instanceof Error ? (pendingQuery.error ?? rejectedQuery.error ?? approvedQuery.error)?.message : "No se pudo conectar con el servidor."}
           </div>
         )}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="kpi-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -519,8 +519,8 @@ export default function PromotersPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
-            <Loader2 className="size-4 animate-spin" /> Cargando solicitudes...
+          <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
+            <Loader2 className="size-5 animate-spin" /> Cargando solicitudes...
           </div>
         ) : (
           <ProDataTable

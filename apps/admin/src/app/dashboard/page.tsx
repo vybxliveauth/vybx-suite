@@ -209,9 +209,9 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="kpi-card">
-            <CardHeader className="pb-1">
+            <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Wallet className="size-3.5 text-primary" /> GMV
+                <Wallet className="size-4 text-primary" /> GMV
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -226,9 +226,9 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="kpi-card">
-            <CardHeader className="pb-1">
+            <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Activity className="size-3.5 text-primary" /> Comision Vybe
+                <Activity className="size-4 text-primary" /> Comision Vybe
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -240,9 +240,9 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="kpi-card">
-            <CardHeader className="pb-1">
+            <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Ticket className="size-3.5 text-primary" /> Tickets vendidos hoy
+                <Ticket className="size-4 text-primary" /> Tickets vendidos hoy
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -257,9 +257,9 @@ export default function DashboardPage() {
           </Card>
 
           <Card className="kpi-card">
-            <CardHeader className="pb-1">
+            <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <RotateCcw className="size-3.5 text-primary" /> Tasa devoluciones
+                <RotateCcw className="size-4 text-primary" /> Tasa devoluciones
               </CardTitle>
             </CardHeader>
             <CardContent>

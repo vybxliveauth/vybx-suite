@@ -118,7 +118,7 @@ export default function RefundsPage() {
 
         {/* Error */}
         {actionError && (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {actionError}
           </div>
         )}
@@ -162,8 +162,8 @@ export default function RefundsPage() {
                 <TableRow>
                   <TableHead>Evento / Tier</TableHead>
                   <TableHead>Comprador</TableHead>
-                  <TableHead className="hidden md:table-cell">Monto</TableHead>
-                  <TableHead className="hidden sm:table-cell">Fecha</TableHead>
+                  <TableHead className="hidden sm:table-cell">Monto</TableHead>
+                  <TableHead className="hidden md:table-cell">Fecha</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
@@ -204,10 +204,10 @@ export default function RefundsPage() {
                           <p className="text-sm">{buyerName}</p>
                           <p className="text-xs text-muted-foreground">{r.requester.email}</p>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell font-semibold text-sm">
+                        <TableCell className="hidden sm:table-cell font-semibold text-sm">
                           {fmtCurrency(r.ticket.ticketType.price)}
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                        <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                           {fmtDate(r.requestedAt ?? r.createdAt)}
                         </TableCell>
                         <TableCell>
