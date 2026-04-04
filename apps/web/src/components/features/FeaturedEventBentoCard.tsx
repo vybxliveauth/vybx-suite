@@ -76,21 +76,44 @@ export function FeaturedEventBentoCard({
           />
 
           <div
-            className={cn(
-              "absolute left-4 top-4 z-30 inline-flex max-w-[70%] items-center gap-2.5 whitespace-nowrap rounded-full border px-4.5 py-2 text-[0.74rem] font-extrabold tracking-[0.03em] text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-md",
-              isTrending
-                ? "border-rose-300/65 bg-[linear-gradient(135deg,rgba(255,42,95,0.97),rgba(225,29,72,0.9))]"
-                : "border-fuchsia-300/60 bg-[linear-gradient(135deg,rgba(124,58,237,0.94),rgba(236,72,153,0.88))]",
-            )}
+            style={{
+              position: "absolute",
+              top: 14,
+              left: 14,
+              zIndex: 30,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.3rem",
+              borderRadius: "var(--radius-pill)",
+              fontSize: "0.64rem",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              padding: "0.28rem 0.64rem",
+              fontWeight: 800,
+              color: "#fff",
+              background: isTrending
+                ? "linear-gradient(120deg, rgba(249,115,22,0.93), rgba(244,63,94,0.88))"
+                : "linear-gradient(120deg, rgba(255,42,95,0.96), rgba(124,58,237,0.9))",
+              border: isTrending
+                ? "1px solid rgba(253,186,116,0.56)"
+                : "1px solid rgba(255,141,179,0.62)",
+              boxShadow: isTrending
+                ? "0 8px 20px rgba(249,115,22,0.28)"
+                : "0 8px 20px rgba(255,42,95,0.34)",
+              maxWidth: "66%",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
           >
             {isTrending ? (
               <>
-                <Flame className="size-3.5" />
+                <Flame size={10} />
                 Top ventas
               </>
             ) : (
               <>
-                <Star className="size-3.5 fill-current" />
+                <Star size={10} fill="currentColor" />
                 Destacado
               </>
             )}
