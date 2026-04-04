@@ -34,6 +34,7 @@ import {
   Globe,
   KeyRound,
   Sparkles,
+  CircleHelp,
 } from "lucide-react";
 
 const API_BASE_URL = resolveApiBaseUrl(
@@ -327,12 +328,13 @@ function EmailStep({
   notice: string | null;
   error: string | null;
 }) {
+  const [showPasskeyGuide, setShowPasskeyGuide] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<EmailFields>({
     resolver: zodResolver(emailSchema),
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div>
         <span style={{
           display: "inline-flex",
@@ -350,13 +352,22 @@ function EmailStep({
           marginBottom: "0.7rem",
         }}>
           <Sparkles size={12} />
-          Secure Access
+          Smart Login
         </span>
-        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.3rem" }}>
-          Bienvenido a vybx
+        <h2 style={{
+          fontFamily: "var(--font-heading)",
+          fontSize: "1.45rem",
+          fontWeight: 900,
+          color: "var(--text-light)",
+          marginBottom: "0.45rem",
+          letterSpacing: "-0.03em",
+          textTransform: "uppercase",
+          lineHeight: 1.1,
+        }}>
+          Inicia sesión o crea tu cuenta
         </h2>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-          Escribe tu correo y te llevamos al siguiente paso automáticamente.
+        <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineHeight: 1.6 }}>
+          Si tu correo ya está registrado te pediremos la contraseña. Si no, te llevamos directo a crear tu cuenta.
         </p>
       </div>
 
@@ -379,7 +390,14 @@ function EmailStep({
           type="submit"
           disabled={pending || passkeyPending}
           className="btn-primary"
-          style={{ justifyContent: "center", padding: "0.85rem", width: "100%", fontSize: "0.95rem", gap: "0.5rem" }}
+          style={{
+            justifyContent: "center",
+            padding: "0.88rem",
+            width: "100%",
+            fontSize: "0.94rem",
+            letterSpacing: "0.01em",
+            gap: "0.5rem",
+          }}
         >
           {pending
             ? <><Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Validando...</>
@@ -387,18 +405,24 @@ function EmailStep({
         </button>
       </form>
 
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.08rem" }}>
+        <div style={{ flex: 1, height: 1, background: "color-mix(in oklab, var(--glass-border) 80%, transparent)" }} />
+        <span style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)" }}>OR</span>
+        <div style={{ flex: 1, height: 1, background: "color-mix(in oklab, var(--glass-border) 80%, transparent)" }} />
+      </div>
+
       <button
         type="button"
         onClick={handleSubmit((d) => onPasskey(d.email))}
         disabled={pending || passkeyPending}
         style={{
           width: "100%",
-          padding: "0.72rem 0.95rem",
+          padding: "0.78rem 0.95rem",
           borderRadius: "var(--radius-lg)",
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid color-mix(in oklab, var(--glass-border) 82%, transparent)",
+          background: "color-mix(in oklab, var(--input-surface) 65%, transparent)",
+          border: "1px solid color-mix(in oklab, var(--glass-border) 85%, transparent)",
           color: "var(--text-light)",
-          fontSize: "0.86rem",
+          fontSize: "0.9rem",
           fontWeight: 700,
           cursor: "pointer",
           display: "inline-flex",
@@ -412,18 +436,89 @@ function EmailStep({
           : <><KeyRound size={15} /> Sign in with Passkey</>}
       </button>
 
-      {notice && (
-        <p style={{ margin: 0, fontSize: "0.78rem", color: "#bfdbfe", lineHeight: 1.45 }}>{notice}</p>
-      )}
-      {error && (
-        <p style={{ margin: 0, fontSize: "0.78rem", color: "#fda4af", lineHeight: 1.45 }}>{error}</p>
+      <button
+        type="button"
+        onClick={() => setShowPasskeyGuide((prev) => !prev)}
+        style={{
+          width: "fit-content",
+          margin: "0 auto",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          color: "var(--accent-secondary)",
+          fontSize: "0.83rem",
+          fontWeight: 700,
+          textDecoration: "underline",
+          textUnderlineOffset: "3px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.35rem",
+        }}
+      >
+        <CircleHelp size={14} />
+        {showPasskeyGuide ? "Ocultar guía de passkey" : "Cómo agregar una passkey"}
+      </button>
+
+      {showPasskeyGuide && (
+        <div style={{
+          border: "1px solid color-mix(in oklab, var(--glass-border) 84%, transparent)",
+          background: "rgba(255,255,255,0.03)",
+          borderRadius: "var(--radius-lg)",
+          padding: "0.72rem 0.82rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.42rem",
+        }}>
+          <p style={{ margin: 0, fontSize: "0.78rem", fontWeight: 700, color: "var(--text-light)" }}>
+            Activarla toma menos de 1 minuto:
+          </p>
+          <p style={{ margin: 0, fontSize: "0.76rem", color: "var(--text-muted)", lineHeight: 1.45 }}>
+            1. Entra con contraseña.
+          </p>
+          <p style={{ margin: 0, fontSize: "0.76rem", color: "var(--text-muted)", lineHeight: 1.45 }}>
+            2. Ve a Perfil y Seguridad.
+          </p>
+          <p style={{ margin: 0, fontSize: "0.76rem", color: "var(--text-muted)", lineHeight: 1.45 }}>
+            3. Elige “Agregar passkey” y confirma con biometría o PIN.
+          </p>
+        </div>
       )}
 
-      <p style={{ textAlign: "center", fontSize: "0.72rem", color: "var(--text-muted)", lineHeight: 1.5, marginTop: "-0.15rem" }}>
-        Al continuar aceptas nuestros{" "}
+      {notice && (
+        <p style={{
+          margin: 0,
+          fontSize: "0.78rem",
+          color: "#bfdbfe",
+          lineHeight: 1.45,
+          border: "1px solid rgba(125,211,252,0.26)",
+          background: "rgba(14,116,144,0.15)",
+          borderRadius: "var(--radius-md)",
+          padding: "0.52rem 0.62rem",
+        }}>
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p style={{
+          margin: 0,
+          fontSize: "0.78rem",
+          color: "#fda4af",
+          lineHeight: 1.45,
+          border: "1px solid rgba(244,63,94,0.35)",
+          background: "rgba(244,63,94,0.12)",
+          borderRadius: "var(--radius-md)",
+          padding: "0.52rem 0.62rem",
+        }}>
+          {error}
+        </p>
+      )}
+
+      <p style={{ textAlign: "left", fontSize: "0.73rem", color: "var(--text-muted)", lineHeight: 1.52, marginTop: "0.1rem" }}>
+        Al continuar, reconoces que leíste y aceptas nuestros{" "}
         <Link href="/terminos" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Términos</Link>
         {" "}y{" "}
         <Link href="/privacidad" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Política de privacidad</Link>
+        . También podremos enviarte novedades y promociones; puedes desactivarlas cuando quieras.
       </p>
     </div>
   );
