@@ -164,9 +164,6 @@ type PasswordValues = z.infer<typeof passwordSchema>;
 export default function SettingsPage() {
   const user = useAuthUser();
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
-  // Keep operation controls interactive even when auth hydration lags.
-  // Authorization still happens server-side in /config/ops.
-  const canManageGlobalOps = true;
 
   const [profileSaved, setProfileSaved] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
@@ -729,7 +726,7 @@ export default function SettingsPage() {
               <Switch
                 checked={maintenanceMode}
                 onCheckedChange={setMaintenanceMode}
-                disabled={!canManageGlobalOps}
+                disabled={opsSaving}
               />
             </div>
 
@@ -743,7 +740,7 @@ export default function SettingsPage() {
               <Switch
                 checked={waitingRoomMode}
                 onCheckedChange={setWaitingRoomMode}
-                disabled={!canManageGlobalOps}
+                disabled={opsSaving}
               />
             </div>
 
@@ -757,7 +754,7 @@ export default function SettingsPage() {
               <Switch
                 checked={opsAlertsEnabled}
                 onCheckedChange={setOpsAlertsEnabled}
-                disabled={!canManageGlobalOps}
+                disabled={opsSaving}
               />
             </div>
 
@@ -771,13 +768,11 @@ export default function SettingsPage() {
                 {opsError}
               </p>
             )}
-            {canManageGlobalOps && (
-              <p className="text-xs text-muted-foreground">
-                Auto-guardado activo. Los cambios se aplican automáticamente.
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              Auto-guardado activo. Los cambios se aplican automáticamente.
+            </p>
 
-            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={!canManageGlobalOps || opsSaving}>
+            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={opsSaving}>
               {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               {opsSaving ? "Guardando..." : "Guardar ahora"}
             </Button>

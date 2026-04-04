@@ -1,7 +1,6 @@
 {
   "extends": "@vybx/tsconfig/nextjs.json",
   "compilerOptions": {
-    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
