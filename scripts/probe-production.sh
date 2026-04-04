@@ -65,7 +65,7 @@ echo "[INFO] Probe target promoter: $PROMOTER_BASE_URL"
 echo "[INFO] Probe target admin: $ADMIN_BASE_URL"
 
 check_status "API health" "$API_BASE_URL/health" "200"
-check_status "API public events" "$API_BASE_URL/events?limit=1" "200"
+check_status "API public events" "$API_BASE_URL/api/v1/events?limit=1" "200"
 check_status "Web landing" "$WEB_BASE_URL" "200,301,302,307,308"
 check_status "Promoter landing" "$PROMOTER_BASE_URL" "200,301,302,307,308"
 check_status "Admin landing" "$ADMIN_BASE_URL" "200,301,302,307,308"
