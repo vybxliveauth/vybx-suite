@@ -105,78 +105,58 @@ function getCsrfTokenFromCookie(): string {
 
 async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
   const encoded = encodeURIComponent(email);
-  const candidates = [
-    `/auth/email-intent?email=${encoded}`,
-    `/auth/email-status?email=${encoded}`,
-    `/auth/email-exists?email=${encoded}`,
-    `/auth/check-email?email=${encoded}`,
-    `/auth/lookup-email?email=${encoded}`,
-  ];
 
-  for (const path of candidates) {
-    const getRes = await fetch(`${API_BASE_URL}${path}`, {
-      method: "GET",
+  const res = await fetch(`${API_BASE_URL}/auth/email-intent?email=${encoded}`, {
+    method: "GET",
+    credentials: "include",
+    headers: { Accept: "application/json" },
+  });
+
+  // Endpoint not deployed yet — let caller fall back gracefully.
+  if (res.status === 404) return null;
+
+  // Server only accepts POST — retry with body.
+  if (res.status === 405) {
+    const postRes = await fetch(`${API_BASE_URL}/auth/email-intent`, {
+      method: "POST",
       credentials: "include",
-      headers: { Accept: "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-csrf-token": getCsrfTokenFromCookie(),
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ email }),
     });
-
-    if (getRes.status === 404) continue;
-    if (getRes.status === 405) {
-      const postRes = await fetch(`${API_BASE_URL}${path.split("?")[0]}`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "x-csrf-token": getCsrfTokenFromCookie(),
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ email }),
-      });
-      if (postRes.status === 404 || postRes.status === 405) continue;
-      const postPayload = await postRes.json().catch(() => null);
-      if (!postRes.ok) {
-        if (postRes.status === 409) return "login";
-        throw new Error(getErrorMessage(postPayload, "No pudimos validar el correo ahora mismo."));
-      }
-      const postData = toRecord(postPayload);
-      if (!postData) continue;
-      const exists = readBooleanKey(postData, ["exists", "registered", "hasAccount", "userExists"]);
-      if (typeof exists === "boolean") return exists ? "login" : "register";
-      if (typeof postData.intent === "string") {
-        const intent = postData.intent.toLowerCase();
-        if (intent.includes("register") || intent.includes("signup")) return "register";
-        if (intent.includes("login") || intent.includes("signin")) return "login";
-      }
-      if (typeof postData.flow === "string") {
-        const flow = postData.flow.toLowerCase();
-        if (flow.includes("register") || flow.includes("signup")) return "register";
-        if (flow.includes("login") || flow.includes("signin")) return "login";
-      }
-      continue;
+    if (postRes.status === 404) return null;
+    if (postRes.status === 409) return "login";
+    const postPayload = await postRes.json().catch(() => null);
+    if (!postRes.ok) {
+      throw new Error(getErrorMessage(postPayload, "No pudimos validar el correo ahora mismo."));
     }
-
-    const payload = await getRes.json().catch(() => null);
-    if (!getRes.ok) {
-      if (getRes.status === 409) return "login";
-      throw new Error(getErrorMessage(payload, "No pudimos validar el correo ahora mismo."));
-    }
-
-    const data = toRecord(payload);
-    if (!data) continue;
-    const exists = readBooleanKey(data, ["exists", "registered", "hasAccount", "userExists"]);
+    const postData = toRecord(postPayload);
+    if (!postData) return null;
+    const exists = readBooleanKey(postData, ["exists", "registered", "hasAccount", "userExists"]);
     if (typeof exists === "boolean") return exists ? "login" : "register";
-    if (typeof data.intent === "string") {
-      const intent = data.intent.toLowerCase();
-      if (intent.includes("register") || intent.includes("signup")) return "register";
-      if (intent.includes("login") || intent.includes("signin")) return "login";
-    }
-    if (typeof data.flow === "string") {
-      const flow = data.flow.toLowerCase();
-      if (flow.includes("register") || flow.includes("signup")) return "register";
-      if (flow.includes("login") || flow.includes("signin")) return "login";
-    }
+    const intent = typeof postData.intent === "string" ? postData.intent.toLowerCase() : "";
+    if (intent.includes("register") || intent.includes("signup")) return "register";
+    if (intent.includes("login") || intent.includes("signin")) return "login";
+    return null;
   }
 
+  if (res.status === 409) return "login";
+
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(getErrorMessage(payload, "No pudimos validar el correo ahora mismo."));
+  }
+
+  const data = toRecord(payload);
+  if (!data) return null;
+  const exists = readBooleanKey(data, ["exists", "registered", "hasAccount", "userExists"]);
+  if (typeof exists === "boolean") return exists ? "login" : "register";
+  const intent = typeof data.intent === "string" ? data.intent.toLowerCase() : "";
+  if (intent.includes("register") || intent.includes("signup")) return "register";
+  if (intent.includes("login") || intent.includes("signin")) return "login";
   return null;
 }
 
@@ -754,10 +734,12 @@ function RegisterStep({
   email,
   onBack,
   onSuccess,
+  onAccountExists,
 }: {
   email: string;
   onBack: () => void;
   onSuccess: (registeredEmail: string) => void;
+  onAccountExists: (existingEmail: string) => void;
 }) {
   const [showPass, setShowPass] = useState(false);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFields>({
@@ -783,9 +765,22 @@ function RegisterStep({
             turnstileToken,
           }),
         });
+        if (res.status === 409) {
+          onAccountExists(email);
+          return uiActionInitialState;
+        }
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          throw new Error(Array.isArray(err.message) ? err.message.join(", ") : err.message ?? "Error al registrar");
+          const message = Array.isArray(err.message) ? err.message.join(", ") : String(err.message ?? "Error al registrar");
+          const normalizedMessage = message.toLowerCase();
+          if (
+            normalizedMessage.includes("ya existe") ||
+            normalizedMessage.includes("already exists")
+          ) {
+            onAccountExists(email);
+            return uiActionInitialState;
+          }
+          throw new Error(message);
         }
         onSuccess(email);
         return actionSuccessState("Revisa tu email para verificar tu cuenta.");
@@ -1426,6 +1421,12 @@ export function AuthModal({
               email={email}
               onBack={() => setStep("email")}
               onSuccess={handleRegisterSuccess}
+              onAccountExists={(existingEmail) => {
+                setEmail(existingEmail);
+                setEmailNotice("Este correo ya tiene cuenta. Ingresa tu contraseña para continuar.");
+                setEmailError(null);
+                setStep("login");
+              }}
             />
           )}
           {step === "verify" && <VerifyStep email={verifiedEmail} />}
