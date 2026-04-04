@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
-import { CalendarDays, Flame, Star } from "lucide-react";
+import { Flame, Star } from "lucide-react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/types";
@@ -31,11 +31,8 @@ export function FeaturedEventBentoCard({
   const startDate = new Date(event.startDate);
   const badgeType = highlight ?? (event.isFeatured ? "featured" : "trending");
   const isTrending = badgeType === "trending" || (event.trendingScore ?? 0) > 0;
-  const dateShort = startDate.toLocaleDateString("es-DO", {
-    day: "2-digit",
-    month: "short",
-  });
-  const dateYear = startDate.getFullYear();
+  const day = startDate.getDate().toString().padStart(2, "0");
+  const month = startDate.toLocaleString("es-DO", { month: "short" }).toUpperCase();
 
   function handleMouseMove(ev: MouseEvent<HTMLAnchorElement>) {
     const rect = ev.currentTarget.getBoundingClientRect();
@@ -78,37 +75,30 @@ export function FeaturedEventBentoCard({
             className="block h-full w-full rounded-[inherit] object-cover transition-transform duration-700 ease-out group-hover:scale-[1.06] [backface-visibility:hidden] [transform:translateZ(0)]"
           />
 
-          <div className="absolute inset-x-4 top-4 z-30 flex items-start gap-2.5">
-            <div
-              className={cn(
-                "inline-flex max-w-[72%] items-center gap-2.5 rounded-full border px-4 py-2 text-[0.72rem] font-extrabold tracking-[0.07em] uppercase text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-md",
-                isTrending
-                  ? "border-orange-300/55 bg-[linear-gradient(135deg,rgba(249,115,22,0.92),rgba(244,63,94,0.86))]"
-                  : "border-rose-300/55 bg-[linear-gradient(135deg,rgba(255,42,95,0.95),rgba(124,58,237,0.88))]",
-              )}
-            >
-              {isTrending ? (
-                <>
-                  <Flame className="size-3.5" />
-                  Top ventas
-                </>
-              ) : (
-                <>
-                  <Star className="size-3.5 fill-current" />
-                  Destacado
-                </>
-              )}
-            </div>
+          <div
+            className={cn(
+              "absolute left-4 top-4 z-30 inline-flex max-w-[70%] items-center gap-2.5 whitespace-nowrap rounded-full border px-4.5 py-2 text-[0.74rem] font-extrabold tracking-[0.03em] text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-md",
+              isTrending
+                ? "border-rose-300/65 bg-[linear-gradient(135deg,rgba(255,42,95,0.97),rgba(225,29,72,0.9))]"
+                : "border-fuchsia-300/60 bg-[linear-gradient(135deg,rgba(124,58,237,0.94),rgba(236,72,153,0.88))]",
+            )}
+          >
+            {isTrending ? (
+              <>
+                <Flame className="size-3.5" />
+                Top ventas
+              </>
+            ) : (
+              <>
+                <Star className="size-3.5 fill-current" />
+                Destacado
+              </>
+            )}
+          </div>
 
-            <div className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/48 bg-[linear-gradient(145deg,rgba(255,255,255,0.2),rgba(15,23,42,0.74))] px-3.5 py-1.5 text-white shadow-[0_10px_24px_rgba(0,0,0,0.45)] backdrop-blur-md">
-              <CalendarDays className="size-3.5 text-white/95" />
-              <span className="text-[0.72rem] font-extrabold tracking-[0.09em] uppercase leading-none">
-                {dateShort}
-              </span>
-              <span className="text-[0.66rem] font-bold text-white/82 leading-none">
-                {dateYear}
-              </span>
-            </div>
+          <div className="date-badge">
+            <span className="day">{day}</span>
+            <span className="month">{month}</span>
           </div>
 
           <div className="absolute bottom-4 left-4 right-4 z-30 md:bottom-5 md:left-5 md:right-5">
