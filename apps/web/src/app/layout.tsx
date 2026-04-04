@@ -95,11 +95,14 @@ type MaintenanceProbe = {
   enabled: boolean;
   source: "ok" | "http_error" | "invalid_payload" | "fetch_error";
   statusCode?: number;
+  baseUrl?: string;
+  detail?: string;
 };
 
 async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
+  const baseUrl = API_BASE_URL;
   try {
-    const response = await fetch(`${API_BASE_URL}/config/MAINTENANCE_MODE`, {
+    const response = await fetch(`${baseUrl}/config/MAINTENANCE_MODE`, {
       cache: "no-store",
       next: { revalidate: 0 },
       headers: {
@@ -110,10 +113,13 @@ async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
     });
 
     if (!response.ok) {
+      const raw = await response.text().catch(() => "");
       return {
         enabled: false,
         source: "http_error",
         statusCode: response.status,
+        baseUrl,
+        detail: raw.slice(0, 120),
       };
     }
     const payload = (await response.json()) as { value?: string | boolean };
@@ -127,11 +133,13 @@ async function getMaintenanceModeProbe(): Promise<MaintenanceProbe> {
       enabled: parseBoolean(payload?.value, false),
       source: "ok",
       statusCode: response.status,
+      baseUrl,
     };
   } catch {
     return {
       enabled: false,
       source: "fetch_error",
+      baseUrl,
     };
   }
 }
@@ -155,6 +163,8 @@ export default async function RootLayout({
         data-maintenance-mode={maintenanceModeEnabled ? "on" : "off"}
         data-maintenance-source={maintenanceProbe.source}
         data-maintenance-status={maintenanceProbe.statusCode ?? "na"}
+        data-maintenance-base={maintenanceProbe.baseUrl ?? "na"}
+        data-maintenance-detail={maintenanceProbe.detail ?? "na"}
       >
         <a
           href="#main-content"
