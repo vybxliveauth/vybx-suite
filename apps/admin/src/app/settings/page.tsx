@@ -741,11 +741,23 @@ export default function SettingsPage() {
                       Si está activo, la plataforma pública entra en modo mantenimiento.
                     </p>
                   </div>
-                  <Switch
-                    checked={maintenanceMode}
-                    onCheckedChange={setMaintenanceMode}
-                    disabled={opsSaving}
-                  />
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={
+                        maintenanceMode
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          : "border-zinc-500/40 bg-zinc-500/10 text-zinc-300"
+                      }
+                    >
+                      {maintenanceMode ? "Activo" : "Inactivo"}
+                    </Badge>
+                    <Switch
+                      checked={maintenanceMode}
+                      onCheckedChange={setMaintenanceMode}
+                      disabled={opsSaving}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
@@ -755,11 +767,23 @@ export default function SettingsPage() {
                       Habilita sala de espera previa para ventanas de tráfico masivo.
                     </p>
                   </div>
-                  <Switch
-                    checked={waitingRoomMode}
-                    onCheckedChange={setWaitingRoomMode}
-                    disabled={opsSaving}
-                  />
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={
+                        waitingRoomMode
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          : "border-zinc-500/40 bg-zinc-500/10 text-zinc-300"
+                      }
+                    >
+                      {waitingRoomMode ? "Activo" : "Inactivo"}
+                    </Badge>
+                    <Switch
+                      checked={waitingRoomMode}
+                      onCheckedChange={setWaitingRoomMode}
+                      disabled={opsSaving}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
@@ -769,11 +793,23 @@ export default function SettingsPage() {
                       Activa o pausa envío de alertas de observabilidad y conciliación.
                     </p>
                   </div>
-                  <Switch
-                    checked={opsAlertsEnabled}
-                    onCheckedChange={setOpsAlertsEnabled}
-                    disabled={opsSaving}
-                  />
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={
+                        opsAlertsEnabled
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                          : "border-zinc-500/40 bg-zinc-500/10 text-zinc-300"
+                      }
+                    >
+                      {opsAlertsEnabled ? "Activo" : "Inactivo"}
+                    </Badge>
+                    <Switch
+                      checked={opsAlertsEnabled}
+                      onCheckedChange={setOpsAlertsEnabled}
+                      disabled={opsSaving}
+                    />
+                  </div>
                 </div>
               </>
             )}
