@@ -261,7 +261,13 @@ export default function SettingsPage() {
     }
   }, [promoters, selectedPromoterId]);
 
+  // Wait for auth hydration before loading config to prevent race conditions
+  // where the api-client and auth-client both try to refresh the token at once.
+  const userReady = user !== null;
+
   useEffect(() => {
+    if (!userReady) return;
+
     setOpsInitialized(false);
     setOpsError(null);
 
@@ -363,7 +369,7 @@ export default function SettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin, platformConfigCacheKey]);
+  }, [userReady, isSuperAdmin, platformConfigCacheKey]);
 
   async function onSaveProfile(values: ProfileValues) {
     setProfileError(null);
@@ -721,47 +727,56 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">Maintenance Mode</p>
-                <p className="text-xs text-muted-foreground">
-                  Si está activo, la plataforma pública entra en modo mantenimiento.
-                </p>
+            {!opsInitialized ? (
+              <div className="flex items-center gap-2 py-6 justify-center text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+                <span className="text-sm">Cargando configuración de operación…</span>
               </div>
-              <Switch
-                checked={maintenanceMode}
-                onCheckedChange={setMaintenanceMode}
-                disabled={opsSaving}
-              />
-            </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Maintenance Mode</p>
+                    <p className="text-xs text-muted-foreground">
+                      Si está activo, la plataforma pública entra en modo mantenimiento.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={maintenanceMode}
+                    onCheckedChange={setMaintenanceMode}
+                    disabled={opsSaving}
+                  />
+                </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">Waiting Room Mode</p>
-                <p className="text-xs text-muted-foreground">
-                  Habilita sala de espera previa para ventanas de tráfico masivo.
-                </p>
-              </div>
-              <Switch
-                checked={waitingRoomMode}
-                onCheckedChange={setWaitingRoomMode}
-                disabled={opsSaving}
-              />
-            </div>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Waiting Room Mode</p>
+                    <p className="text-xs text-muted-foreground">
+                      Habilita sala de espera previa para ventanas de tráfico masivo.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={waitingRoomMode}
+                    onCheckedChange={setWaitingRoomMode}
+                    disabled={opsSaving}
+                  />
+                </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">Alertas Operativas</p>
-                <p className="text-xs text-muted-foreground">
-                  Activa o pausa envío de alertas de observabilidad y conciliación.
-                </p>
-              </div>
-              <Switch
-                checked={opsAlertsEnabled}
-                onCheckedChange={setOpsAlertsEnabled}
-                disabled={opsSaving}
-              />
-            </div>
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-card/40 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Alertas Operativas</p>
+                    <p className="text-xs text-muted-foreground">
+                      Activa o pausa envío de alertas de observabilidad y conciliación.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={opsAlertsEnabled}
+                    onCheckedChange={setOpsAlertsEnabled}
+                    disabled={opsSaving}
+                  />
+                </div>
+              </>
+            )}
 
             {opsNotice && (
               <p className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded px-3 py-2">
@@ -773,11 +788,13 @@ export default function SettingsPage() {
                 {opsError}
               </p>
             )}
-            <p className="text-xs text-muted-foreground">
-              Auto-guardado activo. Los cambios se aplican automáticamente.
-            </p>
+            {opsInitialized && (
+              <p className="text-xs text-muted-foreground">
+                Auto-guardado activo. Los cambios se aplican automáticamente.
+              </p>
+            )}
 
-            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={opsSaving}>
+            <Button size="sm" onClick={() => void saveOperationsSettings()} disabled={opsSaving || !opsInitialized}>
               {opsSaving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
               {opsSaving ? "Guardando..." : "Guardar ahora"}
             </Button>

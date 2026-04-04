@@ -82,8 +82,9 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<UserRole>(assignableRoles[0] ?? "USER");
   const actionDialog = useAdminActionDialog();
 
-  const usersQuery = useUsers(page, USERS_PAGE_SIZE, roleFilter, search);
-  const fraudQuery = useAdminFraudSignals(200, "ALL");
+  const authReady = sessionUser !== null;
+  const usersQuery = useUsers(page, USERS_PAGE_SIZE, roleFilter, search, { enabled: authReady });
+  const fraudQuery = useAdminFraudSignals(200, "ALL", { enabled: authReady });
 
   const createUser = useCreateUser();
   const updateRole = useUpdateUserRole();

@@ -186,7 +186,8 @@ export function useAdminObservability(windowMinutes = 60) {
 
 export function useAdminFraudSignals(
   limit = 80,
-  dimension: "ALL" | "IP" | "USER" | "DEVICE" = "ALL"
+  dimension: "ALL" | "IP" | "USER" | "DEVICE" = "ALL",
+  options?: { enabled?: boolean },
 ) {
   return useQuery({
     queryKey: qk.adminFraudSignals(limit, dimension),
@@ -198,6 +199,7 @@ export function useAdminFraudSignals(
         })}`
       ),
     staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 
@@ -487,7 +489,8 @@ export function useUsers(
   page = 1,
   pageSize = 50,
   role: UserRole | "ALL" = "ALL",
-  q?: string
+  q?: string,
+  options?: { enabled?: boolean },
 ) {
   const normalizedSearch = q?.trim() ?? "";
   return useQuery({
@@ -502,6 +505,7 @@ export function useUsers(
         })}`
       ),
     staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 
