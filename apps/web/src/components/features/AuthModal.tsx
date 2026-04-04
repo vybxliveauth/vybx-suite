@@ -18,6 +18,7 @@ import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/features/PasswordStrengthMeter";
 import { ActionFeedback } from "@vybx/ui";
 import { VybxLogo } from "@/components/ui/VybxLogo";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import {
   X,
@@ -33,7 +34,6 @@ import {
   ArrowLeft,
   Globe,
   KeyRound,
-  Sparkles,
   CircleHelp,
 } from "lucide-react";
 
@@ -320,6 +320,7 @@ function EmailStep({
   passkeyPending,
   notice,
   error,
+  isLightTheme,
 }: {
   onContinue: (email: string) => Promise<void>;
   onPasskey: (email: string) => Promise<void>;
@@ -327,6 +328,7 @@ function EmailStep({
   passkeyPending: boolean;
   notice: string | null;
   error: string | null;
+  isLightTheme: boolean;
 }) {
   const [showPasskeyGuide, setShowPasskeyGuide] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<EmailFields>({
@@ -336,24 +338,6 @@ function EmailStep({
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       <div>
-        <span style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          borderRadius: "9999px",
-          padding: "0.24rem 0.62rem",
-          fontSize: "0.68rem",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          fontWeight: 800,
-          color: "var(--accent-secondary)",
-          background: "rgba(255,42,95,0.12)",
-          border: "1px solid rgba(255,42,95,0.28)",
-          marginBottom: "0.7rem",
-        }}>
-          <Sparkles size={12} />
-          Smart Login
-        </span>
         <h2 style={{
           fontFamily: "var(--font-heading)",
           fontSize: "1.45rem",
@@ -461,8 +445,12 @@ function EmailStep({
 
       {showPasskeyGuide && (
         <div style={{
-          border: "1px solid color-mix(in oklab, var(--glass-border) 84%, transparent)",
-          background: "rgba(255,255,255,0.03)",
+          border: isLightTheme
+            ? "1px solid rgba(15,23,42,0.14)"
+            : "1px solid color-mix(in oklab, var(--glass-border) 84%, transparent)",
+          background: isLightTheme
+            ? "rgba(15,23,42,0.04)"
+            : "rgba(255,255,255,0.03)",
           borderRadius: "var(--radius-lg)",
           padding: "0.72rem 0.82rem",
           display: "flex",
@@ -488,10 +476,10 @@ function EmailStep({
         <p style={{
           margin: 0,
           fontSize: "0.78rem",
-          color: "#bfdbfe",
+          color: isLightTheme ? "#0c4a6e" : "#bfdbfe",
           lineHeight: 1.45,
-          border: "1px solid rgba(125,211,252,0.26)",
-          background: "rgba(14,116,144,0.15)",
+          border: isLightTheme ? "1px solid rgba(2,132,199,0.28)" : "1px solid rgba(125,211,252,0.26)",
+          background: isLightTheme ? "rgba(56,189,248,0.16)" : "rgba(14,116,144,0.15)",
           borderRadius: "var(--radius-md)",
           padding: "0.52rem 0.62rem",
         }}>
@@ -502,10 +490,10 @@ function EmailStep({
         <p style={{
           margin: 0,
           fontSize: "0.78rem",
-          color: "#fda4af",
+          color: isLightTheme ? "#9f1239" : "#fda4af",
           lineHeight: 1.45,
-          border: "1px solid rgba(244,63,94,0.35)",
-          background: "rgba(244,63,94,0.12)",
+          border: isLightTheme ? "1px solid rgba(225,29,72,0.34)" : "1px solid rgba(244,63,94,0.35)",
+          background: isLightTheme ? "rgba(251,113,133,0.14)" : "rgba(244,63,94,0.12)",
           borderRadius: "var(--radius-md)",
           padding: "0.52rem 0.62rem",
         }}>
@@ -974,6 +962,8 @@ export function AuthModal({
   onClose: () => void;
   defaultTab?: "login" | "register";
 }) {
+  const { resolvedTheme } = useTheme();
+  const isLightTheme = resolvedTheme === "light";
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [emailNotice, setEmailNotice] = useState<string | null>(null);
@@ -1196,8 +1186,8 @@ export function AuthModal({
         aria-hidden="true"
         style={{
           position: "fixed", inset: 0, zIndex: 1300,
-          background: "rgba(2,6,23,0.58)",
-          backdropFilter: "blur(7px)",
+          background: isLightTheme ? "rgba(15,23,42,0.28)" : "rgba(2,6,23,0.58)",
+          backdropFilter: isLightTheme ? "blur(5px)" : "blur(7px)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -1223,11 +1213,16 @@ export function AuthModal({
           maxHeight: isMobileViewport
             ? "calc(100dvh - 1rem - env(safe-area-inset-top))"
             : "min(860px, 93dvh)",
-          background:
-            "linear-gradient(160deg, color-mix(in oklab, var(--bg-dark) 90%, transparent), color-mix(in oklab, #070b16 94%, transparent))",
-          border: "1px solid color-mix(in oklab, var(--glass-border) 78%, transparent)",
+          background: isLightTheme
+            ? "linear-gradient(160deg, rgba(255,255,255,0.97), rgba(248,250,252,0.94))"
+            : "linear-gradient(160deg, color-mix(in oklab, var(--bg-dark) 90%, transparent), color-mix(in oklab, var(--bg-fade) 96%, transparent))",
+          border: isLightTheme
+            ? "1px solid rgba(15,23,42,0.14)"
+            : "1px solid color-mix(in oklab, var(--glass-border) 78%, transparent)",
           borderRadius: "var(--radius-2xl)",
-          boxShadow: "0 34px 90px rgba(0,0,0,0.58)",
+          boxShadow: isLightTheme
+            ? "0 22px 60px rgba(15,23,42,0.2)"
+            : "0 34px 90px rgba(0,0,0,0.58)",
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "opacity 0.25s ease, transform 0.35s cubic-bezier(0.16,1,0.3,1)",
@@ -1244,8 +1239,9 @@ export function AuthModal({
             position: "absolute",
             inset: "-34% -12% auto",
             height: 220,
-            background:
-              "radial-gradient(ellipse at top, rgba(124,58,237,0.3) 0%, rgba(255,42,95,0.16) 34%, rgba(8,145,178,0.1) 50%, rgba(7,11,22,0) 74%)",
+            background: isLightTheme
+              ? "radial-gradient(ellipse at top, rgba(109,40,217,0.18) 0%, rgba(225,29,72,0.1) 34%, rgba(8,145,178,0.06) 50%, rgba(248,250,252,0) 74%)"
+              : "radial-gradient(ellipse at top, rgba(124,58,237,0.3) 0%, rgba(255,42,95,0.16) 34%, rgba(8,145,178,0.1) 50%, rgba(7,11,22,0) 74%)",
             pointerEvents: "none",
             zIndex: 0,
           }}
@@ -1268,14 +1264,15 @@ export function AuthModal({
               onClick={onClose}
               aria-label="Cerrar"
               style={{
-                background: "rgba(255,255,255,0.04)", border: "1px solid var(--glass-border)",
+                background: isLightTheme ? "rgba(15,23,42,0.05)" : "rgba(255,255,255,0.04)",
+                border: isLightTheme ? "1px solid rgba(15,23,42,0.14)" : "1px solid var(--glass-border)",
                 borderRadius: "50%", width: 32, height: 32,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", color: "var(--text-muted)",
                 transition: "background 0.2s",
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+              onMouseEnter={e => (e.currentTarget.style.background = isLightTheme ? "rgba(15,23,42,0.1)" : "rgba(255,255,255,0.1)")}
+              onMouseLeave={e => (e.currentTarget.style.background = isLightTheme ? "rgba(15,23,42,0.05)" : "rgba(255,255,255,0.04)")}
             >
               <X size={15} />
             </button>
@@ -1292,6 +1289,7 @@ export function AuthModal({
               passkeyPending={passkeyPending}
               notice={emailNotice}
               error={emailError}
+              isLightTheme={isLightTheme}
             />
           )}
           {step === "login" && (
