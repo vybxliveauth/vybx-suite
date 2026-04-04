@@ -606,6 +606,94 @@ button[aria-disabled='true'] {
   box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2);
 }
 
+/* ─── Unified category segmented bar (desktop) ─────────────────────────────── */
+.events-filter-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 2.5rem;
+  padding: 0.28rem;
+  border-radius: 9999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.events-filter-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.events-filter-segmented .chip-segment {
+  position: relative;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.48rem 0.95rem;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.events-filter-segmented .chip-segment + .chip-segment::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 24%;
+  bottom: 24%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.events-filter-segmented .chip-segment:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: transparent;
+}
+
+.events-filter-segmented .chip-segment.active {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.22),
+    rgba(255, 42, 95, 0.16)
+  );
+  color: var(--text-light);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.24);
+}
+
+[data-theme='light'] .events-filter-segmented {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(15, 23, 42, 0.03);
+}
+
+[data-theme='light']
+  .events-filter-segmented
+  .chip-segment
+  + .chip-segment::before {
+  background: rgba(15, 23, 42, 0.14);
+}
+
+[data-theme='light'] .events-filter-segmented .chip-segment:hover {
+  background: rgba(15, 23, 42, 0.07);
+}
+
+[data-theme='light'] .events-filter-segmented .chip-segment.active {
+  background: linear-gradient(
+    135deg,
+    rgba(109, 40, 217, 0.14),
+    rgba(225, 29, 72, 0.09)
+  );
+  box-shadow: 0 0 0 1px rgba(109, 40, 217, 0.22);
+}
+
 /* ─── Gradient Text ──────────────────────────────────────────────────────────── */
 .gradient-text {
   background: linear-gradient(

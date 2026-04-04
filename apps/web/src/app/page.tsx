@@ -685,9 +685,15 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
         </button>
       </div>
 
-      <div className="events-filter-desktop-row" style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginBottom: "2.5rem" }}>
+      <div className="events-filter-desktop-row events-filter-segmented" role="toolbar" aria-label="Filtros por categoría">
         {categoryOptions.map(({ key, label, icon: Icon }) => (
-          <button key={key} className={`chip ${activeCategory === key ? "active" : ""}`} onClick={() => setActiveCategory(key)}>
+          <button
+            key={key}
+            type="button"
+            className={`chip chip-segment ${activeCategory === key ? "active" : ""}`}
+            onClick={() => setActiveCategory(key)}
+            aria-pressed={activeCategory === key}
+          >
             <Icon size={14} /> {label}
           </button>
         ))}
@@ -835,11 +841,13 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
               {categoryOptions.map(({ key, label, icon: Icon }) => (
                 <button
                   key={`mobile-filter-${key}`}
+                  type="button"
                   className={`chip ${activeCategory === key ? "active" : ""}`}
                   onClick={() => {
                     setActiveCategory(key);
                     setFiltersOpen(false);
                   }}
+                  aria-pressed={activeCategory === key}
                 >
                   <Icon size={14} /> {label}
                 </button>
