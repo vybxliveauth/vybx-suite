@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { MouseEvent } from "react";
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
-import { Flame, Star } from "lucide-react";
+import { CalendarDays, Flame, Star } from "lucide-react";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { cn } from "@/lib/utils";
 import type { Event } from "@/types";
@@ -81,7 +81,7 @@ export function FeaturedEventBentoCard({
           <div className="absolute inset-x-4 top-4 z-30 flex items-start gap-2.5">
             <div
               className={cn(
-                "inline-flex max-w-[64%] items-center gap-2 rounded-full border px-3.5 py-1.5 text-[0.72rem] font-extrabold tracking-[0.09em] uppercase text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-md",
+                "inline-flex max-w-[72%] items-center gap-2.5 rounded-full border px-4 py-2 text-[0.72rem] font-extrabold tracking-[0.07em] uppercase text-white shadow-[0_8px_18px_rgba(0,0,0,0.35)] backdrop-blur-md",
                 isTrending
                   ? "border-orange-300/55 bg-[linear-gradient(135deg,rgba(249,115,22,0.92),rgba(244,63,94,0.86))]"
                   : "border-rose-300/55 bg-[linear-gradient(135deg,rgba(255,42,95,0.95),rgba(124,58,237,0.88))]",
@@ -90,7 +90,7 @@ export function FeaturedEventBentoCard({
               {isTrending ? (
                 <>
                   <Flame className="size-3.5" />
-                  Tendencia
+                  Top ventas
                 </>
               ) : (
                 <>
@@ -100,11 +100,12 @@ export function FeaturedEventBentoCard({
               )}
             </div>
 
-            <div className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/32 bg-[linear-gradient(180deg,rgba(7,9,18,0.78),rgba(7,9,18,0.62))] px-3 py-1.5 text-white shadow-[0_8px_20px_rgba(0,0,0,0.45)] backdrop-blur-md">
-              <span className="text-[0.7rem] font-extrabold tracking-[0.08em] uppercase leading-none">
+            <div className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-white/48 bg-[linear-gradient(145deg,rgba(255,255,255,0.2),rgba(15,23,42,0.74))] px-3.5 py-1.5 text-white shadow-[0_10px_24px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              <CalendarDays className="size-3.5 text-white/95" />
+              <span className="text-[0.72rem] font-extrabold tracking-[0.09em] uppercase leading-none">
                 {dateShort}
               </span>
-              <span className="text-[0.64rem] font-bold text-white/72 leading-none">
+              <span className="text-[0.66rem] font-bold text-white/82 leading-none">
                 {dateYear}
               </span>
             </div>
