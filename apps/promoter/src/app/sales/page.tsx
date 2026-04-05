@@ -106,8 +106,8 @@ export default function SalesPage() {
                   axisLine={false} tickLine={false} width={42}
                 />
                 <Tooltip
-                  formatter={(v: number) => [fmtCurrency(v), "Ingresos"]}
-                  labelFormatter={fmtDate}
+                  formatter={(v) => [fmtCurrency(Number(v ?? 0)), "Ingresos"]}
+                  labelFormatter={(label) => (typeof label === "string" ? fmtDate(label) : String(label ?? ""))}
                   contentStyle={{
                     background: "hsl(224 71.4% 6%)",
                     border: "1px solid hsl(215 27.9% 16.9%)",

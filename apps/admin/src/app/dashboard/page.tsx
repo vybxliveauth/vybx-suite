@@ -293,8 +293,8 @@ export default function DashboardPage() {
                   width={42}
                 />
                 <Tooltip
-                  formatter={(v: number) => [fmtCurrency(v), "Ingresos"]}
-                  labelFormatter={fmtDate}
+                  formatter={(v) => [fmtCurrency(Number(v ?? 0)), "Ingresos"]}
+                  labelFormatter={(label) => (typeof label === "string" ? fmtDate(label) : String(label ?? ""))}
                   contentStyle={{
                     background: CHART_TOOLTIP_BG,
                     border: CHART_TOOLTIP_BORDER,

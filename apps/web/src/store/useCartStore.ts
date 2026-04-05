@@ -116,10 +116,8 @@ export const useCartStore = create<CartStore>()(
               i.tierId === item.tierId && i.eventId === item.eventId
                 ? {
                     ...i,
-                    quantity: Math.min(
-                      i.quantity + item.quantity,
-                      item.quantity // respect maxPerOrder — caller enforces this
-                    ),
+                    // Quantity constraints (stock/max per order) are enforced by caller before addItem.
+                    quantity: i.quantity + item.quantity,
                   }
                 : i
             )

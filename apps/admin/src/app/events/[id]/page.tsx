@@ -334,10 +334,14 @@ export default function EventDetailPage() {
                       />
                       <Tooltip
                         contentStyle={{ background: CHART_TOOLTIP_BG, border: CHART_TOOLTIP_BORDER, borderRadius: "0.5rem", fontSize: 12 }}
-                        formatter={(v: number, name: string) => [
-                          name === "ingresos" ? fmtCurrency(v) : `${v} boletos`,
-                          name === "ingresos" ? "Ingresos" : "Vendidos",
-                        ]}
+                        formatter={(v, name) => {
+                          const numeric = Number(v ?? 0);
+                          const key = String(name ?? "");
+                          return [
+                            key === "ingresos" ? fmtCurrency(numeric) : `${numeric} boletos`,
+                            key === "ingresos" ? "Ingresos" : "Vendidos",
+                          ];
+                        }}
                       />
                       <Bar yAxisId="rev" dataKey="ingresos" radius={[4, 4, 0, 0]} maxBarSize={48}>
                         {chartData.map((entry, i) => (
