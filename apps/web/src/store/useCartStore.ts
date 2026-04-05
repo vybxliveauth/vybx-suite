@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { CartItem, CheckoutSession } from "@/types";
+import { CART_MAX_QUANTITY_PER_TIER } from "@vybx/schemas/checkout";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -116,8 +118,7 @@ export const useCartStore = create<CartStore>()(
               i.tierId === item.tierId && i.eventId === item.eventId
                 ? {
                     ...i,
-                    // Quantity constraints (stock/max per order) are enforced by caller before addItem.
-                    quantity: i.quantity + item.quantity,
+                    quantity: Math.min(i.quantity + item.quantity, CART_MAX_QUANTITY_PER_TIER),
                   }
                 : i
             )
@@ -126,6 +127,11 @@ export const useCartStore = create<CartStore>()(
         const newSession = buildSession(updatedItems);
 
         set({ session: newSession });
+        tracker.track(AnalyticsEvents.CART_ITEM_ADDED, {
+          eventId: item.eventId,
+          tierId: item.tierId,
+          quantity: item.quantity,
+        });
         startTimer();
         return { ok: true };
       },
@@ -144,6 +150,7 @@ export const useCartStore = create<CartStore>()(
         }
 
         set({ session: buildSession(updatedItems) });
+        tracker.track(AnalyticsEvents.CART_ITEM_REMOVED, { tierId, eventId });
       },
 
       updateQuantity: (tierId, eventId, quantity) => {
@@ -155,9 +162,10 @@ export const useCartStore = create<CartStore>()(
           return;
         }
 
+        const clamped = Math.min(quantity, CART_MAX_QUANTITY_PER_TIER);
         const updatedItems = session.items.map((i) =>
           i.tierId === tierId && i.eventId === eventId
-            ? { ...i, quantity }
+            ? { ...i, quantity: clamped }
             : i
         );
 

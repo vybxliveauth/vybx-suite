@@ -33,6 +33,7 @@ import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 import { PasswordStrengthMeter } from "@/components/features/PasswordStrengthMeter";
 import { ActionFeedback } from "@vybx/ui";
 import { API_BASE_URL, getCsrfTokenFromCookie } from "./helpers";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 const emailSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -409,9 +410,11 @@ export function LoginStep({
           onTwoFactor(result.challengeId, result.expiresInSeconds, result.message ?? "");
           return uiActionInitialState;
         }
+        tracker.track(AnalyticsEvents.AUTH_LOGIN_SUCCESS);
         onSuccess(result.user);
         return actionSuccessState("Sesión iniciada.");
       } catch (e) {
+        tracker.track(AnalyticsEvents.AUTH_LOGIN_FAILED);
         return actionErrorState(e, "Credenciales incorrectas");
       }
     },
@@ -651,6 +654,7 @@ export function RegisterStep({
           }
           throw new Error(message);
         }
+        tracker.track(AnalyticsEvents.AUTH_REGISTER_SUCCESS);
         onSuccess(email);
         return actionSuccessState("Revisa tu email para verificar tu cuenta.");
       } catch (e) {

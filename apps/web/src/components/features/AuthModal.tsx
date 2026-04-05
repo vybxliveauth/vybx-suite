@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { fetchProfile, type AuthUser } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { VybxLogo } from "@/components/ui/VybxLogo";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import {
   API_BASE_URL,
   buildPublicKeyRequestOptions,
@@ -52,6 +53,7 @@ export function AuthModal({
 
   useEffect(() => {
     if (open) {
+      tracker.track(AnalyticsEvents.AUTH_MODAL_OPENED);
       setStep(defaultTab === "register" ? "email" : "email");
       setEmail("");
       setEmailNotice(null);

@@ -60,3 +60,40 @@ export const resetPasswordSchema = z
 
 export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+// ─── Passkeys / WebAuthn ─────────────────────────────────────────────────────
+
+export const passkeyRegistrationOptionsRequestSchema = z.object({
+  email: emailSchema,
+});
+
+export const passkeyRegistrationVerifySchema = z.object({
+  email: emailSchema,
+  credential: z.object({
+    id: z.string().min(1),
+    rawId: z.string().min(1),
+    type: z.literal("public-key"),
+    response: z.object({
+      attestationObject: z.string().min(1),
+      clientDataJSON: z.string().min(1),
+    }),
+  }),
+});
+
+export const passkeyAuthenticationVerifySchema = z.object({
+  credential: z.object({
+    id: z.string().min(1),
+    rawId: z.string().min(1),
+    type: z.literal("public-key"),
+    response: z.object({
+      authenticatorData: z.string().min(1),
+      clientDataJSON: z.string().min(1),
+      signature: z.string().min(1),
+      userHandle: z.string().optional(),
+    }),
+  }),
+});
+
+export type PasskeyRegistrationOptionsRequest = z.infer<typeof passkeyRegistrationOptionsRequestSchema>;
+export type PasskeyRegistrationVerify = z.infer<typeof passkeyRegistrationVerifySchema>;
+export type PasskeyAuthenticationVerify = z.infer<typeof passkeyAuthenticationVerifySchema>;

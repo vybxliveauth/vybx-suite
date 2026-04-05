@@ -28,6 +28,11 @@ pnpm-debug.log*
 # misc
 *.tsbuildinfo
 
+# playwright
+playwright-report/
+test-results/
+blob-report/
+
 # lockfiles (pnpm-only)
 package-lock.json
 yarn.lock

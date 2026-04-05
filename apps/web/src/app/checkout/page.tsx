@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCartStore } from "@/store/useCartStore";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import { formatPrice, formatEventDate } from "@/lib/utils";
 import {
   login,
@@ -60,7 +61,7 @@ const buyerSchema = z.object({
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Mínimo 6 caracteres"),
+  password: z.string().min(1, "Requerido"),
 });
 
 type BuyerFields = z.infer<typeof buyerSchema>;
@@ -749,6 +750,7 @@ export default function CheckoutPage() {
   const submitCheckout = async (_data: BuyerFields) => {
     const items = session?.items ?? [];
     if (items.length === 0) return;
+    tracker.track(AnalyticsEvents.CHECKOUT_STARTED);
     setCheckoutError(null);
     const eventId = items[0]?.eventId;
     if (!eventId) {

@@ -320,3 +320,132 @@ export function usePermissionsCore<TUser, TPermission>(
 
   return { user, permissions, can };
 }
+
+// ─── Passkeys / WebAuthn ────────────────────────────────────────────────────
+
+export function isPasskeySupported(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.PublicKeyCredential !== "undefined" &&
+    typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function"
+  );
+}
+
+export async function isPasskeyPlatformAvailable(): Promise<boolean> {
+  if (!isPasskeySupported()) return false;
+  try {
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch {
+    return false;
+  }
+}
+
+function bufferToBase64Url(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlToBuffer(base64url: string): ArrayBuffer {
+  const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+  const binary = atob(padded);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer as ArrayBuffer;
+}
+
+type PublicKeyCreationOptionsJSON = {
+  challenge: string;
+  rp: { name: string; id: string };
+  user: { id: string; name: string; displayName: string };
+  pubKeyCredParams: Array<{ type: "public-key"; alg: number }>;
+  timeout?: number;
+  excludeCredentials?: Array<{ type: "public-key"; id: string }>;
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  attestation?: AttestationConveyancePreference;
+};
+
+type PublicKeyRequestOptionsJSON = {
+  challenge: string;
+  timeout?: number;
+  rpId?: string;
+  allowCredentials?: Array<{ type: "public-key"; id: string }>;
+  userVerification?: UserVerificationRequirement;
+};
+
+export async function createPasskeyCredential(
+  optionsJSON: PublicKeyCreationOptionsJSON,
+) {
+  const publicKey: PublicKeyCredentialCreationOptions = {
+    challenge: base64UrlToBuffer(optionsJSON.challenge),
+    rp: optionsJSON.rp,
+    user: {
+      id: base64UrlToBuffer(optionsJSON.user.id),
+      name: optionsJSON.user.name,
+      displayName: optionsJSON.user.displayName,
+    },
+    pubKeyCredParams: optionsJSON.pubKeyCredParams,
+    timeout: optionsJSON.timeout,
+    excludeCredentials: optionsJSON.excludeCredentials?.map((c) => ({
+      type: c.type,
+      id: base64UrlToBuffer(c.id),
+    })),
+    authenticatorSelection: optionsJSON.authenticatorSelection,
+    attestation: optionsJSON.attestation ?? "none",
+  };
+
+  const credential = (await navigator.credentials.create({
+    publicKey,
+  })) as PublicKeyCredential | null;
+
+  if (!credential) throw new Error("Passkey creation was cancelled");
+
+  const response = credential.response as AuthenticatorAttestationResponse;
+  return {
+    id: credential.id,
+    rawId: bufferToBase64Url(credential.rawId),
+    type: "public-key" as const,
+    response: {
+      attestationObject: bufferToBase64Url(response.attestationObject),
+      clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+    },
+  };
+}
+
+export async function getPasskeyAssertion(
+  optionsJSON: PublicKeyRequestOptionsJSON,
+) {
+  const publicKey: PublicKeyCredentialRequestOptions = {
+    challenge: base64UrlToBuffer(optionsJSON.challenge),
+    timeout: optionsJSON.timeout,
+    rpId: optionsJSON.rpId,
+    allowCredentials: optionsJSON.allowCredentials?.map((c) => ({
+      type: c.type,
+      id: base64UrlToBuffer(c.id),
+    })),
+    userVerification: optionsJSON.userVerification ?? "preferred",
+  };
+
+  const credential = (await navigator.credentials.get({
+    publicKey,
+  })) as PublicKeyCredential | null;
+
+  if (!credential) throw new Error("Passkey authentication was cancelled");
+
+  const response = credential.response as AuthenticatorAssertionResponse;
+  return {
+    id: credential.id,
+    rawId: bufferToBase64Url(credential.rawId),
+    type: "public-key" as const,
+    response: {
+      authenticatorData: bufferToBase64Url(response.authenticatorData),
+      clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+      signature: bufferToBase64Url(response.signature),
+      userHandle: response.userHandle
+        ? bufferToBase64Url(response.userHandle)
+        : undefined,
+    },
+  };
+}

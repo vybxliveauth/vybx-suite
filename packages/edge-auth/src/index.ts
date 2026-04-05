@@ -16,16 +16,28 @@ function decodeBase64Url(input: string): string {
   return atob(padded);
 }
 
-function getRoleFromAccessToken(token: string): string | null {
+type JwtClaims = { role?: unknown; exp?: unknown };
+
+function parseAccessToken(token: string): JwtClaims | null {
   try {
-    const parts = token.split(".");
-    const payloadPart = parts[1];
+    const payloadPart = token.split(".")[1];
     if (!payloadPart) return null;
-    const payload = JSON.parse(decodeBase64Url(payloadPart)) as { role?: unknown };
-    return typeof payload.role === "string" ? payload.role : null;
+    return JSON.parse(decodeBase64Url(payloadPart)) as JwtClaims;
   } catch {
     return null;
   }
+}
+
+function isTokenExpired(claims: JwtClaims): boolean {
+  if (typeof claims.exp !== "number") return false;
+  // 30-second leeway to account for clock skew
+  return claims.exp < Math.floor(Date.now() / 1000) - 30;
+}
+
+function getRoleFromAccessToken(token: string): string | null {
+  const claims = parseAccessToken(token);
+  if (!claims) return null;
+  return typeof claims.role === "string" ? claims.role : null;
 }
 
 function isStaticPath(pathname: string): boolean {
@@ -75,8 +87,13 @@ export function createEdgeAuthMiddleware(options: EdgeAuthMiddlewareOptions = {}
       return buildLoginRedirect(request, pathname, loginPath, nextParamName);
     }
 
+    const claims = parseAccessToken(accessToken);
+    if (!claims || isTokenExpired(claims)) {
+      return buildLoginRedirect(request, pathname, loginPath, nextParamName);
+    }
+
     if (allowedRoles.size > 0) {
-      const role = getRoleFromAccessToken(accessToken);
+      const role = typeof claims.role === "string" ? claims.role : null;
       if (!role || !allowedRoles.has(role)) {
         return buildLoginRedirect(request, pathname, loginPath, nextParamName);
       }
@@ -85,3 +102,5 @@ export function createEdgeAuthMiddleware(options: EdgeAuthMiddlewareOptions = {}
     return NextResponse.next();
   };
 }
+
+export { parseAccessToken, isTokenExpired };

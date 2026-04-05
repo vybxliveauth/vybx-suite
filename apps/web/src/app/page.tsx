@@ -20,6 +20,7 @@ import { MobileNavDrawer } from "@/components/features/MobileNavDrawer";
 import { SearchIllustration, EventsIllustration } from "@/components/features/EmptyStateIllustration";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useAuthStore } from "@/store/useAuthStore";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 function normalizeCategory(value: string): string {
   return value.trim().toLowerCase();
@@ -231,6 +232,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(search);
+    tracker.track(AnalyticsEvents.SEARCH_PERFORMED, { query: search });
     scrollToEvents();
   };
 
@@ -691,7 +693,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             key={key}
             type="button"
             className={`chip chip-segment ${activeCategory === key ? "active" : ""}`}
-            onClick={() => setActiveCategory(key)}
+            onClick={() => { setActiveCategory(key); tracker.track(AnalyticsEvents.CATEGORY_FILTERED, { category: key }); }}
             aria-pressed={activeCategory === key}
           >
             <Icon size={14} /> {label}
