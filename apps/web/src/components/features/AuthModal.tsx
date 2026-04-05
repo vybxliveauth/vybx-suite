@@ -74,8 +74,13 @@ type LoginFields = z.infer<typeof loginSchema>;
 type RegisterFields = z.infer<typeof registerSchema>;
 type ForgotPasswordFields = z.infer<typeof emailSchema>;
 
-type Step = "email" | "login" | "register" | "verify" | "2fa" | "forgot";
+type Step = "email" | "intent" | "login" | "register" | "verify" | "2fa" | "forgot";
 type EmailIntent = "login" | "register";
+type EmailIntentLookupStatus = "resolved" | "unavailable" | "unknown";
+type EmailIntentLookupResult = {
+  status: EmailIntentLookupStatus;
+  intent: EmailIntent | null;
+};
 
 function toRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -86,6 +91,15 @@ function toRecord(value: unknown): Record<string, unknown> | null {
 function readBooleanKey(record: Record<string, unknown>, keys: string[]): boolean | null {
   for (const key of keys) {
     if (typeof record[key] === "boolean") return record[key] as boolean;
+  }
+  return null;
+}
+
+function readStringKey(record: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    if (typeof record[key] === "string" && record[key].trim().length > 0) {
+      return record[key] as string;
+    }
   }
   return null;
 }
@@ -103,7 +117,49 @@ function getCsrfTokenFromCookie(): string {
   return document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/)?.[1] ?? "";
 }
 
-async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
+function parseEmailIntentFromPayload(payload: unknown): EmailIntent | null {
+  const data = toRecord(payload);
+  if (!data) return null;
+
+  const exists = readBooleanKey(data, [
+    "exists",
+    "registered",
+    "hasAccount",
+    "userExists",
+    "emailExists",
+    "isRegistered",
+  ]);
+  if (typeof exists === "boolean") return exists ? "login" : "register";
+
+  const needsPassword = readBooleanKey(data, ["needsPassword", "requirePassword"]);
+  if (needsPassword === true) return "login";
+
+  const needsRegistration = readBooleanKey(data, ["needsRegistration", "requiresSignup"]);
+  if (needsRegistration === true) return "register";
+
+  const intentValue = readStringKey(data, ["intent", "action", "nextStep", "flow", "mode"]);
+  const normalized = intentValue?.toLowerCase() ?? "";
+  if (
+    normalized.includes("register") ||
+    normalized.includes("signup") ||
+    normalized.includes("sign-up") ||
+    normalized.includes("create")
+  ) {
+    return "register";
+  }
+  if (
+    normalized.includes("login") ||
+    normalized.includes("signin") ||
+    normalized.includes("sign-in") ||
+    normalized.includes("password")
+  ) {
+    return "login";
+  }
+
+  return null;
+}
+
+async function lookupEmailIntent(email: string): Promise<EmailIntentLookupResult> {
   const encoded = encodeURIComponent(email);
 
   const res = await fetch(`${API_BASE_URL}/auth/email-intent?email=${encoded}`, {
@@ -112,8 +168,10 @@ async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
     headers: { Accept: "application/json" },
   });
 
-  // Endpoint not deployed yet — let caller fall back gracefully.
-  if (res.status === 404) return null;
+  // Endpoint not deployed yet.
+  if (res.status === 404) {
+    return { status: "unavailable", intent: null };
+  }
 
   // Server only accepts POST — retry with body.
   if (res.status === 405) {
@@ -127,37 +185,38 @@ async function lookupEmailIntent(email: string): Promise<EmailIntent | null> {
       },
       body: JSON.stringify({ email }),
     });
-    if (postRes.status === 404) return null;
-    if (postRes.status === 409) return "login";
+    if (postRes.status === 404) {
+      return { status: "unavailable", intent: null };
+    }
+    if (postRes.status === 409) {
+      return { status: "resolved", intent: "login" };
+    }
     const postPayload = await postRes.json().catch(() => null);
     if (!postRes.ok) {
       throw new Error(getErrorMessage(postPayload, "No pudimos validar el correo ahora mismo."));
     }
-    const postData = toRecord(postPayload);
-    if (!postData) return null;
-    const exists = readBooleanKey(postData, ["exists", "registered", "hasAccount", "userExists"]);
-    if (typeof exists === "boolean") return exists ? "login" : "register";
-    const intent = typeof postData.intent === "string" ? postData.intent.toLowerCase() : "";
-    if (intent.includes("register") || intent.includes("signup")) return "register";
-    if (intent.includes("login") || intent.includes("signin")) return "login";
-    return null;
+    const parsedIntent = parseEmailIntentFromPayload(postPayload);
+    if (parsedIntent) {
+      return { status: "resolved", intent: parsedIntent };
+    }
+    return { status: "unknown", intent: null };
   }
 
-  if (res.status === 409) return "login";
+  if (res.status === 409) {
+    return { status: "resolved", intent: "login" };
+  }
 
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(getErrorMessage(payload, "No pudimos validar el correo ahora mismo."));
   }
 
-  const data = toRecord(payload);
-  if (!data) return null;
-  const exists = readBooleanKey(data, ["exists", "registered", "hasAccount", "userExists"]);
-  if (typeof exists === "boolean") return exists ? "login" : "register";
-  const intent = typeof data.intent === "string" ? data.intent.toLowerCase() : "";
-  if (intent.includes("register") || intent.includes("signup")) return "register";
-  if (intent.includes("login") || intent.includes("signin")) return "login";
-  return null;
+  const parsedIntent = parseEmailIntentFromPayload(payload);
+  if (parsedIntent) {
+    return { status: "resolved", intent: parsedIntent };
+  }
+
+  return { status: "unknown", intent: null };
 }
 
 function decodeBase64Url(value: string): ArrayBuffer {
@@ -501,6 +560,65 @@ function EmailStep({
         <Link href="/privacidad" style={{ color: "var(--accent-secondary)", textDecoration: "none" }}>Política de privacidad</Link>
         . También podremos enviarte novedades y promociones; puedes desactivarlas cuando quieras.
       </p>
+    </div>
+  );
+}
+
+function IntentFallbackStep({
+  email,
+  onBack,
+  onLogin,
+  onRegister,
+}: {
+  email: string;
+  onBack: () => void;
+  onLogin: () => void;
+  onRegister: () => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", padding: 0, marginBottom: "0.75rem" }}
+        >
+          <ArrowLeft size={14} /> Cambiar email
+        </button>
+        <h2 style={{ fontFamily: "var(--font-heading)", fontSize: "1.35rem", fontWeight: 900, color: "var(--text-light)", marginBottom: "0.2rem" }}>
+          Elige cómo continuar
+        </h2>
+        <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", lineHeight: 1.55 }}>
+          No pudimos determinar automáticamente el estado de <strong>{email}</strong>.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onLogin}
+        className="btn-primary"
+        style={{ justifyContent: "center", width: "100%", padding: "0.85rem" }}
+      >
+        Ya tengo cuenta
+      </button>
+
+      <button
+        type="button"
+        onClick={onRegister}
+        style={{
+          width: "100%",
+          padding: "0.78rem 0.95rem",
+          borderRadius: "var(--radius-lg)",
+          background: "color-mix(in oklab, var(--input-surface) 65%, transparent)",
+          border: "1px solid color-mix(in oklab, var(--glass-border) 85%, transparent)",
+          color: "var(--text-light)",
+          fontSize: "0.9rem",
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        Crear cuenta nueva
+      </button>
     </div>
   );
 }
@@ -1170,20 +1288,23 @@ export function AuthModal({
     setResolvingEmail(true);
 
     try {
-      const intent = await lookupEmailIntent(normalizedEmail);
-      if (intent === "register") {
+      const result = await lookupEmailIntent(normalizedEmail);
+      if (result.intent === "register") {
         setEmailNotice("No encontramos una cuenta con ese correo. Te ayudamos a crearla.");
         setStep("register");
         return;
       }
-      if (intent === "login") {
+      if (result.intent === "login") {
         setStep("login");
         return;
       }
 
-      // Backend sin endpoint de lookup: fallback seguro a contraseña.
-      setEmailNotice("Continuemos con tu acceso. Si no tienes cuenta, te la creamos después.");
-      setStep("login");
+      if (result.status === "unavailable") {
+        setEmailNotice("Validación automática no disponible ahora. Elige cómo deseas continuar.");
+      } else {
+        setEmailNotice("No pudimos interpretar la respuesta del correo. Elige cómo deseas continuar.");
+      }
+      setStep("intent");
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : "No pudimos validar el correo.");
     } finally {
@@ -1398,6 +1519,14 @@ export function AuthModal({
               notice={emailNotice}
               error={emailError}
               isLightTheme={isLightTheme}
+            />
+          )}
+          {step === "intent" && (
+            <IntentFallbackStep
+              email={email}
+              onBack={() => setStep("email")}
+              onLogin={() => setStep("login")}
+              onRegister={() => setStep("register")}
             />
           )}
           {step === "login" && (
