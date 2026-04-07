@@ -48,6 +48,7 @@ import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, useDeleteEvent } from "@/lib/queries";
 import type { EventDetail, EventStatus } from "@/lib/types";
+import { EventAnalyticsCharts } from "@/components/features/EventAnalyticsCharts";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtCurrency(n: number) {
@@ -492,6 +493,9 @@ export default function EventDetailPage() {
             </Card>
           </div>
         </div>
+        {/* ── Analytics charts (full width below layout grid) ──────────── */}
+        <EventAnalyticsCharts eventId={id} />
+
       </div>
     </PromoterShell>
   );

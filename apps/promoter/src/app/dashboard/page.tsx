@@ -1,15 +1,30 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
-import { TrendingUp, Ticket, CalendarCheck, ArrowUpRight, AlertCircle, Loader2 } from "lucide-react";
+import {
+  TrendingUp,
+  Ticket,
+  CalendarCheck,
+  ArrowUpRight,
+  AlertCircle,
+  Loader2,
+  MapPin,
+  Clock,
+  ChevronDown,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -20,37 +35,75 @@ import {
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
-import { useDashboard } from "@/lib/queries";
+import { useDashboard, useEvents, useEventCharts } from "@/lib/queries";
 
-// Synthetic 7-day sparkline from grossRevenue
-function buildSparkline(grossRevenue: number) {
-  const weights = [0.066, 0.085, 0.079, 0.116, 0.149, 0.132, 0.102];
-  return weights.map((w, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return {
-      date: d.toISOString().slice(0, 10),
-      revenue: Math.round(grossRevenue * w),
-    };
-  });
-}
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const PURPLE      = "hsl(262.1 83.3% 57.8%)";
+const CYAN        = "#22d3ee";
+const MUTED_CLR   = "hsl(217.9 10.6% 54.9%)";
+const GRID_CLR    = "hsl(215 27.9% 16.9%)";
+const TOOLTIP_STY = {
+  background: "hsl(224 71.4% 6%)",
+  border: `1px solid ${GRID_CLR}`,
+  borderRadius: "0.5rem",
+  fontSize: 12,
+};
+const RANGES = [
+  { label: "7d",  value: 7  },
+  { label: "30d", value: 30 },
+  { label: "90d", value: 90 },
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat("es-MX", {
-    style: "currency",
-    currency: "MXN",
-    maximumFractionDigits: 0,
+    style: "currency", currency: "MXN", maximumFractionDigits: 0,
   }).format(n);
 }
 
-function fmtDate(iso: string) {
+function fmtShortDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-MX", { month: "short", day: "numeric" });
 }
 
-export default function DashboardPage() {
-  const { data, isLoading, isError } = useDashboard();
+function fmtHour(h: number) {
+  const suffix = h < 12 ? "am" : "pm";
+  const d = h % 12 === 0 ? 12 : h % 12;
+  return `${d}${suffix}`;
+}
 
-  if (isLoading) {
+function hourColor(count: number, max: number) {
+  if (max === 0) return MUTED_CLR;
+  const r = count / max;
+  if (r >= 0.75) return "#f43f5e";
+  if (r >= 0.45) return "#f59e0b";
+  return PURPLE;
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
+export default function DashboardPage() {
+  const [days, setDays]           = useState(30);
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
+  const [showEventPicker, setShowEventPicker] = useState(false);
+
+  const { data: dashData, isLoading: dashLoading, isError: dashError } = useDashboard();
+  const { data: eventsData } = useEvents(1, 50);
+
+  // Pick first event with sales by default
+  const events = eventsData?.data ?? [];
+  const activeEventId = selectedEvent ?? events[0]?.id ?? null;
+
+  const { data: charts, isLoading: chartsLoading } = useEventCharts(
+    activeEventId ?? "",
+    days,
+  );
+
+  const activeEventTitle = events.find((e) => e.id === activeEventId)?.title ?? "Selecciona un evento";
+
+  // ── Loading / error states ────────────────────────────────────────────────
+  if (dashLoading) {
     return (
       <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Dashboard" }]} />}>
         <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
@@ -60,7 +113,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (isError || !data) {
+  if (dashError || !dashData) {
     return (
       <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Dashboard" }]} />}>
         <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted-foreground">
@@ -71,8 +124,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { summary, topEvents } = data;
-  const sparkline = buildSparkline(summary.grossRevenue);
+  const { summary, topEvents } = dashData;
 
   const kpis = [
     {
@@ -94,7 +146,7 @@ export default function DashboardPage() {
       sub: `${summary.upcomingEvents} próximos`,
     },
     {
-      label: "Eventos pendientes",
+      label: "Pendientes / Reembolsos",
       value: String(summary.pendingEvents),
       icon: AlertCircle,
       sub:
@@ -104,15 +156,21 @@ export default function DashboardPage() {
     },
   ];
 
+  const maxHour = charts
+    ? Math.max(...charts.ticketsByHour.map((h) => h.count), 0)
+    : 0;
+
   return (
     <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Dashboard" }]} />}>
       <div className="space-y-6">
+
+        {/* Title */}
         <div>
           <h1 className="text-xl font-semibold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Resumen de tus ventas e ingresos</p>
         </div>
 
-        {/* KPI Cards */}
+        {/* ── KPI Cards ──────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {kpis.map(({ label, value, icon: Icon, sub }) => (
             <Card key={label} className="kpi-card">
@@ -126,8 +184,7 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold tabular-nums">{value}</p>
                 {sub && (
                   <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <ArrowUpRight className="size-3" />
-                    {sub}
+                    <ArrowUpRight className="size-3" />{sub}
                   </p>
                 )}
               </CardContent>
@@ -135,77 +192,273 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Revenue sparkline */}
+        {/* ── Event picker + range ────────────────────────────────────────── */}
+        {events.length > 0 && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Event selector */}
+            <div className="relative">
+              <button
+                onClick={() => setShowEventPicker((p) => !p)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/30 text-sm font-medium hover:bg-muted/60 transition-colors max-w-[260px] truncate"
+              >
+                <span className="truncate">{activeEventTitle}</span>
+                <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+              </button>
+              {showEventPicker && (
+                <div className="absolute top-full left-0 mt-1 z-50 w-72 rounded-xl border border-border bg-background shadow-xl overflow-hidden">
+                  <div className="max-h-56 overflow-y-auto p-1">
+                    {events.map((ev) => (
+                      <button
+                        key={ev.id}
+                        onClick={() => { setSelectedEvent(ev.id); setShowEventPicker(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                          ev.id === activeEventId
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "hover:bg-muted/60 text-foreground"
+                        }`}
+                      >
+                        <p className="truncate font-medium">{ev.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(ev.date).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Range selector */}
+            <div className="flex rounded-lg border border-border overflow-hidden text-xs font-medium">
+              {RANGES.map((r) => (
+                <button
+                  key={r.value}
+                  onClick={() => setDays(r.value)}
+                  className={`px-3 py-1.5 transition-colors ${
+                    days === r.value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            {activeEventId && (
+              <Link
+                href={`/events/${activeEventId}`}
+                className="text-xs text-primary hover:underline ml-auto"
+              >
+                Ver evento completo →
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* ── Revenue + Tickets per day ──────────────────────────────────── */}
         <Card>
-          <CardHeader>
-            <CardTitle>Ingresos estimados (últimos 7 días)</CardTitle>
-            <CardDescription>Distribución aproximada de {fmtCurrency(summary.grossRevenue)} en ingresos totales</CardDescription>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="size-4 text-primary" />
+              <CardTitle className="text-sm">Ingresos y boletos por día</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              {activeEventId && charts
+                ? `${fmtCurrency(charts.revenueByDay.reduce((s, d) => s + d.revenue, 0))} en últimos ${days} días`
+                : events.length === 0
+                ? "Crea tu primer evento para ver datos"
+                : "Selecciona un evento"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={sparkline} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(262.1 83.3% 57.8%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(262.1 83.3% 57.8%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 27.9% 16.9%)" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={fmtDate}
-                  tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={42}
-                />
-                <Tooltip
-                  formatter={(v) => [fmtCurrency(Number(v ?? 0)), "Ingresos"]}
-                  labelFormatter={(label) => (typeof label === "string" ? fmtDate(label) : String(label ?? ""))}
-                  contentStyle={{
-                    background: "hsl(224 71.4% 6%)",
-                    border: "1px solid hsl(215 27.9% 16.9%)",
-                    borderRadius: "0.5rem",
-                    fontSize: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(262.1 83.3% 57.8%)"
-                  strokeWidth={2}
-                  fill="url(#revenueGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {chartsLoading ? (
+              <div className="flex items-center justify-center h-[240px] text-muted-foreground gap-2">
+                <Loader2 className="size-4 animate-spin" /> Cargando…
+              </div>
+            ) : charts ? (
+              <>
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={charts.revenueByDay} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="dashRevGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={PURPLE} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={PURPLE} stopOpacity={0}   />
+                      </linearGradient>
+                      <linearGradient id="dashTixGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={CYAN}   stopOpacity={0.25} />
+                        <stop offset="95%" stopColor={CYAN}   stopOpacity={0}    />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={GRID_CLR} />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={fmtShortDate}
+                      tick={{ fontSize: 11, fill: MUTED_CLR }}
+                      axisLine={false} tickLine={false}
+                      interval={days <= 7 ? 0 : days <= 30 ? 4 : 13}
+                    />
+                    <YAxis
+                      yAxisId="rev"
+                      tickFormatter={(v: number) => v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`}
+                      tick={{ fontSize: 11, fill: MUTED_CLR }}
+                      axisLine={false} tickLine={false} width={46}
+                    />
+                    <YAxis
+                      yAxisId="tix"
+                      orientation="right"
+                      tick={{ fontSize: 11, fill: MUTED_CLR }}
+                      axisLine={false} tickLine={false} width={28}
+                    />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STY}
+                      labelFormatter={(l) => typeof l === "string" ? fmtShortDate(l) : String(l)}
+                      formatter={(v, name) => {
+                        const num = Number(v ?? 0);
+                        const key = String(name);
+                        return [key === "revenue" ? fmtCurrency(num) : `${num} boletos`, key === "revenue" ? "Ingresos" : "Boletos"];
+                      }}
+                    />
+                    <Area yAxisId="rev" type="monotone" dataKey="revenue"
+                      stroke={PURPLE} strokeWidth={2} fill="url(#dashRevGrad)" dot={false} />
+                    <Area yAxisId="tix" type="monotone" dataKey="tickets"
+                      stroke={CYAN} strokeWidth={1.5} fill="url(#dashTixGrad)" dot={false} strokeDasharray="4 2" />
+                  </AreaChart>
+                </ResponsiveContainer>
+                <div className="flex gap-5 mt-2 justify-end text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-5 h-0.5 rounded" style={{ background: PURPLE }} /> Ingresos
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-block w-5 border-t border-dashed" style={{ borderColor: CYAN }} /> Boletos
+                  </span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center h-[240px] text-muted-foreground text-sm">
+                Sin datos disponibles
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Top Events */}
+        {/* ── Bottom row: Hour heatmap + Geo ─────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Tickets per hour */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="size-4 text-primary" />
+                <CardTitle className="text-sm">Ventas por hora del día</CardTitle>
+              </div>
+              <CardDescription className="text-xs">Identifica picos de demanda (hora UTC)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartsLoading ? (
+                <div className="flex items-center justify-center h-[160px] text-muted-foreground gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                </div>
+              ) : charts && charts.ticketsByHour.some((h) => h.count > 0) ? (
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={charts.ticketsByHour} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <XAxis
+                      dataKey="hour"
+                      tickFormatter={fmtHour}
+                      tick={{ fontSize: 10, fill: MUTED_CLR }}
+                      axisLine={false} tickLine={false}
+                      interval={2}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: MUTED_CLR }}
+                      axisLine={false} tickLine={false} width={22}
+                    />
+                    <Tooltip
+                      contentStyle={TOOLTIP_STY}
+                      labelFormatter={(h) => `${fmtHour(Number(h))} — ${fmtHour(Number(h) + 1)}`}
+                      formatter={(v) => [`${v} ventas`, "Boletos"]}
+                    />
+                    <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={24}>
+                      {charts.ticketsByHour.map((entry, i) => (
+                        <Cell key={i} fill={hourColor(entry.count, maxHour)} fillOpacity={0.85} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[160px] text-muted-foreground text-xs">
+                  Sin datos en el período
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Geo heat list */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="size-4 text-primary" />
+                <CardTitle className="text-sm">Top ciudades de compradores</CardTitle>
+              </div>
+              <CardDescription className="text-xs">Basado en perfil de usuario</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {chartsLoading ? (
+                <div className="flex items-center justify-center h-[160px] text-muted-foreground gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                </div>
+              ) : charts && charts.topLocations.length > 0 ? (
+                <div className="space-y-2.5 py-1">
+                  {charts.topLocations.slice(0, 7).map(({ location, buyers }, i) => {
+                    const max = charts.topLocations[0]?.buyers ?? 1;
+                    const pct = Math.round((buyers / max) * 100);
+                    const opacity = 0.2 + (pct / 100) * 0.65;
+                    return (
+                      <div key={location} className="flex items-center gap-2.5">
+                        <span className="text-xs text-muted-foreground w-3.5 text-right tabular-nums shrink-0">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-medium truncate">{location}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums ml-2 shrink-0">{buyers}</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                            <div style={{ width: `${pct}%`, height: "100%", borderRadius: 9999, background: `rgba(124,58,237,${opacity})`, transition: "width 0.5s ease" }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-[160px] text-xs text-muted-foreground text-center px-4">
+                  Sin datos geográficos. Los compradores deben completar su perfil de ubicación.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Top Events table ────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
-            <CardTitle>Top eventos</CardTitle>
-            <CardDescription>Por ingresos generados</CardDescription>
+            <CardTitle>Top eventos por ingreso</CardTitle>
+            <CardDescription>Rendimiento global de tus eventos</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {topEvents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Aún no hay eventos con ventas.
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">Aún no hay eventos con ventas.</p>
             ) : (
               topEvents.map((ev, i) => (
-                <div key={ev.eventId} className="flex items-center gap-3">
+                <Link
+                  key={ev.eventId}
+                  href={`/events/${ev.eventId}`}
+                  className="flex items-center gap-3 group rounded-lg px-2 py-1.5 -mx-2 hover:bg-muted/40 transition-colors"
+                >
                   <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{ev.title}</p>
+                    <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{ev.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {ev.soldTickets.toLocaleString("es-MX")} boletos · {ev.successfulPayments} pagos
                     </p>
@@ -213,11 +466,12 @@ export default function DashboardPage() {
                   <Badge variant="secondary" className="shrink-0 font-mono text-xs">
                     {fmtCurrency(ev.revenue)}
                   </Badge>
-                </div>
+                </Link>
               ))
             )}
           </CardContent>
         </Card>
+
       </div>
     </PromoterShell>
   );

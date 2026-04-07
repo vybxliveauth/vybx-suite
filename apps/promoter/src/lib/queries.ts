@@ -6,6 +6,7 @@ import type {
   Event,
   EventDetail,
   EventAnalyticsResponse,
+  EventChartsResponse,
 } from "./types";
 
 // ── Query keys ────────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ export const qk = {
                     ["events", page, pageSize]               as const,
   event:          (id: string) => ["event", id]             as const,
   eventAnalytics: (id: string) => ["event-analytics", id]   as const,
+  eventCharts:    (id: string, days: number) => ["event-charts", id, days] as const,
   categoriesActive: ["categories", "active"]                as const,
 };
 
@@ -59,6 +61,16 @@ export function useEventAnalytics(id: string) {
     queryKey: qk.eventAnalytics(id),
     queryFn:  () =>
       api.get<EventAnalyticsResponse>(`/promoter/events/${id}/analytics`),
+    enabled:  !!id,
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useEventCharts(id: string, days = 30) {
+  return useQuery({
+    queryKey: qk.eventCharts(id, days),
+    queryFn:  () =>
+      api.get<EventChartsResponse>(`/promoter/events/${id}/charts?days=${days}`),
     enabled:  !!id,
     staleTime: 2 * 60 * 1000,
   });

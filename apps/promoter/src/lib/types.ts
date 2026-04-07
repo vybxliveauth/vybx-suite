@@ -66,6 +66,28 @@ export interface EventAnalyticsResponse {
   ticketTypes: TicketTypeAnalytics[];
 }
 
+export interface RevenueDay {
+  date: string;   // YYYY-MM-DD
+  revenue: number;
+  tickets: number;
+}
+
+export interface TicketsHour {
+  hour: number;   // 0-23
+  count: number;
+}
+
+export interface GeoLocation {
+  location: string;
+  buyers: number;
+}
+
+export interface EventChartsResponse {
+  revenueByDay: RevenueDay[];
+  ticketsByHour: TicketsHour[];
+  topLocations: GeoLocation[];
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export type DashboardSummary = SharedDashboardSummary;
