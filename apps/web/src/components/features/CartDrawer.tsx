@@ -83,7 +83,7 @@ export function CartDrawer({
           zIndex: 1200,
           width: "min(420px, 100vw)",
           borderLeft: "1px solid var(--glass-border)",
-          boxShadow: "-20px 0 60px rgba(0,0,0,0.5)",
+          boxShadow: open ? "-20px 0 60px rgba(0,0,0,0.5)" : "none",
           display: "flex",
           flexDirection: "column",
           transform: open ? "translateX(0)" : "translateX(100%)",
