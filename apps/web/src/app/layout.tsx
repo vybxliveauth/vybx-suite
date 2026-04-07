@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Outfit, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Footer } from "@/components/features/Footer";
+import { PwaServiceWorker } from "@/components/features/PwaServiceWorker";
+import { PwaInstallBanner } from "@/components/features/PwaInstallBanner";
 import { resolveServerApiBaseUrl } from "@/lib/api-base-url";
 import "./globals.css";
 
@@ -28,6 +30,16 @@ function resolveMetadataBase(): URL {
     return new URL(fallback);
   }
 }
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#7c3aed" },
+    { media: "(prefers-color-scheme: light)", color: "#7c3aed" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: {
@@ -184,6 +196,7 @@ export default async function RootLayout({
         >
           Saltar al contenido
         </a>
+        <PwaServiceWorker />
         <Providers>
           {maintenanceModeEnabled ? (
             <main
@@ -207,6 +220,7 @@ export default async function RootLayout({
             <>
               {children}
               <Footer />
+              <PwaInstallBanner />
             </>
           )}
         </Providers>

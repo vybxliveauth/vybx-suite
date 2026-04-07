@@ -26,6 +26,7 @@ const cspDirectives = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  "worker-src 'self'",
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ]
   .filter(Boolean)
@@ -73,6 +74,14 @@ const nextConfig: NextConfig = {
             key: "Cache-Control",
             value: "no-store, max-age=0, must-revalidate",
           },
+        ],
+      },
+      {
+        // Service worker must never be cached — browsers need to detect updates.
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
       { source: "/(.*)", headers: securityHeaders },
