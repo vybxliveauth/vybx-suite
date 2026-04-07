@@ -247,7 +247,7 @@ export type AuthUser = PublicAuthUser & {
   marketingEmailOptIn?: boolean;
 };
 
-interface BackendAuthUser {
+export interface BackendAuthUser {
   userId: string;
   email: string;
   role: UserRole;
@@ -257,7 +257,7 @@ interface BackendAuthUser {
   marketingEmailOptIn?: boolean;
 }
 
-function adaptAuthUser(raw: BackendAuthUser): AuthUser {
+export function adaptAuthUser(raw: BackendAuthUser): AuthUser {
   return {
     id: raw.userId,
     email: raw.email,

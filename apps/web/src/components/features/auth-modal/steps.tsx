@@ -134,7 +134,7 @@ export function EmailStep({
   isLightTheme,
 }: {
   onContinue: (email: string) => Promise<void>;
-  onPasskey: (email: string) => Promise<void>;
+  onPasskey: () => Promise<void>;
   pending: boolean;
   passkeyPending: boolean;
   notice: string | null;
@@ -208,7 +208,7 @@ export function EmailStep({
 
       <button
         type="button"
-        onClick={handleSubmit((d) => onPasskey(d.email))}
+        onClick={() => onPasskey()}
         disabled={pending || passkeyPending}
         style={{
           width: "100%",

@@ -103,34 +103,6 @@ export async function lookupEmailIntent(email: string): Promise<EmailIntentLooku
     return { status: "unavailable", intent: null };
   }
 
-  if (res.status === 405) {
-    const postRes = await fetch(`${API_BASE_URL}/auth/email-intent`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        "x-csrf-token": getCsrfTokenFromCookie(),
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ email }),
-    });
-    if (postRes.status === 404) {
-      return { status: "unavailable", intent: null };
-    }
-    if (postRes.status === 409) {
-      return { status: "resolved", intent: "login" };
-    }
-    const postPayload = await postRes.json().catch(() => null);
-    if (!postRes.ok) {
-      throw new Error(getErrorMessage(postPayload, "No pudimos validar el correo ahora mismo."));
-    }
-    const parsedIntent = parseEmailIntentFromPayload(postPayload);
-    if (parsedIntent) {
-      return { status: "resolved", intent: parsedIntent };
-    }
-    return { status: "unknown", intent: null };
-  }
-
   if (res.status === 409) {
     return { status: "resolved", intent: "login" };
   }
@@ -293,7 +265,7 @@ export function serializeAssertionCredential(credential: PublicKeyCredential) {
       authenticatorData: encodeBase64Url(response.authenticatorData),
       clientDataJSON: encodeBase64Url(response.clientDataJSON),
       signature: encodeBase64Url(response.signature),
-      userHandle: response.userHandle ? encodeBase64Url(response.userHandle) : null,
+      ...(response.userHandle ? { userHandle: encodeBase64Url(response.userHandle) } : {}),
     },
   };
 }

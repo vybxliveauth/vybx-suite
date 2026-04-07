@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { X } from "lucide-react";
-import { fetchProfile, type AuthUser } from "@/lib/api";
+import { adaptAuthUser, type AuthUser } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { VybxLogo } from "@/components/ui/VybxLogo";
 import { tracker, AnalyticsEvents } from "@/lib/analytics";
@@ -161,9 +161,7 @@ export function AuthModal({
     }
   }
 
-  async function handlePasskeySignIn(nextEmail: string) {
-    const normalizedEmail = nextEmail.trim().toLowerCase();
-    setEmail(normalizedEmail);
+  async function handlePasskeySignIn() {
     setEmailNotice(null);
     setEmailError(null);
 
@@ -226,8 +224,7 @@ export function AuthModal({
         throw new Error(getErrorMessage(verifyPayload, "No pudimos verificar tu passkey."));
       }
 
-      const user = await fetchProfile();
-      handleLoginSuccess(user);
+      handleLoginSuccess(adaptAuthUser(verifyPayload.user));
     } catch (err: unknown) {
       // User cancelled the browser prompt — suppress noisy DOMException
       if (err instanceof Error && err.name === "NotAllowedError") {
@@ -344,7 +341,7 @@ export function AuthModal({
           {step === "email" && (
             <EmailStep
               onContinue={handleEmailContinue}
-              onPasskey={handlePasskeySignIn}
+              onPasskey={() => handlePasskeySignIn()}
               pending={resolvingEmail}
               passkeyPending={passkeyPending}
               notice={emailNotice}
