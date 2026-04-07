@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Ticket, User, LogOut, Moon, Sun } from "lucide-react";
@@ -24,6 +25,9 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
   const { user, logout } = useAuthStore();
   const { theme, setTheme } = useTheme();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -38,7 +42,11 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
     };
   }, [open, onClose]);
 
-  return (
+  // Portal to document.body so position:fixed is never clipped by an
+  // overflow:hidden/clip ancestor (iOS Safari bug when page is scrolled).
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
@@ -339,6 +347,7 @@ export function MobileNavDrawer({ open, onClose, onAuthOpen }: MobileNavDrawerPr
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
