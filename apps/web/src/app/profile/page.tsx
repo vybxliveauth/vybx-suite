@@ -28,8 +28,15 @@ import {
   ChevronLeft, User, Mail, Lock,
   Eye, EyeOff, AlertCircle, Loader2,
   Save, ShieldCheck, Ticket, Download, Trash2,
-  Globe, MapPin, LogOut, Settings, Bell,
+  Globe, MapPin, LogOut, Settings, Bell, KeyRound,
 } from "lucide-react";
+import {
+  API_BASE_URL,
+  buildPublicKeyCreationOptions,
+  getCsrfTokenFromCookie,
+  getErrorMessage,
+  serializeAttestationCredential,
+} from "@/components/features/auth-modal/helpers";
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
 
@@ -162,7 +169,116 @@ function ProfileSection() {
 
 // ─── Security Section ─────────────────────────────────────────────────────────
 
+function PasskeyRegistration({ email }: { email: string }) {
+  const [passkeyState, setPasskeyState] = useState<"idle" | "pending" | "success" | "error">("idle");
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+
+  const supported =
+    typeof window !== "undefined" &&
+    typeof window.PublicKeyCredential !== "undefined" &&
+    typeof navigator.credentials?.create === "function";
+
+  async function handleAddPasskey() {
+    setPasskeyState("pending");
+    setPasskeyError(null);
+    try {
+      // 1. Get registration options
+      const optionsRes = await fetch(`${API_BASE_URL}/auth/passkey/register/options`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfTokenFromCookie(),
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      const optionsPayload = await optionsRes.json().catch(() => null);
+      if (!optionsRes.ok) {
+        throw new Error(getErrorMessage(optionsPayload, "No pudimos obtener las opciones de registro."));
+      }
+
+      // 2. Build creation options and prompt device
+      const creationOptions = buildPublicKeyCreationOptions(optionsPayload);
+      if (!creationOptions) throw new Error("Respuesta de opciones inválida.");
+
+      const credential = await navigator.credentials.create({ publicKey: creationOptions });
+      if (!(credential instanceof PublicKeyCredential)) {
+        throw new Error("No se pudo crear la passkey.");
+      }
+
+      // 3. Verify on backend
+      const verifyRes = await fetch(`${API_BASE_URL}/auth/passkey/register/verify`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfTokenFromCookie(),
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email, credential: serializeAttestationCredential(credential) }),
+      });
+      const verifyPayload = await verifyRes.json().catch(() => null);
+      if (!verifyRes.ok) {
+        throw new Error(getErrorMessage(verifyPayload, "No pudimos verificar la passkey."));
+      }
+
+      setPasskeyState("success");
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        setPasskeyState("idle");
+      } else {
+        setPasskeyError(err instanceof Error ? err.message : "Error al registrar passkey.");
+        setPasskeyState("error");
+      }
+    }
+  }
+
+  if (!supported) return null;
+
+  return (
+    <div style={{ marginTop: "1.5rem", paddingTop: "1.5rem", borderTop: "1px solid var(--glass-border)" }}>
+      <SectionTitle>Acceso con Passkey</SectionTitle>
+      <div style={{ background: "rgba(124,58,237,0.05)", border: "1px solid rgba(124,58,237,0.2)", borderRadius: "var(--radius-xl)", padding: "1.1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <KeyRound size={16} color="var(--accent-primary)" />
+          <div>
+            <p style={{ color: "var(--text-light)", fontSize: "0.9rem", fontWeight: 700 }}>Passkey biométrica</p>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.78rem" }}>
+              {passkeyState === "success"
+                ? "Passkey registrada. Ya puedes iniciar sesión con huella o Face ID."
+                : "Inicia sesión con huella digital, Face ID o PIN del dispositivo."}
+            </p>
+          </div>
+        </div>
+        {passkeyState !== "success" && (
+          <button
+            type="button"
+            disabled={passkeyState === "pending"}
+            className="btn-primary"
+            style={{ display: "flex", alignItems: "center", gap: "0.45rem", padding: "0.6rem 1.25rem", fontSize: "0.85rem", flexShrink: 0 }}
+            onClick={() => void handleAddPasskey()}
+          >
+            {passkeyState === "pending"
+              ? <><Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> Registrando...</>
+              : <><KeyRound size={14} /> Agregar passkey</>}
+          </button>
+        )}
+        {passkeyState === "success" && (
+          <span style={{ fontSize: "0.82rem", color: "#86efac", fontWeight: 700 }}>✓ Registrada</span>
+        )}
+      </div>
+      {passkeyState === "error" && passkeyError && (
+        <p style={{ marginTop: "0.6rem", fontSize: "0.78rem", color: "#fda4af", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+          <AlertCircle size={13} /> {passkeyError}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SecuritySection() {
+  const { user } = useAuthStore();
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset, control } = useForm<PasswordFields>({
@@ -184,51 +300,55 @@ function SecuritySection() {
   );
 
   return (
-    <form onSubmit={handleSubmit((data) => action(data))} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-      <SectionTitle>Cambiar contraseña</SectionTitle>
-      <Field
-        label="Contraseña actual" icon={Lock} type={showCurrent ? "text" : "password"}
-        {...register("currentPassword")} error={errors.currentPassword?.message}
-        placeholder="••••••••" autoComplete="current-password"
-        suffix={
-          <button
-            type="button"
-            aria-label={showCurrent ? "Ocultar contraseña actual" : "Mostrar contraseña actual"}
-            onClick={() => setShowCurrent(!showCurrent)}
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
-          >
-            {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <form onSubmit={handleSubmit((data) => action(data))} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <SectionTitle>Cambiar contraseña</SectionTitle>
+        <Field
+          label="Contraseña actual" icon={Lock} type={showCurrent ? "text" : "password"}
+          {...register("currentPassword")} error={errors.currentPassword?.message}
+          placeholder="••••••••" autoComplete="current-password"
+          suffix={
+            <button
+              type="button"
+              aria-label={showCurrent ? "Ocultar contraseña actual" : "Mostrar contraseña actual"}
+              onClick={() => setShowCurrent(!showCurrent)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
+            >
+              {showCurrent ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          }
+        />
+        <Field
+          label="Nueva contraseña" icon={Lock} type={showNew ? "text" : "password"}
+          {...register("newPassword")} error={errors.newPassword?.message}
+          placeholder="Mín. 12 caracteres" autoComplete="new-password"
+          suffix={
+            <button
+              type="button"
+              aria-label={showNew ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"}
+              onClick={() => setShowNew(!showNew)}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
+            >
+              {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          }
+        />
+        <Field
+          label="Confirmar nueva contraseña" icon={Lock} type={showNew ? "text" : "password"}
+          {...register("confirmPassword")} error={errors.confirmPassword?.message}
+          placeholder="Repite la contraseña" autoComplete="new-password"
+        />
+        <PasswordStrengthMeter value={newPasswordValue} />
+        <ActionFeedback status={state.status} message={state.message} />
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button type="submit" disabled={pending} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.65rem 1.5rem" }}>
+            {pending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Actualizando...</> : <><ShieldCheck size={15} /> Actualizar contraseña</>}
           </button>
-        }
-      />
-      <Field
-        label="Nueva contraseña" icon={Lock} type={showNew ? "text" : "password"}
-        {...register("newPassword")} error={errors.newPassword?.message}
-        placeholder="Mín. 12 caracteres" autoComplete="new-password"
-        suffix={
-          <button
-            type="button"
-            aria-label={showNew ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"}
-            onClick={() => setShowNew(!showNew)}
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--text-muted)", display: "flex" }}
-          >
-            {showNew ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
-        }
-      />
-      <Field
-        label="Confirmar nueva contraseña" icon={Lock} type={showNew ? "text" : "password"}
-        {...register("confirmPassword")} error={errors.confirmPassword?.message}
-        placeholder="Repite la contraseña" autoComplete="new-password"
-      />
-      <PasswordStrengthMeter value={newPasswordValue} />
-      <ActionFeedback status={state.status} message={state.message} />
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button type="submit" disabled={pending} className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.65rem 1.5rem" }}>
-          {pending ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Actualizando...</> : <><ShieldCheck size={15} /> Actualizar contraseña</>}
-        </button>
-      </div>
-    </form>
+        </div>
+      </form>
+
+      {user?.email && <PasskeyRegistration email={user.email} />}
+    </div>
   );
 }
 

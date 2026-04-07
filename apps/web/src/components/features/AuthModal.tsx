@@ -15,6 +15,7 @@ import {
   lookupEmailIntent,
   serializeAssertionCredential,
 } from "./auth-modal/helpers";
+
 import {
   EmailStep,
   ForgotPasswordStep,
@@ -176,56 +177,10 @@ export function AuthModal({
       return;
     }
 
-    const passkeyEndpoints = [
-      { optionsPath: "/auth/passkey/login/options", verifyPath: "/auth/passkey/login/verify" },
-      { optionsPath: "/auth/passkeys/login/options", verifyPath: "/auth/passkeys/login/verify" },
-    ];
-
     setPasskeyPending(true);
     try {
-      let selected:
-        | { payload: unknown; verifyPath: string }
-        | null = null;
-
-      for (const candidate of passkeyEndpoints) {
-        const response = await fetch(`${API_BASE_URL}${candidate.optionsPath}`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "x-csrf-token": getCsrfTokenFromCookie(),
-            Accept: "application/json",
-          },
-          body: JSON.stringify({ email: normalizedEmail }),
-        });
-
-        if (response.status === 404 || response.status === 405) continue;
-        const payload = await response.json().catch(() => null);
-        if (!response.ok) {
-          throw new Error(getErrorMessage(payload, "No pudimos iniciar passkey ahora mismo."));
-        }
-        selected = { payload, verifyPath: candidate.verifyPath };
-        break;
-      }
-
-      if (!selected) {
-        setEmailError("Passkeys todavía no están habilitadas en esta plataforma.");
-        return;
-      }
-
-      const publicKey = buildPublicKeyRequestOptions(selected.payload);
-      if (!publicKey) {
-        setEmailError("La configuración de passkey no es válida en este momento.");
-        return;
-      }
-
-      const assertion = await navigator.credentials.get({ publicKey });
-      if (!(assertion instanceof PublicKeyCredential)) {
-        setEmailError("No se pudo completar la autenticación con passkey.");
-        return;
-      }
-
-      const verifyResponse = await fetch(`${API_BASE_URL}${selected.verifyPath}`, {
+      // 1. Get authentication challenge from backend (no email needed — discoverable credential)
+      const optionsRes = await fetch(`${API_BASE_URL}/auth/passkey/authenticate/options`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -233,21 +188,53 @@ export function AuthModal({
           "x-csrf-token": getCsrfTokenFromCookie(),
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          assertion: serializeAssertionCredential(assertion),
-        }),
+        body: JSON.stringify({}),
       });
 
-      const verifyPayload = await verifyResponse.json().catch(() => null);
-      if (!verifyResponse.ok) {
+      const optionsPayload = await optionsRes.json().catch(() => null);
+      if (!optionsRes.ok) {
+        throw new Error(getErrorMessage(optionsPayload, "No pudimos iniciar la autenticación con passkey."));
+      }
+
+      const publicKey = buildPublicKeyRequestOptions(optionsPayload);
+      if (!publicKey) {
+        setEmailError("La configuración de passkey no es válida en este momento.");
+        return;
+      }
+
+      // 2. Prompt biometric / device authentication
+      const assertion = await navigator.credentials.get({ publicKey });
+      if (!(assertion instanceof PublicKeyCredential)) {
+        setEmailError("No se pudo completar la autenticación con passkey.");
+        return;
+      }
+
+      // 3. Verify on backend — sets access_token / refresh_token / csrf_token cookies
+      const verifyRes = await fetch(`${API_BASE_URL}/auth/passkey/authenticate/verify`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": getCsrfTokenFromCookie(),
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ credential: serializeAssertionCredential(assertion) }),
+      });
+
+      const verifyPayload = await verifyRes.json().catch(() => null);
+      if (!verifyRes.ok) {
         throw new Error(getErrorMessage(verifyPayload, "No pudimos verificar tu passkey."));
       }
 
       const user = await fetchProfile();
       handleLoginSuccess(user);
-    } catch (err) {
-      setEmailError(err instanceof Error ? err.message : "Falló la autenticación con passkey.");
+    } catch (err: unknown) {
+      // User cancelled the browser prompt — suppress noisy DOMException
+      if (err instanceof Error && err.name === "NotAllowedError") {
+        setEmailError("Autenticación cancelada. Vuelve a intentarlo.");
+      } else {
+        setEmailError(err instanceof Error ? err.message : "Falló la autenticación con passkey.");
+      }
     } finally {
       setPasskeyPending(false);
     }

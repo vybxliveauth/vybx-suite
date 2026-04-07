@@ -166,6 +166,73 @@ function encodeBase64Url(buffer: ArrayBuffer): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+export function buildPublicKeyCreationOptions(payload: unknown): PublicKeyCredentialCreationOptions | null {
+  const raw = toRecord(payload);
+  if (!raw) return null;
+  const source = toRecord(raw.publicKey ?? raw.creationOptions ?? raw.options ?? raw);
+  if (!source || typeof source.challenge !== "string") return null;
+
+  const rp = toRecord(source.rp);
+  if (!rp || typeof rp.name !== "string") return null;
+
+  const userRaw = toRecord(source.user);
+  if (!userRaw || typeof userRaw.name !== "string" || typeof userRaw.id !== "string") return null;
+
+  const pubKeyCredParams: PublicKeyCredentialParameters[] = Array.isArray(source.pubKeyCredParams)
+    ? (source.pubKeyCredParams as unknown[]).flatMap((p) => {
+        const entry = toRecord(p);
+        if (!entry || typeof entry.alg !== "number" || entry.type !== "public-key") return [];
+        return [{ type: "public-key" as const, alg: entry.alg }];
+      })
+    : [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }];
+
+  const excludeCredentials: PublicKeyCredentialDescriptor[] = Array.isArray(source.excludeCredentials)
+    ? (source.excludeCredentials as unknown[]).flatMap((item) => {
+        const cred = toRecord(item);
+        if (!cred || typeof cred.id !== "string") return [];
+        return [{ type: "public-key" as const, id: decodeBase64Url(cred.id) }];
+      })
+    : [];
+
+  const authSelRaw = toRecord(source.authenticatorSelection);
+
+  return {
+    challenge: decodeBase64Url(source.challenge),
+    rp: { name: rp.name, id: typeof rp.id === "string" ? rp.id : undefined },
+    user: {
+      id: decodeBase64Url(userRaw.id),
+      name: userRaw.name as string,
+      displayName: typeof userRaw.displayName === "string" ? userRaw.displayName : (userRaw.name as string),
+    },
+    pubKeyCredParams,
+    timeout: typeof source.timeout === "number" ? source.timeout : 60000,
+    attestation: (source.attestation as AttestationConveyancePreference) ?? "none",
+    excludeCredentials: excludeCredentials.length > 0 ? excludeCredentials : undefined,
+    authenticatorSelection: authSelRaw
+      ? {
+          residentKey: (authSelRaw.residentKey as ResidentKeyRequirement) ?? "preferred",
+          userVerification: (authSelRaw.userVerification as UserVerificationRequirement) ?? "preferred",
+        }
+      : undefined,
+  };
+}
+
+export function serializeAttestationCredential(credential: PublicKeyCredential) {
+  const response = credential.response as AuthenticatorAttestationResponse;
+  const transports =
+    typeof response.getTransports === "function" ? response.getTransports() : [];
+  return {
+    id: credential.id,
+    rawId: encodeBase64Url(credential.rawId),
+    type: credential.type,
+    response: {
+      attestationObject: encodeBase64Url(response.attestationObject),
+      clientDataJSON: encodeBase64Url(response.clientDataJSON),
+      transports,
+    },
+  };
+}
+
 export function buildPublicKeyRequestOptions(payload: unknown): PublicKeyCredentialRequestOptions | null {
   const raw = toRecord(payload);
   if (!raw) return null;
