@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus, Search, CalendarDays, MoreHorizontal, Eye, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, CalendarDays, MoreHorizontal, Eye, Pencil, Trash2, Loader2, ScanLine } from "lucide-react";
 import {
   Button,
   Input,
@@ -159,6 +159,12 @@ export default function EventsPage() {
                                 <Link href={`/events/${ev.id}`}>
                                   <Eye className="size-4" />
                                   Ver detalles
+                                </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/scan/${ev.id}`}>
+                                  <ScanLine className="size-4" />
+                                  Escanear boletos
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem asChild>

@@ -32,6 +32,7 @@ import {
   XCircle,
   CircleDot,
   ExternalLink,
+  ScanLine,
 } from "lucide-react";
 import {
   Button,
@@ -262,6 +263,11 @@ export default function EventDetailPage() {
               <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={duplicateEvent.isPending} className="bg-white/5 border-white/20 text-white hover:bg-white/15">
                 {duplicateEvent.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCcw className="size-4" />}
                 Duplicar
+              </Button>
+              <Button variant="outline" size="sm" asChild className="bg-white/5 border-white/20 text-white hover:bg-white/15">
+                <Link href={`/scan/${event.id}`}>
+                  <ScanLine className="size-4" /> Escanear
+                </Link>
               </Button>
               <Button size="sm" asChild>
                 <Link href={`/events/${event.id}/edit`}>

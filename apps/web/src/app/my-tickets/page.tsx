@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { generateTotp, totpSecondsLeft } from "@/lib/totp";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,6 +34,7 @@ interface BackendTicket {
   id: string;
   status: TicketStatus;
   qrCode: string | null;
+  ticketSecret: string | null;
   createdAt: string;
   ticketType: {
     id: string;
@@ -107,7 +109,42 @@ function ModalPortal({ children }: { children: React.ReactNode }) {
 
 // ─── QR Modal ─────────────────────────────────────────────────────────────────
 
+// Generate rotating TOTP QR value: "{ticketId}.{6-digit-totp}" refreshed every 30s
+function useTotpQrValue(ticket: BackendTicket): { value: string; secondsLeft: number } {
+  const fallback = ticket.qrCode ?? ticket.id;
+  const [value, setValue] = useState(fallback);
+  const [secondsLeft, setSecondsLeft] = useState(totpSecondsLeft);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!ticket.ticketSecret) return;
+    try {
+      const token = await generateTotp(ticket.ticketSecret);
+      setValue(`${ticket.id}.${token}`);
+    } catch {
+      setValue(fallback);
+    }
+  }, [ticket.id, ticket.ticketSecret, fallback]);
+
+  useEffect(() => {
+    void refresh();
+
+    intervalRef.current = setInterval(() => {
+      const sLeft = totpSecondsLeft();
+      setSecondsLeft(sLeft);
+      if (sLeft === 30) void refresh(); // window just rolled over
+    }, 1000);
+
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [refresh]);
+
+  return { value, secondsLeft };
+}
+
 function QRModal({ ticket, onClose }: { ticket: BackendTicket; onClose: () => void }) {
+  const { value: qrValue, secondsLeft } = useTotpQrValue(ticket);
+  const isDynamic = Boolean(ticket.ticketSecret);
+
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -178,25 +215,49 @@ function QRModal({ ticket, onClose }: { ticket: BackendTicket; onClose: () => vo
             padding: "2rem 1.5rem",
             display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem",
           }}>
-            <div style={{
-              padding: "1rem",
-              background: "#fff",
-              borderRadius: "var(--radius-xl)",
-              boxShadow: "0 0 0 6px rgba(124,58,237,0.08)",
-            }}>
-              <QRCodeSVG
-                value={ticket.qrCode ?? ticket.id}
-                size={200}
-                bgColor="#ffffff"
-                fgColor="#0f172a"
-                level="M"
-              />
+            <div style={{ position: "relative" }}>
+              <div style={{
+                padding: "1rem",
+                background: "#fff",
+                borderRadius: "var(--radius-xl)",
+                boxShadow: "0 0 0 6px rgba(124,58,237,0.08)",
+              }}>
+                <QRCodeSVG
+                  value={qrValue}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#0f172a"
+                  level="M"
+                />
+              </div>
+              {isDynamic && (
+                <div style={{
+                  position: "absolute", bottom: -10, right: -10,
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--glass-border)",
+                  borderRadius: "50%",
+                  width: 36, height: 36,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: "0.6rem", fontWeight: 700,
+                  color: secondsLeft <= 5 ? "var(--accent-destructive, #f43f5e)" : "var(--accent-primary)",
+                }}>
+                  {secondsLeft}s
+                </div>
+              )}
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "0.2rem" }}>ID del ticket</p>
-              <code style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontFamily: "monospace", wordBreak: "break-all" }}>
-                {ticket.id}
-              </code>
+              {isDynamic ? (
+                <p style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
+                  Código dinámico · se renueva cada 30s
+                </p>
+              ) : (
+                <>
+                  <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginBottom: "0.2rem" }}>ID del ticket</p>
+                  <code style={{ fontSize: "0.7rem", color: "var(--text-secondary)", fontFamily: "monospace", wordBreak: "break-all" }}>
+                    {ticket.id}
+                  </code>
+                </>
+              )}
             </div>
           </div>
 
