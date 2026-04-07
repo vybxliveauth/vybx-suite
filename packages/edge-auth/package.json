@@ -9,11 +9,12 @@
   "types": "./src/index.ts",
   "license": "MIT",
   "peerDependencies": {
-    "next": "^15 || ^16"
+    "next": "^16"
   },
   "devDependencies": {
     "@types/node": "^22",
     "@vybx/tsconfig": "workspace:*",
+    "next": "16.2.1",
     "typescript": "^5"
   }
 }
