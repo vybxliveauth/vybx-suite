@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 /** Format price to currency string (e.g. 15.00 → "$15.00") */
 export function formatPrice(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,

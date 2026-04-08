@@ -37,13 +37,13 @@ const TOOLTIP_STYLE = {
 };
 
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency", currency: "MXN", maximumFractionDigits: 0,
   }).format(n);
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("es-DO", { month: "short", day: "numeric" });
 }
 
 function fmtHour(h: number) {

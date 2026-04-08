@@ -156,7 +156,7 @@ function fmtShortDate(input?: string | null) {
   if (!input) return "";
   const date = new Date(input);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("es-US", { day: "2-digit", month: "short" });
+  return date.toLocaleDateString("es-DO", { day: "2-digit", month: "short" });
 }
 
 function sourceBadge(source: CommandItem["source"]) {
@@ -340,7 +340,7 @@ export function CommandPalette() {
           const amount = Number(entry.amount ?? 0);
           const currency = String(entry.currency ?? "USD").toUpperCase();
           const event = (entry.event as { title?: string } | undefined)?.title ?? "Evento";
-          const amountFmt = new Intl.NumberFormat("es-US", {
+          const amountFmt = new Intl.NumberFormat("es-DO", {
             style: "currency",
             currency,
             maximumFractionDigits: 2,

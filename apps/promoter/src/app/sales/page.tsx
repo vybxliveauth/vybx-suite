@@ -28,13 +28,13 @@ const RANGES = [
 ];
 
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency", currency: "MXN", maximumFractionDigits: 0,
   }).format(n);
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("es-DO", { month: "short", day: "numeric" });
 }
 
 function buildSparkline(grossRevenue: number) {
@@ -80,12 +80,12 @@ export default function SalesPage() {
         },
         {
           label: "Pagos exitosos",
-          value: (selectedEvent?.metrics?.successfulPayments ?? 0).toLocaleString("es-MX"),
+          value: (selectedEvent?.metrics?.successfulPayments ?? 0).toLocaleString("es-DO"),
           icon: CreditCard,
         },
         {
           label: "Boletos vendidos",
-          value: (selectedEvent?.metrics?.totalSold ?? 0).toLocaleString("es-MX"),
+          value: (selectedEvent?.metrics?.totalSold ?? 0).toLocaleString("es-DO"),
           icon: Ticket,
         },
         {
@@ -96,9 +96,9 @@ export default function SalesPage() {
       ]
     : [
         { label: "Ingresos totales", value: fmtCurrency(summary?.grossRevenue ?? 0), icon: TrendingUp },
-        { label: "Pagos exitosos", value: (summary?.successfulPayments ?? 0).toLocaleString("es-MX"), icon: CreditCard },
-        { label: "Boletos vendidos", value: (summary?.soldTickets ?? 0).toLocaleString("es-MX"), icon: Ticket },
-        { label: "Boletos cancelados", value: (summary?.cancelledTickets ?? 0).toLocaleString("es-MX"), icon: RotateCcw },
+        { label: "Pagos exitosos", value: (summary?.successfulPayments ?? 0).toLocaleString("es-DO"), icon: CreditCard },
+        { label: "Boletos vendidos", value: (summary?.soldTickets ?? 0).toLocaleString("es-DO"), icon: Ticket },
+        { label: "Boletos cancelados", value: (summary?.cancelledTickets ?? 0).toLocaleString("es-DO"), icon: RotateCcw },
       ];
 
   return (
@@ -157,7 +157,7 @@ export default function SalesPage() {
                     >
                       <p className="truncate font-medium">{event.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(event.date).toLocaleDateString("es-MX", {
+                        {new Date(event.date).toLocaleDateString("es-DO", {
                           day: "2-digit",
                           month: "short",
                           year: "numeric",

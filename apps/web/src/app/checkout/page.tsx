@@ -575,10 +575,10 @@ function CheckoutSteps({ currentStep }: { currentStep: number }) {
 }
 
 // ─── Payment Method Card ──────────────────────────────────────────────────────
-// Stripe Checkout is the only provider for the US launch.
+// Stripe es el único proveedor habilitado para este lanzamiento.
 const PROVIDER_LABEL = {
-  name: "Credit / Debit Card",
-  detail: "Secure payment via Stripe · Visa, Mastercard, Amex and more.",
+  name: "Tarjeta de crédito / débito",
+  detail: "Pago seguro con Stripe · Visa, Mastercard, Amex y más.",
 };
 
 function PaymentMethodCard() {
@@ -610,7 +610,7 @@ function PaymentMethodCard() {
             {provider.detail}
           </p>
           <p style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>
-            Serás redirigido al gateway al confirmar.
+            Serás redirigido a la pasarela al confirmar.
           </p>
         </div>
         <ShieldCheck size={16} color="#4ade80" style={{ flexShrink: 0 }} />
@@ -882,7 +882,7 @@ export default function CheckoutPage() {
           setCheckoutError(
             retryError instanceof Error && retryError.message.trim().length > 0
               ? retryError.message
-              : "No se pudo iniciar el checkout.",
+              : "No se pudo iniciar el pago.",
           );
           return;
         }
@@ -891,7 +891,7 @@ export default function CheckoutPage() {
       setCheckoutError(
         e instanceof Error && e.message.trim().length > 0
           ? e.message
-          : "No se pudo iniciar el checkout.",
+          : "No se pudo iniciar el pago.",
       );
     } finally {
       setCheckoutPending(false);
@@ -921,7 +921,7 @@ export default function CheckoutPage() {
 
       <main id="main-content" className="page-main-shell page-main-shell-roomy">
         <h1 className="page-title" style={{ marginBottom: "1.75rem" }}>
-          Checkout
+          Pago
         </h1>
         <p className="page-subtitle">
           Confirma tu compra en un flujo protegido y te redirigimos a Stripe para completar el pago.
@@ -931,7 +931,7 @@ export default function CheckoutPage() {
             <ShieldCheck size={12} /> SSL cifrado
           </span>
           <span className="checkout-trust-chip">
-            <Lock size={12} /> Stripe Checkout
+            <Lock size={12} /> Pago con Stripe
           </span>
           <span className="checkout-trust-chip">
             <CheckCircle2 size={12} /> Soporte USD

@@ -25,5 +25,5 @@ export const useAuthUser = sessionStore.useAuthUser;
 export const hydrateUserFromSession = sessionStore.hydrateUserFromSession;
 
 export function displayName(user: AuthUser | null): string {
-  return formatDisplayName(user, "Staff");
+  return formatDisplayName(user, "Personal");
 }

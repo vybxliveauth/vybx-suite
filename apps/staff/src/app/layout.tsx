@@ -4,7 +4,7 @@ import { ThemeSyncProvider } from "@/components/providers/ThemeSyncProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vybx Staff — Scanner",
+  title: "Vybx Personal — Escáner",
   description: "Acceso del equipo de escaneo",
 };
 

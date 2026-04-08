@@ -78,7 +78,7 @@ function TierCard({
             </span>
           </div>
           <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-            {soldOut ? "Agotado" : `${tier.stock.toLocaleString()} disponibles`}
+            {soldOut ? "Agotado" : `${tier.stock.toLocaleString("es-DO")} disponibles`}
           </span>
         </div>
         <div style={{ textAlign: "right" }}>

@@ -107,6 +107,7 @@ describe("resolveAdminRequiredPermissionForPath", () => {
       ["/promoters", "promoters:view"],
       ["/payouts", "payouts:view"],
       ["/sales", "sales:view"],
+      ["/revenue-ops", "sales:view"],
       ["/refunds", "refunds:view"],
       ["/users", "users:view"],
       ["/security", "security:view"],

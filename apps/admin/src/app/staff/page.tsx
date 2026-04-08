@@ -104,13 +104,13 @@ export default function StaffPage() {
     try {
       await api.post(`/event-staff/events/${selectedId}/assign`, { email: trimmed, role });
       setEmail("");
-      setNotice("Staff asignado correctamente.");
+      setNotice("Personal asignado correctamente.");
       void loadStaff();
     } catch (err) {
       const msg = (err as Error).message ?? "";
       setError(/not found|not registered|no user/i.test(msg)
         ? "Solo usuarios registrados pueden ser asignados. Verifica el correo."
-        : msg || "Error al asignar staff.");
+        : msg || "Error al asignar personal.");
     } finally { setSaving(false); }
   }
 
@@ -143,14 +143,14 @@ export default function StaffPage() {
   }
 
   return (
-    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Staff" }]} />}>
+    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Personal" }]} />}>
       <div className="space-y-6">
 
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-xl font-semibold flex items-center gap-2">
-              <Users className="size-5 text-primary" /> Staff
+              <Users className="size-5 text-primary" /> Personal
             </h1>
             <p className="text-sm text-muted-foreground">
               Asigna escáneres y supervisores a tus eventos.
@@ -183,7 +183,7 @@ export default function StaffPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Evento</CardTitle>
-            <CardDescription>Selecciona el evento al que asignarás el staff.</CardDescription>
+            <CardDescription>Selecciona el evento al que asignarás el personal.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
@@ -245,7 +245,7 @@ export default function StaffPage() {
         {/* Assign form */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Asignar staff</CardTitle>
+            <CardTitle className="text-base">Asignar personal</CardTitle>
             <CardDescription>
               Solo usuarios con cuenta registrada pueden ser asignados.
             </CardDescription>
@@ -270,7 +270,7 @@ export default function StaffPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SCANNER">Scanner</SelectItem>
+                  <SelectItem value="SCANNER">Escáner</SelectItem>
                   <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
                 </SelectContent>
               </Select>
@@ -309,7 +309,7 @@ export default function StaffPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ALL">Todos los roles</SelectItem>
-                  <SelectItem value="SCANNER">Scanner</SelectItem>
+                  <SelectItem value="SCANNER">Escáner</SelectItem>
                   <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
                 </SelectContent>
               </Select>
@@ -319,7 +319,7 @@ export default function StaffPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Staff</TableHead>
+                  <TableHead>Personal</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead className="hidden md:table-cell">Asignado por</TableHead>
@@ -341,7 +341,7 @@ export default function StaffPage() {
                     <TableCell colSpan={6} className="py-12 text-center text-muted-foreground text-sm">
                       {selectedId
                         ? "No hay asignaciones con los filtros actuales."
-                        : "Selecciona un evento para ver el staff."}
+                        : "Selecciona un evento para ver el personal."}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -358,7 +358,7 @@ export default function StaffPage() {
                             ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
                             : "bg-sky-500/10 text-sky-400 border-sky-500/20"}
                         >
-                          {a.role === "SUPERVISOR" ? "Supervisor" : "Scanner"}
+                          {a.role === "SUPERVISOR" ? "Supervisor" : "Escáner"}
                         </Badge>
                       </TableCell>
                       <TableCell>

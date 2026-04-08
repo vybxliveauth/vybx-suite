@@ -18,13 +18,13 @@ import { api } from "@/lib/api";
 import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency", currency: "MXN", maximumFractionDigits: 0,
   }).format(n);
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  return new Date(iso).toLocaleDateString("es-DO", {
     day: "2-digit", month: "short", year: "numeric",
   });
 }

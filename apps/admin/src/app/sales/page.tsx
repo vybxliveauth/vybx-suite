@@ -220,16 +220,16 @@ export default function SalesPage() {
         {!isEventMode && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Semana 1: Funnel de conversión</CardTitle>
+              <CardTitle className="text-base">Semana 1: Embudo de conversión</CardTitle>
               <CardDescription>
-                View → Checkout → Pago aprobado, con tasa de fallo por flujo.
-                {analytics?.source === "fallback" ? " Fuente: fallback multi-endpoint." : " Fuente: endpoint combinado."}
+                Vista → Inicio de compra → Pago aprobado, con tasa de fallo por flujo.
+                {analytics?.source === "fallback" ? " Fuente: respaldo multipunto." : " Fuente: endpoint combinado."}
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border border-border/70 bg-card/40 p-3">
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Eye className="size-3.5" /> Event viewed
+                  <Eye className="size-3.5" /> Evento visto
                 </p>
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}
@@ -237,29 +237,29 @@ export default function SalesPage() {
               </div>
               <div className="rounded-lg border border-border/70 bg-card/40 p-3">
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <ShoppingCart className="size-3.5" /> Checkout started
+                  <ShoppingCart className="size-3.5" /> Inicio de compra
                 </p>
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  View → Checkout: {fmtPct(funnel?.viewToCheckoutRatePct ?? 0)}
+                  Vista → Inicio de compra: {fmtPct(funnel?.viewToCheckoutRatePct ?? 0)}
                 </p>
               </div>
               <div className="rounded-lg border border-border/70 bg-card/40 p-3">
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <CheckCircle2 className="size-3.5" /> Checkout completed
+                  <CheckCircle2 className="size-3.5" /> Compra completada
                 </p>
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Checkout → Pago: {fmtPct(funnel?.checkoutToApprovedPaymentRatePct ?? 0)}
+                  Inicio de compra → Pago: {fmtPct(funnel?.checkoutToApprovedPaymentRatePct ?? 0)}
                 </p>
               </div>
               <div className="rounded-lg border border-border/70 bg-card/40 p-3">
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <AlertTriangle className="size-3.5" /> Payment failed
+                  <AlertTriangle className="size-3.5" /> Pago fallido
                 </p>
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}
@@ -286,7 +286,7 @@ export default function SalesPage() {
                     <div key={row.categoryId} className="rounded-md border border-border/70 px-3 py-2">
                       <p className="text-sm font-medium">{row.categoryName}</p>
                       <p className="text-xs text-muted-foreground">
-                        views {row.eventViewed.toLocaleString("es-DO")} · checkout {row.checkoutCompleted.toLocaleString("es-DO")} · conv {fmtPct(row.conversionRatePct)}
+                        vistas {row.eventViewed.toLocaleString("es-DO")} · compras {row.checkoutCompleted.toLocaleString("es-DO")} · conv. {fmtPct(row.conversionRatePct)}
                       </p>
                     </div>
                   ))
@@ -296,7 +296,7 @@ export default function SalesPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Top promoters con ventas reales</CardTitle>
+                <CardTitle className="text-sm">Top promotores con ventas reales</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {topPromoters.length === 0 ? (
@@ -306,7 +306,7 @@ export default function SalesPage() {
                     <div key={row.promoterId} className="rounded-md border border-border/70 px-3 py-2">
                       <p className="text-sm font-medium">{row.promoterName}</p>
                       <p className="text-xs text-muted-foreground">
-                        eventos {row.eventsCreated.toLocaleString("es-DO")} · checkouts {row.checkoutCompleted.toLocaleString("es-DO")} · {fmtCurrency(row.grossRevenue)}
+                        eventos {row.eventsCreated.toLocaleString("es-DO")} · compras {row.checkoutCompleted.toLocaleString("es-DO")} · {fmtCurrency(row.grossRevenue)}
                       </p>
                     </div>
                   ))

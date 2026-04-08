@@ -28,7 +28,7 @@ function money(value: number, currency = "USD", decimals: 0 | 2 = 2) {
     typeof currency === "string" && currency.trim().length === 3
       ? currency.toUpperCase()
       : "USD";
-  return new Intl.NumberFormat("es-US", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency",
     currency: safeCurrency,
     minimumFractionDigits: decimals,
@@ -159,7 +159,7 @@ export default function PayoutsPage() {
       },
       {
         accessorKey: "provider",
-        header: "Gateway",
+        header: "Pasarela",
         cell: ({ row }) => <span className="font-mono text-xs uppercase">{row.original.provider}</span>,
       },
       {
@@ -173,7 +173,7 @@ export default function PayoutsPage() {
       },
       {
         id: "formula",
-        header: "Calculo neto",
+        header: "Cálculo neto",
         cell: ({ row }) => (
           <span className="text-xs text-muted-foreground">
             {money(row.original.grossSales, row.original.currency)} -{" "}
@@ -528,7 +528,7 @@ export default function PayoutsPage() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {item.mode === "queue_execution" ? "Batch de cola" : "Batch manual"} •{" "}
-                    {new Date(item.executedAt).toLocaleString("es-US", {
+                    {new Date(item.executedAt).toLocaleString("es-DO", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",

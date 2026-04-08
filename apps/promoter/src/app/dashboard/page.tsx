@@ -58,13 +58,13 @@ const RANGES = [
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency", currency: "MXN", maximumFractionDigits: 0,
   }).format(n);
 }
 
 function fmtShortDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString("es-DO", { month: "short", day: "numeric" });
 }
 
 function fmtHour(h: number) {
@@ -105,7 +105,7 @@ export default function DashboardPage() {
   // ── Loading / error states ────────────────────────────────────────────────
   if (dashLoading) {
     return (
-      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Dashboard" }]} />}>
+      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Centro de mando" }]} />}>
         <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
           <Loader2 className="size-5 animate-spin" /> Cargando dashboard…
         </div>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
 
   if (dashError || !dashData) {
     return (
-      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Dashboard" }]} />}>
+      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Centro de mando" }]} />}>
         <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted-foreground">
           <AlertCircle className="size-10 opacity-40" />
           <p className="text-sm">No se pudieron cargar los datos del dashboard.</p>
@@ -135,7 +135,7 @@ export default function DashboardPage() {
     },
     {
       label: "Boletos vendidos",
-      value: summary.soldTickets.toLocaleString("es-MX"),
+      value: summary.soldTickets.toLocaleString("es-DO"),
       icon: Ticket,
       sub: `${summary.cancelledTickets} cancelados`,
     },
@@ -161,12 +161,12 @@ export default function DashboardPage() {
     : 0;
 
   return (
-    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Dashboard" }]} />}>
+    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Centro de mando" }]} />}>
       <div className="space-y-6">
 
         {/* Title */}
         <div>
-          <h1 className="text-xl font-semibold">Dashboard</h1>
+          <h1 className="text-xl font-semibold">Centro de mando</h1>
           <p className="text-sm text-muted-foreground">Resumen de tus ventas e ingresos</p>
         </div>
 
@@ -219,7 +219,7 @@ export default function DashboardPage() {
                       >
                         <p className="truncate font-medium">{ev.title}</p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(ev.date).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                          {new Date(ev.date).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" })}
                         </p>
                       </button>
                     ))}
@@ -460,7 +460,7 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{ev.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ev.soldTickets.toLocaleString("es-MX")} boletos · {ev.successfulPayments} pagos
+                      {ev.soldTickets.toLocaleString("es-DO")} boletos · {ev.successfulPayments} pagos
                     </p>
                   </div>
                   <Badge variant="secondary" className="shrink-0 font-mono text-xs">

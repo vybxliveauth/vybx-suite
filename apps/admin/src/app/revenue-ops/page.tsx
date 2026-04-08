@@ -113,7 +113,7 @@ export default function RevenueOpsPage() {
 
             {funnelQuery.isLoading || !funnel ? (
               <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin" /> Cargando funnel...
+                <Loader2 className="size-4 animate-spin" /> Cargando embudo...
               </div>
             ) : (
               <>
@@ -128,12 +128,12 @@ export default function RevenueOpsPage() {
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Checkouts iniciados</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Inicios de compra</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{funnel.totals.checkoutStarted.toLocaleString("es-DO")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Visita → Checkout: {funnel.totals.viewToCheckoutRatePct.toFixed(2)}%
+                        Visita → Inicio de compra: {funnel.totals.viewToCheckoutRatePct.toFixed(2)}%
                       </p>
                     </CardContent>
                   </Card>
@@ -144,7 +144,7 @@ export default function RevenueOpsPage() {
                     <CardContent>
                       <p className="text-2xl font-bold">{funnel.totals.paymentApproved.toLocaleString("es-DO")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Checkout → Pago: {funnel.totals.checkoutToApprovedPaymentRatePct.toFixed(2)}%
+                        Inicio de compra → Pago: {funnel.totals.checkoutToApprovedPaymentRatePct.toFixed(2)}%
                       </p>
                     </CardContent>
                   </Card>
@@ -172,7 +172,7 @@ export default function RevenueOpsPage() {
                         <TableRow>
                           <TableHead>Día</TableHead>
                           <TableHead>Visitas</TableHead>
-                          <TableHead>Checkouts</TableHead>
+                          <TableHead>Inicios de compra</TableHead>
                           <TableHead>Aprobados</TableHead>
                           <TableHead>Fallidos</TableHead>
                           <TableHead className="text-right">Conversión</TableHead>
@@ -507,7 +507,7 @@ export default function RevenueOpsPage() {
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-md border border-border/70 p-3">
               <p className="text-sm font-medium">Embudo diario</p>
-              <p className="text-xs text-muted-foreground mt-1">Visitas, checkout y pagos reales por día.</p>
+              <p className="text-xs text-muted-foreground mt-1">Visitas, inicios de compra y pagos reales por día.</p>
             </div>
             <div className="rounded-md border border-border/70 p-3">
               <p className="text-sm font-medium">Operaciones de suministro</p>

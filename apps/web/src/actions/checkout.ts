@@ -76,7 +76,7 @@ export async function submitCheckoutAction(
 
     return {
       status: "success",
-      message: "Checkout iniciado correctamente.",
+      message: "Inicio de compra completado correctamente.",
       orderId: checkout.reference,
       checkoutUrl: checkout.checkoutUrl,
     };

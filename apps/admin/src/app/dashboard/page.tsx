@@ -57,6 +57,14 @@ function resolvePlatformFeePercent(raw: number | undefined): number {
   return Math.max(0, Math.min(100, Number((raw as number).toFixed(2))));
 }
 
+function fmtTxStatus(status: string): string {
+  if (status === "SUCCESS") return "exitoso";
+  if (status === "FAILED") return "fallido";
+  if (status === "CANCELLED") return "cancelado";
+  if (status === "PENDING") return "pendiente";
+  return status.toLowerCase();
+}
+
 export default function DashboardPage() {
   const statsQuery = useAdminStats();
   const analyticsQuery = useAdminAnalyticsOverview(7);
@@ -121,7 +129,7 @@ export default function DashboardPage() {
     const txItems = (txQuery.data?.data ?? []).slice(0, 5).map<ActivityItem>((tx) => ({
       id: `tx:${tx.id}`,
       type: "sale",
-      title: `Pago ${tx.status} (${tx.provider})`,
+      title: `Pago ${fmtTxStatus(tx.status)} (${tx.provider})`,
       subtitle: `${tx.event?.title ?? "Evento"} · ${fmtCurrency(tx.amount)}`,
       at: tx.createdAt,
     }));
@@ -163,7 +171,7 @@ export default function DashboardPage() {
       const txItems = (txRes.data ?? []).map<ActivityItem>((tx) => ({
         id: `tx:${tx.id}`,
         type: "sale",
-        title: `Pago ${tx.status} (${tx.provider})`,
+        title: `Pago ${fmtTxStatus(tx.status)} (${tx.provider})`,
         subtitle: `${tx.event?.title ?? "Evento"} · ${fmtCurrency(tx.amount)}`,
         at: tx.createdAt,
       }));
@@ -181,9 +189,9 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Global Command Center" }]} />}>
+      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Centro de mando global" }]} />}>
         <div className="flex items-center justify-center py-32 text-muted-foreground gap-2">
-          <Loader2 className="size-5 animate-spin" /> Cargando command center...
+          <Loader2 className="size-5 animate-spin" /> Cargando centro de mando...
         </div>
       </PromoterShell>
     );
@@ -191,7 +199,7 @@ export default function DashboardPage() {
 
   if (hasError || !stats) {
     return (
-      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Global Command Center" }]} />}>
+      <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Centro de mando global" }]} />}>
         <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted-foreground">
           <AlertCircle className="size-10 opacity-40" />
           <p className="text-sm">No se pudieron cargar los datos del dashboard.</p>
@@ -201,10 +209,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Global Command Center" }]} />}>
+    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Centro de mando global" }]} />}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-semibold">Global Command Center</h1>
+          <h1 className="text-xl font-semibold">Centro de mando global</h1>
           <p className="text-sm text-muted-foreground">
             Vista operativa en tiempo real conectada al backend admin.
           </p>
@@ -231,7 +239,7 @@ export default function DashboardPage() {
           <Card className="kpi-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Activity className="size-4 text-primary" /> Comision Vybe
+                <Activity className="size-4 text-primary" /> Comisión Vybe
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -274,8 +282,8 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Tendencia de mercado (ultimos 7 dias)</CardTitle>
-            <CardDescription>Linea real basada en `admin/stats.sparklines.revenue`</CardDescription>
+            <CardTitle>Tendencia de mercado (últimos 7 días)</CardTitle>
+            <CardDescription>Línea real basada en `admin/stats.sparklines.revenue`</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
@@ -322,30 +330,30 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Conversión Semana 1</CardTitle>
             <CardDescription>
-              View → Checkout → Pago aprobado.
+              Vista → Inicio de compra → Pago aprobado.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="text-xs text-muted-foreground">Event viewed</p>
+              <p className="text-xs text-muted-foreground">Evento visto</p>
               <p className="text-lg font-semibold">{(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Checkout started</p>
+              <p className="text-xs text-muted-foreground">Inicio de compra</p>
               <p className="text-lg font-semibold">{(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}</p>
               <p className="text-xs text-muted-foreground">
                 {(funnel?.viewToCheckoutRatePct ?? 0).toFixed(2)}%
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Checkout completed</p>
+              <p className="text-xs text-muted-foreground">Compra completada</p>
               <p className="text-lg font-semibold">{(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}</p>
               <p className="text-xs text-muted-foreground">
                 {(funnel?.checkoutToApprovedPaymentRatePct ?? 0).toFixed(2)}%
               </p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Payment failed</p>
+              <p className="text-xs text-muted-foreground">Pago fallido</p>
               <p className="text-lg font-semibold">{(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}</p>
               <p className="text-xs text-muted-foreground">
                 {(funnel?.paymentFailureRatePct ?? 0).toFixed(2)}%
@@ -367,7 +375,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <p className="text-xs text-muted-foreground">Auth failures</p>
+              <p className="text-xs text-muted-foreground">Fallos de autenticación</p>
               <p className="text-lg font-semibold">{observability?.summary.authFailures ?? 0}</p>
             </div>
             <div>
@@ -387,7 +395,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Conciliacion de payouts</CardTitle>
+            <CardTitle className="text-base">Conciliación de liquidaciones</CardTitle>
             <CardDescription>
               Diferencia entre transacciones `SUCCESS` y payouts realmente `PAID`.
             </CardDescription>

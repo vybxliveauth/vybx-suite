@@ -203,7 +203,7 @@ export function EmailStep({
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginTop: "0.08rem" }}>
         <div style={{ flex: 1, height: 1, background: "color-mix(in oklab, var(--glass-border) 80%, transparent)" }} />
-        <span style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)" }}>OR</span>
+        <span style={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--text-muted)" }}>O</span>
         <div style={{ flex: 1, height: 1, background: "color-mix(in oklab, var(--glass-border) 80%, transparent)" }} />
       </div>
 
@@ -229,7 +229,7 @@ export function EmailStep({
       >
         {passkeyPending
           ? <><Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} /> Preparando passkey...</>
-          : <><KeyRound size={15} /> Sign in with Passkey</>}
+          : <><KeyRound size={15} /> Iniciar con passkey</>}
       </button>
 
       <button

@@ -20,11 +20,11 @@ import { usePermissions } from "@/lib/use-permissions";
 import type { Permission } from "@/lib/permissions";
 
 const NAV: { href: string; label: string; icon: React.ElementType; permission: Permission }[] = [
-  { href: "/dashboard", label: "Dashboard",     icon: LayoutDashboard, permission: "dashboard:view" },
+  { href: "/dashboard", label: "Centro de mando", icon: LayoutDashboard, permission: "dashboard:view" },
   { href: "/events",    label: "Eventos",       icon: CalendarDays,    permission: "events:view"    },
   { href: "/sales",     label: "Ventas",        icon: BarChart3,       permission: "sales:view"     },
   { href: "/refunds",   label: "Reembolsos",    icon: RotateCcw,       permission: "refunds:view"   },
-  { href: "/staff",     label: "Staff",         icon: Users,           permission: "staff:view"     },
+  { href: "/staff",     label: "Personal",      icon: Users,           permission: "staff:view"     },
   { href: "/settings",  label: "Configuración", icon: Settings,        permission: "settings:view"  },
 ];
 

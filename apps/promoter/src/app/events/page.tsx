@@ -38,11 +38,11 @@ function getStatusBadge(event: Event): StatusBadge {
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n);
 }
 
 export default function EventsPage() {

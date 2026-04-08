@@ -510,7 +510,7 @@ export function useAdminAnalyticsOverview(windowDays = 7) {
   });
 }
 
-export function useAdminRevenueOpsFunnel(windowDays = 1) {
+export function useAdminRevenueOpsFunnel(windowDays = 1, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: qk.adminRevenueOpsFunnel(windowDays),
     queryFn: () =>
@@ -518,10 +518,11 @@ export function useAdminRevenueOpsFunnel(windowDays = 1) {
         `/admin/revenue-ops/funnel?${makeQueryString({ windowDays })}`
       ),
     staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 
-export function useAdminRevenueOpsSupply(windowDays = 30) {
+export function useAdminRevenueOpsSupply(windowDays = 30, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: qk.adminRevenueOpsSupply(windowDays),
     queryFn: () =>
@@ -529,10 +530,11 @@ export function useAdminRevenueOpsSupply(windowDays = 30) {
         `/admin/revenue-ops/supply?${makeQueryString({ windowDays })}`
       ),
     staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 
-export function useAdminRevenueOpsRisk(windowDays = 7, windowMinutes = 60) {
+export function useAdminRevenueOpsRisk(windowDays = 7, windowMinutes = 60, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: qk.adminRevenueOpsRisk(windowDays, windowMinutes),
     queryFn: () =>
@@ -540,10 +542,11 @@ export function useAdminRevenueOpsRisk(windowDays = 7, windowMinutes = 60) {
         `/admin/revenue-ops/risk?${makeQueryString({ windowDays, windowMinutes })}`
       ),
     staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 
-export function useAdminRevenueOpsLeaderboard(windowDays = 30) {
+export function useAdminRevenueOpsLeaderboard(windowDays = 30, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: qk.adminRevenueOpsLeaderboard(windowDays),
     queryFn: () =>
@@ -551,6 +554,7 @@ export function useAdminRevenueOpsLeaderboard(windowDays = 30) {
         `/admin/revenue-ops/leaderboard?${makeQueryString({ windowDays })}`
       ),
     staleTime: 30 * 1000,
+    enabled: options?.enabled,
   });
 }
 

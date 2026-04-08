@@ -59,14 +59,14 @@ interface TicketsResponse {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDate(iso: string) {
-  return new Intl.DateTimeFormat("es", {
+  return new Intl.DateTimeFormat("es-DO", {
     weekday: "short", year: "numeric", month: "short", day: "numeric",
     hour: "2-digit", minute: "2-digit",
   }).format(new Date(iso));
 }
 
 function formatPrice(price: string) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 })
+  return new Intl.NumberFormat("es-DO", { style: "currency", currency: "USD", minimumFractionDigits: 2 })
     .format(Number(price));
 }
 

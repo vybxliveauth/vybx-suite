@@ -18,7 +18,7 @@ import { useAuthUser, clearSession, displayName, hydrateUserFromSession } from "
 import type { StaffEvent } from "@/lib/types";
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  return new Date(iso).toLocaleDateString("es-DO", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -69,7 +69,7 @@ export default function EventsPage() {
             <ScanLine className="size-4 text-primary" />
           </div>
           <div>
-            <p className="text-sm font-semibold leading-none">Vybx Staff</p>
+            <p className="text-sm font-semibold leading-none">Vybx Personal</p>
             <p className="text-xs text-muted-foreground mt-0.5">{displayName(user ?? null)}</p>
           </div>
         </div>

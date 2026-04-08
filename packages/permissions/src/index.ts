@@ -117,6 +117,9 @@ export function resolveAdminRequiredPermissionForPath(
   if (pathname === "/sales" || pathname.startsWith("/sales/")) {
     return "sales:view";
   }
+  if (pathname === "/revenue-ops" || pathname.startsWith("/revenue-ops/")) {
+    return "sales:view";
+  }
   if (pathname === "/refunds" || pathname.startsWith("/refunds/")) {
     return "refunds:view";
   }

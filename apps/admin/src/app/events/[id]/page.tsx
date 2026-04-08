@@ -475,7 +475,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground flex items-center gap-1.5"><Ticket className="size-3.5" />Capacidad total</span>
-                  <span className="font-medium tabular-nums">{totalCapacity.toLocaleString("es-MX")}</span>
+                  <span className="font-medium tabular-nums">{totalCapacity.toLocaleString("es-DO")}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Estado</span>

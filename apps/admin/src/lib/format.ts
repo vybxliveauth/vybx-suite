@@ -1,6 +1,6 @@
 /** Shared formatting utilities — single source of truth for locale/currency */
 
-const LOCALE = "es-US";
+const LOCALE = "es-DO";
 const CURRENCY = "USD";
 
 function toValidDate(input: string): Date | null {

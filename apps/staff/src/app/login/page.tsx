@@ -98,7 +98,7 @@ function LoginForm() {
           <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
             <ScanLine className="size-6 text-primary" />
           </div>
-          <h1 className="text-xl font-bold">Vybx Staff</h1>
+          <h1 className="text-xl font-bold">Vybx Personal</h1>
           <p className="text-sm text-muted-foreground">Acceso del equipo de escaneo</p>
         </div>
 

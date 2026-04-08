@@ -53,13 +53,13 @@ import { EventAnalyticsCharts } from "@/components/features/EventAnalyticsCharts
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtCurrency(n: number) {
-  return new Intl.NumberFormat("es-MX", {
+  return new Intl.NumberFormat("es-DO", {
     style: "currency", currency: "MXN", maximumFractionDigits: 0,
   }).format(n);
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("es-MX", {
+  return new Date(iso).toLocaleDateString("es-DO", {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
@@ -491,7 +491,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground flex items-center gap-1.5"><Ticket className="size-3.5" />Capacidad total</span>
-                  <span className="font-medium tabular-nums">{totalCapacity.toLocaleString("es-MX")}</span>
+                  <span className="font-medium tabular-nums">{totalCapacity.toLocaleString("es-DO")}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Estado</span>

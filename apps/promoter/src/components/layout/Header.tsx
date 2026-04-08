@@ -24,11 +24,11 @@ import { api } from "@/lib/api";
 import type { NotificationItem, NotificationsResponse } from "@/lib/types";
 
 const MODULES = [
-  { label: "Dashboard",      href: "/dashboard",  keywords: ["dashboard", "inicio"] },
+  { label: "Centro de mando", href: "/dashboard",  keywords: ["dashboard", "inicio", "mando"] },
   { label: "Eventos",        href: "/events",     keywords: ["events", "eventos"] },
   { label: "Ventas",         href: "/sales",      keywords: ["sales", "ventas", "ingresos"] },
   { label: "Reembolsos",     href: "/refunds",    keywords: ["refunds", "reembolsos", "cancelaciones"] },
-  { label: "Staff",          href: "/staff",      keywords: ["staff", "escaner", "scanner", "personal"] },
+  { label: "Personal",       href: "/staff",      keywords: ["staff", "escaner", "scanner", "personal"] },
   { label: "Configuración",  href: "/settings",   keywords: ["settings", "configuracion", "perfil"] },
   { label: "Nuevo evento",   href: "/events/new", keywords: ["new", "crear", "nuevo", "create"] },
 ];
@@ -61,7 +61,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
     void loadNotifications();
     intervalRef.current = setInterval(() => void loadNotifications(), 45_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   async function handleNotifClick(n: NotificationItem) {

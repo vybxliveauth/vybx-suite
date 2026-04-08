@@ -55,7 +55,7 @@ function MockGatewayInner() {
     window.location.href = cancelUrl;
   }
 
-  const formatted = new Intl.NumberFormat("en-US", {
+  const formatted = new Intl.NumberFormat("es-DO", {
     style: "currency", currency, minimumFractionDigits: 0,
   }).format(Number(amount));
 
@@ -64,7 +64,7 @@ function MockGatewayInner() {
       <main id="main-content" className="page-state-shell">
         <section className="page-state-card" style={{ maxWidth: 560 }}>
           <h1 className="auth-title" style={{ marginBottom: "0.6rem" }}>
-            Gateway de prueba deshabilitado
+            Pasarela de prueba deshabilitada
           </h1>
           <p className="auth-subtitle">
             Esta ruta solo está disponible en entornos de desarrollo.
