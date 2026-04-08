@@ -23,6 +23,8 @@
 /* ── Admin design tokens (same base as promoter, blue palette) ──────────── */
 :root {
   color-scheme: dark;
+  --font-heading: 'Avenir Next', 'Montserrat', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
   --background: 220 18% 5%;
   --foreground: 210 20% 98%;

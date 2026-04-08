@@ -118,11 +118,11 @@ function ProfileSection() {
   const { user, setUser } = useAuthStore();
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ProfileFields>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { firstName: user?.firstName ?? "", lastName: user?.lastName ?? "", email: user?.email ?? "" },
+    defaultValues: { firstName: user?.firstName ?? "", lastName: user?.lastName ?? "", email: user?.email ?? "", country: user?.country ?? "", city: user?.city ?? "" },
   });
 
   useEffect(() => {
-    if (user) reset({ firstName: user.firstName, lastName: user.lastName, email: user.email });
+    if (user) reset({ firstName: user.firstName, lastName: user.lastName, email: user.email, country: user.country ?? "", city: user.city ?? "" });
   }, [user, reset]);
 
   const [state, action, pending] = useActionState<UiActionState, ProfileFields>(
@@ -151,8 +151,8 @@ function ProfileSection() {
       <div style={{ marginTop: "0.5rem", paddingTop: "1.25rem", borderTop: "1px solid var(--glass-border)" }}>
         <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "0.85rem" }}>Ubicación</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem" }}>
-          <Field label="País" icon={Globe} {...register("country")} placeholder="United States" />
-          <Field label="Ciudad" icon={MapPin} {...register("city")} placeholder="Santo Domingo" />
+          <Field label="País" icon={Globe} {...register("country")} placeholder="México" />
+          <Field label="Ciudad" icon={MapPin} {...register("city")} placeholder="Ciudad de México" />
         </div>
       </div>
 

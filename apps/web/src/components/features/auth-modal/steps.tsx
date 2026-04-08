@@ -53,7 +53,8 @@ const registerSchema = z.object({
     .regex(/\d/, "Debe tener un número")
     .regex(/[^A-Za-z\d]/, "Debe tener un símbolo"),
   confirmPassword: z.string(),
-  country: z.string().optional(),
+  country: z.string().max(80, "Máximo 80 caracteres").optional().or(z.literal("")),
+  city: z.string().max(120, "Máximo 120 caracteres").optional().or(z.literal("")),
   acceptTerms: z.literal(true, { errorMap: () => ({ message: "Debes aceptar los términos" }) }),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -634,6 +635,7 @@ export function RegisterStep({
             firstName: data.firstName,
             lastName: data.lastName,
             country: data.country || undefined,
+            city: data.city || undefined,
             turnstileToken,
           }),
         });
@@ -736,13 +738,21 @@ export function RegisterStep({
           autoComplete="new-password"
         />
 
-        <Field
-          label="País (opcional)"
-          icon={Globe}
-          {...register("country")}
-          placeholder="United States"
-          autoComplete="country-name"
-        />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+          <Field
+            label="País (opcional)"
+            icon={Globe}
+            {...register("country")}
+            placeholder="México"
+            autoComplete="country-name"
+          />
+          <Field
+            label="Ciudad (opcional)"
+            {...register("city")}
+            placeholder="Ciudad de México"
+            autoComplete="address-level2"
+          />
+        </div>
 
         <label style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", cursor: "pointer" }}>
           <input

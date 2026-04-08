@@ -255,6 +255,8 @@ export interface BackendAuthUser {
   lastName?: string;
   profileImageUrl?: string;
   marketingEmailOptIn?: boolean;
+  country?: string | null;
+  city?: string | null;
 }
 
 export function adaptAuthUser(raw: BackendAuthUser): AuthUser {
@@ -267,6 +269,8 @@ export function adaptAuthUser(raw: BackendAuthUser): AuthUser {
     emailVerified: true,
     profileImageUrl: raw.profileImageUrl ?? null,
     marketingEmailOptIn: raw.marketingEmailOptIn ?? true,
+    country: raw.country ?? null,
+    city: raw.city ?? null,
   };
 }
 

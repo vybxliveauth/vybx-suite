@@ -140,4 +140,6 @@ export interface PublicAuthUser {
   role: UserRole;
   emailVerified: boolean;
   profileImageUrl: string | null;
+  country?: string | null;
+  city?: string | null;
 }
