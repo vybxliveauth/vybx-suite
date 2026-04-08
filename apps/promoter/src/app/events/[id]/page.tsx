@@ -48,8 +48,8 @@ import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, useDeleteEvent } from "@/lib/queries";
 import { tracker, AnalyticsEvents } from "@/lib/analytics";
-import type { EventDetail, EventStatus } from "@/lib/types";
 import { EventAnalyticsCharts } from "@/components/features/EventAnalyticsCharts";
+import { getEventStatusBadge } from "@/lib/event-status";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtCurrency(n: number) {
@@ -63,16 +63,6 @@ function fmtDate(iso: string) {
     weekday: "long", day: "2-digit", month: "long", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
-}
-
-function getStatusBadge(ev: EventDetail): { label: string; variant: "default" | "secondary" | "destructive" | "outline" } {
-  if (!ev.isActive && ev.status === "APPROVED") return { label: "Inactivo", variant: "secondary" };
-  const map: Record<EventStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    APPROVED: { label: "Publicado", variant: "default" },
-    PENDING:  { label: "Pendiente aprobación", variant: "outline" },
-    REJECTED: { label: "Rechazado", variant: "destructive" },
-  };
-  return map[ev.status];
 }
 
 function useCountdown(targetIso: string) {
@@ -202,7 +192,7 @@ export default function EventDetailPage() {
     );
   }
 
-  const st = getStatusBadge(event);
+  const st = getEventStatusBadge(event, { pendingLabel: "Pendiente aprobación" });
   const totalSold = event.ticketTypes.reduce((a, t) => a + t.sold, 0);
   const totalCapacity = event.ticketTypes.reduce((a, t) => a + t.quantity, 0);
   const isPast = new Date(event.date) < new Date();

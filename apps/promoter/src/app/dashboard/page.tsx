@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AreaChart,
@@ -24,6 +24,12 @@ import {
   MapPin,
   Clock,
   ChevronDown,
+  CheckCircle2,
+  CircleDashed,
+  ScanLine,
+  Users,
+  FilePlus2,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   Card,
@@ -32,10 +38,14 @@ import {
   CardTitle,
   CardDescription,
   Badge,
+  Button,
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
-import { useDashboard, useEvents, useEventCharts } from "@/lib/queries";
+import { useDashboard, useEvents, useEventCharts, usePromoterProfile } from "@/lib/queries";
+import { useAuthUser } from "@/lib/auth";
+import { getEventStatusBadge, getPublicationFeedback } from "@/lib/event-status";
+import type { Event, PromoterApplicationStatus } from "@/lib/types";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -54,6 +64,13 @@ const RANGES = [
   { label: "30d", value: 30 },
   { label: "90d", value: 90 },
 ];
+
+type EventWithLifecycle = Event & {
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  approvedAt?: string | null;
+  publishedAt?: string | null;
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,6 +98,77 @@ function hourColor(count: number, max: number) {
   return PURPLE;
 }
 
+function parseIsoMs(input?: string | null): number | null {
+  if (!input || input.trim().length === 0) return null;
+  const ms = Date.parse(input);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function fmtLeadHours(hours: number | null): string {
+  if (hours === null) return "N/D";
+  if (hours < 1) return "< 1h";
+  if (hours < 24) return `${hours.toFixed(1)}h`;
+  const days = hours / 24;
+  if (days < 7) return `${days.toFixed(1)} días`;
+  const weeks = days / 7;
+  return `${weeks.toFixed(1)} sem`;
+}
+
+function resolveAccountReviewState(
+  status: PromoterApplicationStatus | undefined,
+  pendingEventsCount: number,
+  rejectedEventsCount: number,
+  approvedEventsCount: number,
+): { label: string; detail: string; variant: "default" | "secondary" | "destructive" | "outline" } {
+  if (status === "PENDING_APPROVAL") {
+    return {
+      label: "Cuenta en revisión",
+      detail: "Tu perfil de promotor está siendo revisado por el equipo.",
+      variant: "outline",
+    };
+  }
+  if (status === "REJECTED") {
+    return {
+      label: "Cuenta con ajustes",
+      detail: "Actualiza tu perfil para continuar con la publicación.",
+      variant: "destructive",
+    };
+  }
+  if (status === "APPROVED") {
+    return {
+      label: "Cuenta aprobada",
+      detail: "Puedes crear, publicar y vender eventos normalmente.",
+      variant: "default",
+    };
+  }
+  if (rejectedEventsCount > 0) {
+    return {
+      label: "Eventos con observaciones",
+      detail: "Tienes eventos rechazados que requieren corrección.",
+      variant: "destructive",
+    };
+  }
+  if (pendingEventsCount > 0) {
+    return {
+      label: "Eventos en revisión",
+      detail: "Tu publicación está en cola de aprobación.",
+      variant: "outline",
+    };
+  }
+  if (approvedEventsCount > 0) {
+    return {
+      label: "Publicación activa",
+      detail: "Ya tienes eventos publicados y vendiendo.",
+      variant: "default",
+    };
+  }
+  return {
+    label: "Listo para empezar",
+    detail: "Completa el checklist para publicar tu primer evento.",
+    variant: "secondary",
+  };
+}
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
@@ -88,11 +176,16 @@ export default function DashboardPage() {
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
   const [showEventPicker, setShowEventPicker] = useState(false);
 
+  const authUser = useAuthUser();
+  const { data: promoterProfile } = usePromoterProfile();
   const { data: dashData, isLoading: dashLoading, isError: dashError } = useDashboard();
   const { data: eventsData } = useEvents(1, 50);
 
   // Pick first event with sales by default
-  const events = eventsData?.data ?? [];
+  const events = useMemo(
+    () => (eventsData?.data ?? []) as EventWithLifecycle[],
+    [eventsData?.data],
+  );
   const activeEventId = selectedEvent ?? events[0]?.id ?? null;
 
   const { data: charts, isLoading: chartsLoading } = useEventCharts(
@@ -101,6 +194,92 @@ export default function DashboardPage() {
   );
 
   const activeEventTitle = events.find((e) => e.id === activeEventId)?.title ?? "Selecciona un evento";
+
+  const latestEvent = useMemo(() => {
+    if (events.length === 0) return null;
+    return [...events].sort((a, b) => {
+      const bMs = parseIsoMs(b.createdAt ?? b.updatedAt ?? b.date) ?? 0;
+      const aMs = parseIsoMs(a.createdAt ?? a.updatedAt ?? a.date) ?? 0;
+      return bMs - aMs;
+    })[0] ?? null;
+  }, [events]);
+
+  const approvedEventsCount = useMemo(
+    () => events.filter((event) => event.status === "APPROVED").length,
+    [events],
+  );
+  const pendingEventsCount = useMemo(
+    () => events.filter((event) => event.status === "PENDING").length,
+    [events],
+  );
+  const rejectedEventsCount = useMemo(
+    () => events.filter((event) => event.status === "REJECTED").length,
+    [events],
+  );
+
+  const firstPublishedLeadHours = useMemo(() => {
+    const publishedCandidates = events
+      .map((event) => ({
+        createdMs: parseIsoMs(event.createdAt),
+        publishedMs: parseIsoMs(event.publishedAt ?? event.approvedAt ?? event.updatedAt),
+      }))
+      .filter((event): event is { createdMs: number; publishedMs: number } => (
+        event.createdMs !== null && event.publishedMs !== null && event.publishedMs >= event.createdMs
+      ))
+      .sort((a, b) => a.publishedMs - b.publishedMs);
+
+    const first = publishedCandidates[0];
+    if (!first) return null;
+    return (first.publishedMs - first.createdMs) / (1000 * 60 * 60);
+  }, [events]);
+
+  const profileSource = promoterProfile ?? authUser;
+  const profileReady = Boolean(
+    (profileSource?.firstName ?? "").trim().length > 0 &&
+    (profileSource?.email ?? "").trim().length > 0,
+  );
+
+  const onboardingSteps = [
+    {
+      id: "profile",
+      title: "Completa tu perfil",
+      detail: "Datos de cuenta y contacto listos para operar.",
+      done: profileReady,
+      href: "/settings",
+      cta: profileReady ? "Editar perfil" : "Completar perfil",
+    },
+    {
+      id: "event",
+      title: "Crea tu primer evento",
+      detail: "Define fecha, boletos y detalles del show.",
+      done: events.length > 0,
+      href: "/events/new",
+      cta: events.length > 0 ? "Crear otro evento" : "Crear evento",
+    },
+    {
+      id: "publish",
+      title: "Publica tu primer evento",
+      detail: "Cuando esté aprobado, comienzas a vender.",
+      done: approvedEventsCount > 0,
+      href: latestEvent ? `/events/${latestEvent.id}` : "/events/new",
+      cta: approvedEventsCount > 0 ? "Ver evento publicado" : "Ver estado de revisión",
+    },
+  ] as const;
+
+  const onboardingCompleted = onboardingSteps.filter((step) => step.done).length;
+  const onboardingProgressPct = Math.round((onboardingCompleted / onboardingSteps.length) * 100);
+
+  const accountReview = resolveAccountReviewState(
+    promoterProfile?.promoterApplicationStatus,
+    pendingEventsCount,
+    rejectedEventsCount,
+    approvedEventsCount,
+  );
+
+  const latestPublicationFeedback = latestEvent ? getPublicationFeedback(latestEvent) : null;
+  const latestPublicationBadge = latestEvent
+    ? getEventStatusBadge(latestEvent, { pendingLabel: "Pendiente aprobación" })
+    : null;
 
   // ── Loading / error states ────────────────────────────────────────────────
   if (dashLoading) {
@@ -167,7 +346,149 @@ export default function DashboardPage() {
         {/* Title */}
         <div>
           <h1 className="text-xl font-semibold">Centro de mando</h1>
-          <p className="text-sm text-muted-foreground">Resumen de tus ventas e ingresos</p>
+          <p className="text-sm text-muted-foreground">Resumen de ventas, publicación y operación diaria</p>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <Card className="xl:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ClipboardCheck className="size-4 text-primary" />
+                Onboarding del promotor
+              </CardTitle>
+              <CardDescription>
+                Objetivo: pasar de alta a primer evento publicado y cobrando lo más rápido posible.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                  <p className="text-xs text-muted-foreground">Checklist completado</p>
+                  <p className="text-xl font-semibold tabular-nums mt-1">
+                    {onboardingCompleted}/{onboardingSteps.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{onboardingProgressPct}% de avance</p>
+                </div>
+                <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                  <p className="text-xs text-muted-foreground">Tiempo a primer evento publicado</p>
+                  <p className="text-xl font-semibold tabular-nums mt-1">{fmtLeadHours(firstPublishedLeadHours)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    KPI principal de activación para promotores nuevos.
+                  </p>
+                </div>
+              </div>
+
+              <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-500"
+                  style={{ width: `${onboardingProgressPct}%` }}
+                />
+              </div>
+
+              <div className="space-y-2.5">
+                {onboardingSteps.map((step) => (
+                  <div
+                    key={step.id}
+                    className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2 ${
+                      step.done ? "border-emerald-500/30 bg-emerald-500/5" : "border-border/70 bg-card/40"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        {step.done ? (
+                          <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                        ) : (
+                          <CircleDashed className="size-4 text-muted-foreground shrink-0" />
+                        )}
+                        {step.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{step.detail}</p>
+                    </div>
+                    <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs shrink-0">
+                      <Link href={step.href}>{step.cta}</Link>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Revisión y publicación</CardTitle>
+              <CardDescription>Estado actual y accesos rápidos de operación.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">Revisión de cuenta</p>
+                  <Badge variant={accountReview.variant}>{accountReview.label}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">{accountReview.detail}</p>
+                {promoterProfile?.promoterApplicationFeedback && (
+                  <p className="text-xs text-amber-300 mt-2">
+                    Feedback: {promoterProfile.promoterApplicationFeedback}
+                  </p>
+                )}
+              </div>
+
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">Último resultado de publicación</p>
+                  {latestPublicationBadge ? (
+                    <Badge variant={latestPublicationBadge.variant}>{latestPublicationBadge.label}</Badge>
+                  ) : (
+                    <Badge variant="secondary">Sin eventos</Badge>
+                  )}
+                </div>
+                <p className="text-sm font-medium mt-1">
+                  {latestPublicationFeedback?.title ?? "Crea tu primer evento para iniciar revisión"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {latestPublicationFeedback?.detail ?? "Te guiaremos paso a paso desde el checklist."}
+                </p>
+              </div>
+
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <p className="text-xs text-muted-foreground">Ventas y cobros confirmados</p>
+                <p className="text-sm font-semibold mt-1">
+                  {summary.successfulPayments.toLocaleString("es-DO")} pagos · {fmtCurrency(summary.grossRevenue)}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Reembolsos pendientes: {summary.refundRequestsPending.toLocaleString("es-DO")}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <Button asChild variant="outline" size="sm" className="justify-start">
+                  <Link href="/events/new">
+                    <FilePlus2 className="size-4" /> Nuevo evento
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="justify-start">
+                  <Link href="/sales">
+                    <TrendingUp className="size-4" /> Ver ventas
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="sm" className="justify-start">
+                  <Link href="/staff">
+                    <Users className="size-4" /> Gestionar personal
+                  </Link>
+                </Button>
+                {activeEventId ? (
+                  <Button asChild variant="outline" size="sm" className="justify-start">
+                    <Link href={`/scan/${activeEventId}`}>
+                      <ScanLine className="size-4" /> Escanear boletos
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" className="justify-start" disabled>
+                    <ScanLine className="size-4" /> Escanear boletos
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* ── KPI Cards ──────────────────────────────────────────────────── */}

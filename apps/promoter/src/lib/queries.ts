@@ -1,16 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import type {
+  PromoterProfile,
   DashboardResponse,
   PaginatedResponse,
   Event,
   EventDetail,
   EventAnalyticsResponse,
   EventChartsResponse,
+  RefundRequest,
+  RefundStatus,
 } from "./types";
 
 // ── Query keys ────────────────────────────────────────────────────────────────
 export const qk = {
+  profile:        ["profile"]                                as const,
   dashboard:      ["dashboard"]                              as const,
   events:         (page: number, pageSize: number) =>
                     ["events", page, pageSize]               as const,
@@ -33,6 +37,14 @@ export function useDashboard() {
   return useQuery({
     queryKey: qk.dashboard,
     queryFn:  () => api.get<DashboardResponse>("/promoter/dashboard"),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function usePromoterProfile() {
+  return useQuery({
+    queryKey: qk.profile,
+    queryFn: () => api.get<PromoterProfile>("/auth/profile"),
     staleTime: 2 * 60 * 1000,
   });
 }
@@ -88,7 +100,7 @@ export function useActiveCategories() {
 export function useDeleteEvent() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/events/${id}`),
+    mutationFn: (id: string) => api.delete(`/promoter/events/${id}`),
     onSuccess:  () => qc.invalidateQueries({ queryKey: ["events"] }),
   });
 }
@@ -97,7 +109,7 @@ export function useToggleEvent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      api.patch(`/events/${id}/status`, { isActive }),
+      api.patch(`/promoter/events/${id}/status`, { isActive }),
     onSuccess: (_, { id }) =>
       qc.invalidateQueries({ queryKey: qk.event(id) }),
   });
@@ -122,24 +134,5 @@ export function useRefunds(page = 1, limit = 20) {
   });
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-export type RefundStatus = "REQUESTED" | "APPROVED" | "REJECTED";
-
-export interface RefundRequest {
-  id: string;
-  status: RefundStatus;
-  refundStatus: string;
-  reason: string | null;
-  requestedAt: string;
-  createdAt: string;
-  ticket: {
-    id: string;
-    user: { id: string; email: string; firstName?: string; lastName?: string };
-    ticketType: {
-      name: string;
-      price: number;
-      event: { id: string; title: string };
-    };
-  };
-  requester: { id: string; email: string; firstName?: string; lastName?: string };
-}
+// Re-export so pages that import from queries still work
+export type { RefundStatus, RefundRequest };

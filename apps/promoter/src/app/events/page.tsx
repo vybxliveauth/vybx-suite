@@ -23,19 +23,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useEvents, useDeleteEvent } from "@/lib/queries";
-import type { Event, EventStatus } from "@/lib/types";
-
-type StatusBadge = { label: string; variant: "default" | "secondary" | "destructive" | "outline" };
-
-function getStatusBadge(event: Event): StatusBadge {
-  if (!event.isActive && event.status === "APPROVED") return { label: "Inactivo", variant: "secondary" };
-  const map: Record<EventStatus, StatusBadge> = {
-    APPROVED: { label: "Publicado", variant: "default" },
-    PENDING:  { label: "Pendiente", variant: "outline" },
-    REJECTED: { label: "Rechazado", variant: "destructive" },
-  };
-  return map[event.status];
-}
+import { getEventStatusBadge } from "@/lib/event-status";
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-DO", { day: "2-digit", month: "short", year: "numeric" });
@@ -120,7 +108,7 @@ export default function EventsPage() {
                   </TableRow>
                 ) : (
                   filtered.map((ev) => {
-                    const st = getStatusBadge(ev);
+                    const st = getEventStatusBadge(ev, { pendingLabel: "Pendiente" });
                     const m = ev.metrics;
                     const isDeleting = deleteEvent.isPending && deleteEvent.variables === ev.id;
                     return (

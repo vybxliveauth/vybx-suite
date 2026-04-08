@@ -17,8 +17,6 @@ import type {
   NotificationsResponse as SharedNotificationsResponse,
   NotificationSeverity as SharedNotificationSeverity,
   PaginatedResponse as SharedPaginatedResponse,
-  RefundRequestCore as SharedRefundRequestCore,
-  RefundStatus as SharedRefundStatus,
   UserRole as SharedUserRole,
 } from "@vybx/types";
 
@@ -27,6 +25,21 @@ export type UserRole = SharedUserRole;
 export interface AuthUser extends AuthUserCore {}
 
 export type LoginResponse = LoginResponseCore<AuthUser>;
+
+export type PromoterApplicationStatus =
+  | "NOT_STARTED"
+  | "PENDING_APPROVAL"
+  | "APPROVED"
+  | "REJECTED";
+
+export interface PromoterProfile extends AuthUser {
+  promoterApplicationStatus?: PromoterApplicationStatus;
+  promoterApplicationSubmittedAt?: string | null;
+  promoterApplicationReviewedAt?: string | null;
+  promoterApplicationFeedback?: string | null;
+  city?: string | null;
+  country?: string | null;
+}
 
 // ── Events ───────────────────────────────────────────────────────────────────
 
@@ -103,9 +116,29 @@ export type NotificationsResponse = SharedNotificationsResponse;
 // ── Refunds ───────────────────────────────────────────────────────────────────
 
 export type CancellationStatus = SharedCancellationStatus;
-export type RefundStatus = SharedRefundStatus;
 
-export type RefundRequest = SharedRefundRequestCore;
+/** Values returned by the promoter refund endpoints. */
+export type RefundStatus = "REQUESTED" | "APPROVED" | "REJECTED";
+
+/** Shape returned by GET /promoter/refunds. */
+export interface RefundRequest {
+  id: string;
+  status: RefundStatus;
+  refundStatus: string;
+  reason: string | null;
+  requestedAt: string;
+  createdAt: string;
+  ticket: {
+    id: string;
+    user: { id: string; email: string; firstName?: string; lastName?: string };
+    ticketType: {
+      name: string;
+      price: number;
+      event: { id: string; title: string };
+    };
+  };
+  requester: { id: string; email: string; firstName?: string; lastName?: string };
+}
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
