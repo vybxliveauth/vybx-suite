@@ -9,6 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  LabelList,
 } from "recharts";
 import { Activity, Ticket, Wallet, RotateCcw, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@vybx/ui";
@@ -63,6 +67,119 @@ function fmtTxStatus(status: string): string {
   if (status === "CANCELLED") return "cancelado";
   if (status === "PENDING") return "pendiente";
   return status.toLowerCase();
+}
+
+type FunnelData = {
+  eventViewed?: number;
+  checkoutStarted?: number;
+  checkoutCompleted?: number;
+  paymentFailed?: number;
+  viewToCheckoutRatePct?: number;
+  checkoutToApprovedPaymentRatePct?: number;
+  paymentFailureRatePct?: number;
+} | null | undefined;
+
+function FunnelCard({ funnel, analyticsLoading }: { funnel: FunnelData; analyticsLoading: boolean }) {
+  const viewed    = funnel?.eventViewed ?? 0;
+  const started   = funnel?.checkoutStarted ?? 0;
+  const completed = funnel?.checkoutCompleted ?? 0;
+  const failed    = funnel?.paymentFailed ?? 0;
+
+  const viewToCheckout   = funnel?.viewToCheckoutRatePct ?? (viewed > 0 ? (started / viewed) * 100 : 0);
+  const checkoutToApproved = funnel?.checkoutToApprovedPaymentRatePct ?? (started > 0 ? (completed / started) * 100 : 0);
+  const failureRate      = funnel?.paymentFailureRatePct ?? (started > 0 ? (failed / started) * 100 : 0);
+
+  const steps = [
+    { label: "Evento visto",      value: viewed,    pct: 100,             color: "hsl(var(--primary))" },
+    { label: "Inicio compra",     value: started,   pct: viewToCheckout,  color: "hsl(217 91% 60%)" },
+    { label: "Pago aprobado",     value: completed, pct: checkoutToApproved, color: "hsl(142 76% 36%)" },
+  ];
+
+  const maxValue = Math.max(viewed, 1);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Embudo de conversión</CardTitle>
+        <CardDescription>Vista → Inicio de compra → Pago aprobado · últimos 7 días</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {analyticsLoading ? (
+          <div className="flex items-center justify-center py-10 text-muted-foreground gap-2">
+            <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span className="text-sm">Cargando embudo…</span>
+          </div>
+        ) : viewed === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 gap-2 text-muted-foreground">
+            <p className="text-sm">Sin datos de funnel para el período.</p>
+            <p className="text-xs opacity-60">Se actualiza a medida que llegan eventos de analytics.</p>
+          </div>
+        ) : (
+          <>
+            {/* Bar funnel */}
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={steps}
+                layout="vertical"
+                margin={{ top: 4, right: 80, left: 8, bottom: 4 }}
+                barSize={32}
+              >
+                <XAxis type="number" domain={[0, maxValue]} hide />
+                <YAxis
+                  type="category"
+                  dataKey="label"
+                  width={110}
+                  tick={{ fontSize: 12, fill: CHART_TICK_COLOR }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                  formatter={(v) => [Number(v ?? 0).toLocaleString("es-DO"), "Cantidad"]}
+                  contentStyle={{
+                    background: CHART_TOOLTIP_BG,
+                    border: CHART_TOOLTIP_BORDER,
+                    borderRadius: "0.5rem",
+                    fontSize: 12,
+                  }}
+                />
+                <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  {steps.map((s, i) => (
+                    <Cell key={i} fill={s.color} />
+                  ))}
+                  <LabelList
+                    dataKey="value"
+                    position="right"
+                    formatter={(v: unknown) => Number(v ?? 0).toLocaleString("es-DO")}
+                    style={{ fontSize: 12, fill: CHART_TICK_COLOR, fontWeight: 600 }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+
+            {/* Drop-off stats row */}
+            <div className="grid grid-cols-3 gap-3 mt-2 border-t border-border/50 pt-4">
+              <div className="text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Vista → Compra</p>
+                <p className="text-lg font-bold tabular-nums text-sky-400">{viewToCheckout.toFixed(1)}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Compra → Pago</p>
+                <p className="text-lg font-bold tabular-nums text-emerald-400">{checkoutToApproved.toFixed(1)}%</p>
+              </div>
+              <div className="text-center">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Tasa fallos</p>
+                <p className={`text-lg font-bold tabular-nums ${failureRate > 10 ? "text-red-400" : "text-muted-foreground"}`}>
+                  {failureRate.toFixed(1)}%
+                  {failed > 0 && <span className="text-xs font-normal ml-1">({failed.toLocaleString("es-DO")})</span>}
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function DashboardPage() {
@@ -326,41 +443,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Conversión Semana 1</CardTitle>
-            <CardDescription>
-              Vista → Inicio de compra → Pago aprobado.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <p className="text-xs text-muted-foreground">Evento visto</p>
-              <p className="text-lg font-semibold">{(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Inicio de compra</p>
-              <p className="text-lg font-semibold">{(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}</p>
-              <p className="text-xs text-muted-foreground">
-                {(funnel?.viewToCheckoutRatePct ?? 0).toFixed(2)}%
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Compra completada</p>
-              <p className="text-lg font-semibold">{(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}</p>
-              <p className="text-xs text-muted-foreground">
-                {(funnel?.checkoutToApprovedPaymentRatePct ?? 0).toFixed(2)}%
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Pago fallido</p>
-              <p className="text-lg font-semibold">{(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}</p>
-              <p className="text-xs text-muted-foreground">
-                {(funnel?.paymentFailureRatePct ?? 0).toFixed(2)}%
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <FunnelCard funnel={funnel} analyticsLoading={analyticsQuery.isLoading} />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <ActivityFeed initialItems={initialFeedItems} source={feedSource} />
