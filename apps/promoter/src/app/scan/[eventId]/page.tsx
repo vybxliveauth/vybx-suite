@@ -125,6 +125,8 @@ export default function ScanPage() {
   const [lastResult, setLastResult] = useState<CheckInResult | null>(null);
   const [secretsReady, setSecretsReady] = useState(false);
   const [secretsCount, setSecretsCount] = useState(0);
+  const [secretsSyncedAt, setSecretsSyncedAt] = useState<Date | null>(null);
+  const [refreshingSecrets, setRefreshingSecrets] = useState(false);
 
   // Refs for scan loop (avoid stale closures)
   const secretsMap = useRef<Map<string, TicketSecret>>(new Map());
@@ -145,27 +147,34 @@ export default function ScanPage() {
     };
   }, []);
 
-  // ── Preload ticket secrets ────────────────────────────────────────────────
-  useEffect(() => {
-    if (!eventId) return;
-    api
-      .get<{ secrets: TicketSecret[]; count: number }>(
-        `/event-staff/events/${eventId}/ticket-secrets`,
-      )
-      .then((res) => {
+  // ── Preload / refresh ticket secrets ────────────────────────────────────
+  const loadSecrets = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!eventId) return;
+      if (!opts?.silent) setRefreshingSecrets(true);
+      try {
+        const res = await api.get<{ secrets: TicketSecret[]; count: number }>(
+          `/event-staff/events/${eventId}/ticket-secrets`,
+        );
         const map = new Map<string, TicketSecret>();
         for (const s of (res as any).secrets ?? []) {
           map.set(s.ticketId, s);
         }
         secretsMap.current = map;
         setSecretsCount((res as any).count ?? map.size);
+        setSecretsSyncedAt(new Date());
         setSecretsReady(true);
-      })
-      .catch(() => {
-        // Offline preload failed — will rely on online check-in
+      } catch {
+        // Offline load failed — will rely on online check-in
         setSecretsReady(true);
-      });
-  }, [eventId]);
+      } finally {
+        setRefreshingSecrets(false);
+      }
+    },
+    [eventId],
+  );
+
+  useEffect(() => { void loadSecrets({ silent: true }); }, [loadSecrets]);
 
   // ── Camera setup ──────────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
@@ -287,11 +296,21 @@ export default function ScanPage() {
             <h1 className="text-sm font-semibold truncate">Escanear boletos</h1>
             <p className="text-xs text-muted-foreground">
               {secretsReady
-                ? `${secretsCount} boletos cargados`
+                ? `${secretsCount} boletos · sync ${secretsSyncedAt ? secretsSyncedAt.toLocaleTimeString("es-DO", { hour: "2-digit", minute: "2-digit" }) : "—"}`
                 : "Cargando boletos..."}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8"
+              onClick={() => void loadSecrets()}
+              disabled={refreshingSecrets}
+              title="Actualizar lista de boletos"
+            >
+              <RotateCcw className={`size-3.5 ${refreshingSecrets ? "animate-spin" : ""}`} />
+            </Button>
             {isOnline ? (
               <Badge variant="outline" className="gap-1 text-emerald-400 border-emerald-500/30 bg-emerald-500/10 text-xs">
                 <Wifi className="size-3" /> Online

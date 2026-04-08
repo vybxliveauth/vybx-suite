@@ -13,7 +13,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useRefunds } from "@/lib/queries";
-import type { RefundStatus } from "@/lib/queries";
+import type { RefundStatus } from "@/lib/types";
 import { api } from "@/lib/api";
 import { tracker, AnalyticsEvents } from "@/lib/analytics";
 

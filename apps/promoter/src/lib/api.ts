@@ -10,7 +10,8 @@ const client = createApiClient({
   onSessionExpired: () => {
     if (typeof window !== "undefined") {
       clearSession();
-      window.location.href = `/login?next=${encodeURIComponent(window.location.pathname)}`;
+      const fullPath = window.location.pathname + window.location.search + window.location.hash;
+      window.location.href = `/login?next=${encodeURIComponent(fullPath)}`;
     }
   },
 });
