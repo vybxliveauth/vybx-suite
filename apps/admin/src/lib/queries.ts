@@ -863,14 +863,14 @@ export function usePromoterApplicationsOverview() {
   });
 }
 
-export function usePromoters(q?: string) {
+export function usePromoters(q?: string, page = 1, pageSize = 20) {
   return useQuery({
-    queryKey: qk.promoters(q),
+    queryKey: [...qk.promoters(q), page, pageSize],
     queryFn: () =>
       api.get<PaginatedResponse<AdminUserRecord>>(
         `/users/promoters?${makeQueryString({
-          page: 1,
-          limit: 100,
+          page,
+          limit: pageSize,
           q: q?.trim() || undefined,
         })}`
       ),

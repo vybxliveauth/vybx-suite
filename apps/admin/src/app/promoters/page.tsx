@@ -3,7 +3,9 @@
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@vybx/ui";
-import { AlertTriangle, Building2, FileCheck2, Loader2, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Building2, ExternalLink, FileCheck2, Loader2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import { Pagination } from "@/components/pro/Pagination";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ProDataTable } from "@/components/pro/ProDataTable";
@@ -84,8 +86,11 @@ function payoutMethodLabel(method?: PromoterPayoutMethod | null) {
   return "Transferencia bancaria";
 }
 
+const PROMOTERS_PAGE_SIZE = 20;
+
 export default function PromotersPage() {
   const [selected, setSelected] = useState<PromoterReviewRow[]>([]);
+  const [approvedPage, setApprovedPage] = useState(1);
   const [bulkNotice, setBulkNotice] = useState<{
     tone: "success" | "error" | "info";
     text: string;
@@ -95,7 +100,7 @@ export default function PromotersPage() {
   const overviewQuery = usePromoterApplicationsOverview();
   const pendingQuery = usePromoterApplications("PENDING_APPROVAL");
   const rejectedQuery = usePromoterApplications("REJECTED");
-  const approvedQuery = usePromoters();
+  const approvedQuery = usePromoters(undefined, approvedPage, PROMOTERS_PAGE_SIZE);
 
   const approveMutation = useApprovePromoterApplication();
   const rejectMutation = useRejectPromoterApplication();
@@ -257,6 +262,17 @@ export default function PromotersPage() {
               : "text-emerald-300";
           return <span className={`text-xs font-medium ${cls}`}>{hours}h</span>;
         },
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+            <Link href={`/promoters/${row.original.id}`}>
+              <ExternalLink className="size-3.5 mr-1" /> Ver perfil
+            </Link>
+          </Button>
+        ),
       },
     ],
     []
@@ -536,14 +552,24 @@ export default function PromotersPage() {
             <Loader2 className="size-5 animate-spin" /> Cargando solicitudes...
           </div>
         ) : (
-          <ProDataTable
-            data={rows}
-            columns={columns}
-            enableRowSelection
-            onSelectionChange={setSelected}
-            searchPlaceholder="Buscar promotor, email o empresa..."
-            emptyMessage="No hay promotores en la cola."
-          />
+          <>
+            <ProDataTable
+              data={rows}
+              columns={columns}
+              enableRowSelection
+              onSelectionChange={setSelected}
+              searchPlaceholder="Buscar promotor, email o empresa..."
+              emptyMessage="No hay promotores en la cola."
+            />
+            <Pagination
+              page={approvedPage}
+              totalPages={Math.ceil((approvedQuery.data?.total ?? 0) / PROMOTERS_PAGE_SIZE)}
+              total={approvedQuery.data?.total ?? 0}
+              pageSize={PROMOTERS_PAGE_SIZE}
+              onPageChange={setApprovedPage}
+              isLoading={approvedQuery.isLoading}
+            />
+          </>
         )}
         {bulkNotice && (
           <div

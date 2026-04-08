@@ -538,7 +538,14 @@ export default function RevenueOpsPage() {
                         ) : (
                           leaderboard.rows.map((row) => (
                             <TableRow key={row.promoterId}>
-                              <TableCell className="font-medium">{row.promoterName}</TableCell>
+                              <TableCell className="font-medium">
+                                <Link
+                                  href={`/promoters/${row.promoterId}`}
+                                  className="hover:text-primary hover:underline transition-colors"
+                                >
+                                  {row.promoterName}
+                                </Link>
+                              </TableCell>
                               <TableCell>{fmtCurrency(row.revenue)}</TableCell>
                               <TableCell>{row.ticketsSold.toLocaleString("es-DO")}</TableCell>
                               <TableCell>{row.conversionRatePct.toFixed(2)}%</TableCell>

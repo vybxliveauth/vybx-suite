@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, RefreshCw, RotateCcw, Search, XCircle } from "lucide-react";
+import { Pagination } from "@/components/pro/Pagination";
 import {
   Badge,
   Button,
@@ -93,6 +94,7 @@ export default function RefundsPage() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
   const [bulkBusyAction, setBulkBusyAction] = useState<"APPROVE" | "REJECT" | null>(null);
   const [bulkNotice, setBulkNotice] = useState<{
     tone: "success" | "error" | "info";
@@ -100,7 +102,8 @@ export default function RefundsPage() {
   } | null>(null);
   const actionDialog = useAdminActionDialog();
 
-  const refundsQuery = useAdminRefunds(1, 100, statusFilter);
+  const PAGE_SIZE = 20;
+  const refundsQuery = useAdminRefunds(page, PAGE_SIZE, statusFilter);
   const reviewMutation = useReviewAdminRefund();
   const refundExecutionMutation = useUpdateAdminRefundExecution();
   const disputeMutation = useUpdateAdminRefundDispute();
@@ -541,7 +544,7 @@ export default function RefundsPage() {
               className="pl-9"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as UiStatus | "ALL")}>
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as UiStatus | "ALL"); setPage(1); }}>
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
@@ -813,6 +816,14 @@ export default function RefundsPage() {
                 )}
               </TableBody>
             </Table>
+            <Pagination
+              page={page}
+              totalPages={Math.ceil((refundsQuery.data?.total ?? 0) / PAGE_SIZE)}
+              total={refundsQuery.data?.total ?? 0}
+              pageSize={PAGE_SIZE}
+              onPageChange={setPage}
+              isLoading={refundsQuery.isLoading}
+            />
           </CardContent>
         </Card>
 

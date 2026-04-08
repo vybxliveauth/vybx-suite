@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { Badge, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@vybx/ui";
+import { Pagination } from "@/components/pro/Pagination";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ProDataTable } from "@/components/pro/ProDataTable";
@@ -69,16 +70,19 @@ function eventTicketSummary(ev: Event) {
   return `${sold} / ${capacity}`;
 }
 
+const PAGE_SIZE = 20;
+
 export default function EventsPage() {
   const [selected, setSelected] = useState<Event[]>([]);
   const [statusFilter, setStatusFilter] = useState<EventStatus | "ALL">("ALL");
+  const [page, setPage] = useState(1);
   const [bulkNotice, setBulkNotice] = useState<{
     tone: "success" | "error" | "info";
     text: string;
   } | null>(null);
   const actionDialog = useAdminActionDialog();
 
-  const listQuery = useAdminEvents(1, 100, statusFilter);
+  const listQuery = useAdminEvents(page, PAGE_SIZE, statusFilter);
   const deleteEvent = useDeleteEvent();
   const toggleEvent = useToggleEvent();
   const approveMutation = useUpdateEventApproval();
@@ -404,7 +408,7 @@ export default function EventsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as EventStatus | "ALL")}>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v as EventStatus | "ALL"); setPage(1); }}>
               <SelectTrigger className="w-44">
                 <SelectValue />
               </SelectTrigger>
@@ -436,6 +440,14 @@ export default function EventsPage() {
           onSelectionChange={setSelected}
           searchPlaceholder={listQuery.isLoading ? "Cargando eventos..." : "Buscar evento o ubicacion..."}
           emptyMessage={listQuery.isLoading ? "Cargando..." : "No hay eventos para mostrar."}
+        />
+        <Pagination
+          page={page}
+          totalPages={Math.ceil((listQuery.data?.total ?? 0) / PAGE_SIZE)}
+          total={listQuery.data?.total ?? 0}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          isLoading={listQuery.isLoading}
         />
         {bulkNotice && (
           <div
