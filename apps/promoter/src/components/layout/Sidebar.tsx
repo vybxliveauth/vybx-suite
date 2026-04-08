@@ -106,7 +106,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <LogOut className="size-4 shrink-0" />
             Cerrar sesión
           </button>
-          <p className="text-[11px] text-muted-foreground px-3">v0.1.0</p>
+          <p className="text-xs text-muted-foreground px-3">v0.1.0</p>
         </div>
       </aside>
     </>

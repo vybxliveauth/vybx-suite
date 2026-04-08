@@ -577,7 +577,7 @@ export function CommandPalette() {
               </p>
               <p className="text-sm text-muted-foreground">
                 Navega en segundos. Atajo:{" "}
-                <kbd className="rounded border border-white/10 px-1.5 py-0.5 text-[11px]">Cmd/Ctrl + K</kbd>
+                <kbd className="rounded border border-white/10 px-1.5 py-0.5 text-xs">Cmd/Ctrl + K</kbd>
               </p>
             </div>
 

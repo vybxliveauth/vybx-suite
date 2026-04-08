@@ -460,8 +460,8 @@ export default function CategoriesPage() {
 
         <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] p-3 text-xs text-muted-foreground flex items-start gap-2">
           <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-          Si una categoría está asignada a eventos, el backend impedirá eliminarla hasta que se
-          reasigne o se desactive.
+          Al eliminar una categoría, el backend desvincula automáticamente los eventos asociados
+          para mantener el catálogo operativo.
         </div>
         {actionDialog.dialog}
       </div>

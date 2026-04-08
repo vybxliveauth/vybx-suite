@@ -759,36 +759,99 @@ export default function DashboardPage() {
           </Card>
         </div>
 
+        {/* ── Attention: pending/rejected events ──────────────────────────── */}
+        {(pendingEventsCount > 0 || rejectedEventsCount > 0) && (
+          <Card className="border-amber-500/20 bg-amber-500/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2 text-amber-400">
+                <AlertCircle className="size-4" /> Eventos que necesitan atención
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {events
+                .filter((ev) => ev.status === "PENDING" || ev.status === "REJECTED")
+                .slice(0, 5)
+                .map((ev) => {
+                  const badge = getEventStatusBadge(ev, { pendingLabel: "En revisión" });
+                  const feedback = getPublicationFeedback(ev);
+                  return (
+                    <Link
+                      key={ev.id}
+                      href={`/events/${ev.id}`}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-card/60 px-3 py-2 hover:bg-muted/40 transition-colors group"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{ev.title}</p>
+                        {feedback && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{feedback.detail}</p>
+                        )}
+                      </div>
+                      {badge && (
+                        <Badge variant={badge.variant} className="shrink-0 text-xs">{badge.label}</Badge>
+                      )}
+                    </Link>
+                  );
+                })}
+              {(pendingEventsCount + rejectedEventsCount) > 5 && (
+                <p className="text-xs text-muted-foreground text-center pt-1">
+                  +{(pendingEventsCount + rejectedEventsCount) - 5} eventos más —{" "}
+                  <Link href="/events" className="text-primary hover:underline">ver todos</Link>
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* ── Top Events table ────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle>Top eventos por ingreso</CardTitle>
-            <CardDescription>Rendimiento global de tus eventos</CardDescription>
+            <CardDescription>Rendimiento global de tus eventos activos</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {topEvents.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">Aún no hay eventos con ventas.</p>
             ) : (
-              topEvents.map((ev, i) => (
-                <Link
-                  key={ev.eventId}
-                  href={`/events/${ev.eventId}`}
-                  className="flex items-center gap-3 group rounded-lg px-2 py-1.5 -mx-2 hover:bg-muted/40 transition-colors"
-                >
-                  <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{ev.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {ev.soldTickets.toLocaleString("es-DO")} boletos · {ev.successfulPayments} pagos
-                    </p>
-                  </div>
-                  <Badge variant="secondary" className="shrink-0 font-mono text-xs">
-                    {fmtCurrency(ev.revenue)}
-                  </Badge>
-                </Link>
-              ))
+              topEvents.map((ev, i) => {
+                const revenuePerTicket = ev.soldTickets > 0
+                  ? ev.revenue / ev.soldTickets
+                  : null;
+                const maxRevenue = topEvents[0]?.revenue ?? 1;
+                const barPct = Math.round((ev.revenue / maxRevenue) * 100);
+                return (
+                  <Link
+                    key={ev.eventId}
+                    href={`/events/${ev.eventId}`}
+                    className="flex items-center gap-3 group rounded-lg px-2 py-2 -mx-2 hover:bg-muted/40 transition-colors"
+                  >
+                    <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
+                      {i + 1}
+                    </span>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{ev.title}</p>
+                        <Badge variant="secondary" className="shrink-0 font-mono text-xs">
+                          {fmtCurrency(ev.revenue)}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden flex-1">
+                          <div
+                            className="h-full rounded-full bg-primary/60 transition-[width] duration-500"
+                            style={{ width: `${barPct}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground shrink-0">
+                          {ev.soldTickets.toLocaleString("es-DO")} boletos
+                          {revenuePerTicket != null && (
+                            <> · <span className="text-foreground/70">{fmtCurrency(revenuePerTicket)}/c/u</span></>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
             )}
           </CardContent>
         </Card>

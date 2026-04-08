@@ -242,7 +242,7 @@ export default function SalesPage() {
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Vista → Inicio de compra: {fmtPct(funnel?.viewToCheckoutRatePct ?? 0)}
                 </p>
               </div>
@@ -253,7 +253,7 @@ export default function SalesPage() {
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Inicio de compra → Pago: {fmtPct(funnel?.checkoutToApprovedPaymentRatePct ?? 0)}
                 </p>
               </div>
@@ -264,7 +264,7 @@ export default function SalesPage() {
                 <p className="text-xl font-semibold tabular-nums mt-1">
                   {(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Fallo de pago: {fmtPct(funnel?.paymentFailureRatePct ?? 0)}
                 </p>
               </div>

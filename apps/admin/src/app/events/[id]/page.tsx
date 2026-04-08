@@ -47,7 +47,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useAdminActionDialog } from "@/components/shared/use-admin-action-dialog";
-import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, useDeleteEvent } from "@/lib/queries";
+import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, useDeleteEvent, useUpdateEventApproval } from "@/lib/queries";
 import type { EventDetail, EventStatus } from "@/lib/types";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ function OccupancyBar({ value, max, label }: { value: number; max: number; label
           style={{ width: `${pct}%`, background: color, height: "100%", borderRadius: 9999, transition: "width 0.6s ease" }}
         />
       </div>
-      <p className="text-right text-[11px] text-muted-foreground">{pct}% ocupado</p>
+      <p className="text-right text-xs text-muted-foreground">{pct}% ocupado</p>
     </div>
   );
 }
@@ -114,13 +114,15 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [approvalProcessing, setApprovalProcessing] = useState(false);
   const actionDialog = useAdminActionDialog();
 
-  const eventQuery     = useEventDetail(id);
-  const analyticsQuery = useEventAnalytics(id);
-  const toggleEvent    = useToggleEvent();
-  const duplicateEvent = useDuplicateEvent();
-  const deleteEvent    = useDeleteEvent();
+  const eventQuery      = useEventDetail(id);
+  const analyticsQuery  = useEventAnalytics(id);
+  const toggleEvent     = useToggleEvent();
+  const duplicateEvent  = useDuplicateEvent();
+  const deleteEvent     = useDeleteEvent();
+  const approvalMutation = useUpdateEventApproval();
 
   const event     = eventQuery.data ?? null;
   const analytics = analyticsQuery.data ?? null;
@@ -159,6 +161,26 @@ export default function EventDetailPage() {
     deleteEvent.mutate(event.id, {
       onSuccess: () => router.push("/events"),
     });
+  }
+
+  async function handleApproval(status: "APPROVED" | "REJECTED") {
+    if (!event) return;
+    const confirmed = await actionDialog.confirm({
+      title: status === "APPROVED" ? "Aprobar evento" : "Rechazar evento",
+      description: status === "APPROVED"
+        ? `¿Aprobar "${event.title}"? El evento se hará visible al público si el promotor lo activa.`
+        : `¿Rechazar "${event.title}"? El promotor será notificado.`,
+      confirmLabel: status === "APPROVED" ? "Aprobar" : "Rechazar",
+      tone: status === "APPROVED" ? "default" : "destructive",
+    });
+    if (!confirmed) return;
+    setApprovalProcessing(true);
+    try {
+      await approvalMutation.mutateAsync({ id: event.id, status });
+      await eventQuery.refetch();
+    } finally {
+      setApprovalProcessing(false);
+    }
   }
 
   // ── States ──────────────────────────────────────────────────────────────────
@@ -223,7 +245,7 @@ export default function EventDetailPage() {
               {event.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {event.tags.map((tag) => (
-                    <span key={tag} className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-white/20 text-white/70 bg-white/5">
+                    <span key={tag} className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-white/20 text-white/70 bg-white/5">
                       <Tag className="size-2.5" />{tag}
                     </span>
                   ))}
@@ -297,7 +319,7 @@ export default function EventDetailPage() {
                 ].map(({ label, value, icon: Icon, color }) => (
                   <Card key={label}>
                     <CardHeader className="pb-1 flex flex-row items-center justify-between">
-                      <CardTitle className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{label}</CardTitle>
+                      <CardTitle className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</CardTitle>
                       <Icon className={`size-3.5 ${color}`} />
                     </CardHeader>
                     <CardContent>
@@ -386,6 +408,51 @@ export default function EventDetailPage() {
           {/* ── RIGHT COLUMN (1/3) ────────────────────────────────────────── */}
           <div className="space-y-6">
 
+            {/* Approval actions (only for PENDING events) */}
+            {event.status === "PENDING" && (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <AlertCircle className="size-4 text-amber-400" />
+                    Revisión pendiente
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    Este evento está esperando aprobación antes de poder publicarse.
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                      disabled={approvalProcessing}
+                      onClick={() => handleApproval("APPROVED")}
+                    >
+                      {approvalProcessing ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <><CheckCircle2 className="size-3.5 mr-1" /> Aprobar</>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                      disabled={approvalProcessing}
+                      onClick={() => handleApproval("REJECTED")}
+                    >
+                      {approvalProcessing ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <><XCircle className="size-3.5 mr-1" /> Rechazar</>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Countdown or Past badge */}
             <Card>
               <CardHeader className="pb-2">
@@ -429,7 +496,7 @@ export default function EventDetailPage() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-sm">Reembolsos</CardTitle>
                     {analytics.refundSummary.pending > 0 && (
-                      <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-[11px]">
+                      <Badge variant="outline" className="text-amber-400 border-amber-400/40 text-xs">
                         {analytics.refundSummary.pending} pendientes
                       </Badge>
                     )}
@@ -479,7 +546,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Estado</span>
-                  <Badge variant={st.variant} className="text-[11px]">{st.label}</Badge>
+                  <Badge variant={st.variant} className="text-xs">{st.label}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Visibilidad</span>

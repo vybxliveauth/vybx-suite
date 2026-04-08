@@ -170,7 +170,7 @@ export default function EventsPage() {
                       }}
                     />
                   </div>
-                  <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
                     {event.metrics.totalSold} / {event.metrics.totalCapacity}
                   </span>
                 </div>

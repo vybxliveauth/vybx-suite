@@ -152,15 +152,9 @@ export default function EventsPage() {
         header: "Acciones",
         cell: ({ row }) => (
           <div className="flex items-center gap-1.5">
-            {row.original.status === "APPROVED" ? (
-              <Button asChild size="sm" variant="outline">
-                <Link href={`/events/${row.original.id}`}>Ver</Link>
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" disabled>
-                Ver
-              </Button>
-            )}
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/events/${row.original.id}`}>Ver</Link>
+            </Button>
             <Button
               size="sm"
               variant="outline"

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Cell,
 } from "recharts";
 import {
   ArrowRight,
@@ -37,14 +38,7 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("es-DO", { month: "short", day: "numeric" });
 }
 
-function buildSparkline(grossRevenue: number) {
-  const weights = [0.066, 0.085, 0.079, 0.116, 0.149, 0.132, 0.102];
-  return weights.map((w, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return { date: d.toISOString().slice(0, 10), revenue: Math.round(grossRevenue * w) };
-  });
-}
+const PURPLE = "hsl(262.1 83.3% 57.8%)";
 
 export default function SalesPage() {
   const [selectedEventId, setSelectedEventId] = useState<string>("ALL");
@@ -60,8 +54,11 @@ export default function SalesPage() {
   const isEventMode = Boolean(selectedEvent);
 
   const summary = data?.summary;
-  const sparkline = buildSparkline(summary?.grossRevenue ?? 0);
-  const chartData = isEventMode ? (eventCharts?.revenueByDay ?? []) : sparkline;
+  const topEvents = data?.topEvents ?? [];
+  const eventChartData = isEventMode ? (eventCharts?.revenueByDay ?? []) : [];
+  const allEventsBarData = topEvents
+    .slice(0, 8)
+    .map((ev) => ({ name: ev.title.length > 20 ? ev.title.slice(0, 18) + "…" : ev.title, revenue: ev.revenue, tickets: ev.soldTickets }));
 
   const selectedEventRevenue = useMemo(() => {
     if (!selectedEvent) return 0;
@@ -224,59 +221,106 @@ export default function SalesPage() {
             <CardTitle className="text-base">
               {isEventMode
                 ? `Ingresos del evento (${days} días)`
-                : "Ingresos estimados (últimos 7 días)"}
+                : "Ingresos por evento"}
             </CardTitle>
             <CardDescription>
               {isEventMode
                 ? `Evolución de ingresos de ${selectedEvent?.title ?? "evento seleccionado"}`
-                : `Distribución aproximada de ${fmtCurrency(summary?.grossRevenue ?? 0)} en ingresos totales`}
+                : `Top ${allEventsBarData.length} eventos · total ${fmtCurrency(summary?.grossRevenue ?? 0)}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isEventMode && eventChartsQuery.isLoading ? (
-              <div className="flex items-center justify-center h-[220px] text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin" /> Cargando métricas del evento…
+            {isEventMode ? (
+              eventChartsQuery.isLoading ? (
+                <div className="flex items-center justify-center h-[220px] text-muted-foreground gap-2">
+                  <Loader2 className="size-4 animate-spin" /> Cargando métricas del evento…
+                </div>
+              ) : eventChartData.length === 0 ? (
+                <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">
+                  Sin datos de ingresos para este período.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <AreaChart data={eventChartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={PURPLE} stopOpacity={0.3} />
+                        <stop offset="95%" stopColor={PURPLE} stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 27.9% 16.9%)" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={fmtDate}
+                      tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
+                      axisLine={false} tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                      tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
+                      axisLine={false} tickLine={false} width={42}
+                    />
+                    <Tooltip
+                      formatter={(v) => [fmtCurrency(Number(v ?? 0)), "Ingresos"]}
+                      labelFormatter={(label) => (typeof label === "string" ? fmtDate(label) : String(label ?? ""))}
+                      contentStyle={{
+                        background: "hsl(224 71.4% 6%)",
+                        border: "1px solid hsl(215 27.9% 16.9%)",
+                        borderRadius: "0.5rem",
+                        fontSize: 12,
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke={PURPLE}
+                      strokeWidth={2}
+                      fill="url(#salesGrad)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )
+            ) : allEventsBarData.length === 0 ? (
+              <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">
+                Aún no hay eventos con ventas registradas.
               </div>
             ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="hsl(262.1 83.3% 57.8%)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(262.1 83.3% 57.8%)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 27.9% 16.9%)" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={fmtDate}
-                  tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
-                  axisLine={false} tickLine={false}
-                />
-                <YAxis
-                  tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
-                  tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
-                  axisLine={false} tickLine={false} width={42}
-                />
-                <Tooltip
-                  formatter={(v) => [fmtCurrency(Number(v ?? 0)), "Ingresos"]}
-                  labelFormatter={(label) => (typeof label === "string" ? fmtDate(label) : String(label ?? ""))}
-                  contentStyle={{
-                    background: "hsl(224 71.4% 6%)",
-                    border: "1px solid hsl(215 27.9% 16.9%)",
-                    borderRadius: "0.5rem",
-                    fontSize: 12,
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="hsl(262.1 83.3% 57.8%)"
-                  strokeWidth={2}
-                  fill="url(#salesGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={allEventsBarData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barSize={28}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(215 27.9% 16.9%)" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: "hsl(217.9 10.6% 54.9%)" }}
+                    axisLine={false} tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    tick={{ fontSize: 11, fill: "hsl(217.9 10.6% 54.9%)" }}
+                    axisLine={false} tickLine={false} width={42}
+                  />
+                  <Tooltip
+                    formatter={(v, name) => [
+                      name === "revenue" ? fmtCurrency(Number(v ?? 0)) : `${Number(v ?? 0)} boletos`,
+                      name === "revenue" ? "Ingresos" : "Boletos",
+                    ]}
+                    contentStyle={{
+                      background: "hsl(224 71.4% 6%)",
+                      border: "1px solid hsl(215 27.9% 16.9%)",
+                      borderRadius: "0.5rem",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
+                    {allEventsBarData.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={PURPLE}
+                        fillOpacity={1 - i * (0.6 / Math.max(allEventsBarData.length - 1, 1))}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </CardContent>
         </Card>

@@ -486,13 +486,13 @@ export default function UsersPage() {
                           <TableCell>
                             <p className="text-sm font-medium">{fullName(user)}</p>
                             <p className="text-xs text-muted-foreground">{user.email}</p>
-                            <p className="text-[11px] text-muted-foreground">{user.id}</p>
+                            <p className="text-xs text-muted-foreground">{user.id}</p>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-2">
                               {roleBadge(user.role)}
                               {!canManagePrivileged && roleIsPrivileged ? (
-                                <p className="text-[11px] text-muted-foreground">Solo SUPER_ADMIN puede cambiar este rol.</p>
+                                <p className="text-xs text-muted-foreground">Solo SUPER_ADMIN puede cambiar este rol.</p>
                               ) : (
                                 <Select
                                   value={user.role}

@@ -652,7 +652,7 @@ export default function RefundsPage() {
                           {fmtCurrency(
                             r.ticket.paidAmount ?? r.ticket.ticketType.price
                           )}
-                          <p className="text-[11px] text-muted-foreground font-normal">
+                          <p className="text-xs text-muted-foreground font-normal">
                             {r.ticket.paidAmount != null ? "Monto transaccionado" : "Fallback ticketType.price"}
                           </p>
                         </TableCell>
@@ -675,7 +675,7 @@ export default function RefundsPage() {
                             {REFUND_LABEL[refundStatus]}
                           </Badge>
                           {r.refundAmount != null && (
-                            <p className="text-[11px] text-muted-foreground mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               {fmtCurrency(r.refundAmount)}
                             </p>
                           )}

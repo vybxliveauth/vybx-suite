@@ -14,8 +14,9 @@ import {
   Cell,
   LabelList,
 } from "recharts";
-import { Activity, Ticket, Wallet, RotateCcw, Loader2, AlertCircle, ShieldAlert } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@vybx/ui";
+import { Activity, Ticket, Wallet, RotateCcw, Loader2, AlertCircle, ShieldAlert, Tag, Users2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button } from "@vybx/ui";
+import Link from "next/link";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ActivityFeed, type ActivityItem } from "@/components/pro/ActivityFeed";
@@ -160,15 +161,15 @@ function FunnelCard({ funnel, analyticsLoading }: { funnel: FunnelData; analytic
             {/* Drop-off stats row */}
             <div className="grid grid-cols-3 gap-3 mt-2 border-t border-border/50 pt-4">
               <div className="text-center">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Vista → Compra</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Vista → Compra</p>
                 <p className="text-lg font-bold tabular-nums text-sky-400">{viewToCheckout.toFixed(1)}%</p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Compra → Pago</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Compra → Pago</p>
                 <p className="text-lg font-bold tabular-nums text-emerald-400">{checkoutToApproved.toFixed(1)}%</p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Tasa fallos</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Tasa fallos</p>
                 <p className={`text-lg font-bold tabular-nums ${failureRate > 10 ? "text-red-400" : "text-muted-foreground"}`}>
                   {failureRate.toFixed(1)}%
                   {failed > 0 && <span className="text-xs font-normal ml-1">({failed.toLocaleString("es-DO")})</span>}
@@ -400,7 +401,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Tendencia de mercado (últimos 7 días)</CardTitle>
-            <CardDescription>Línea real basada en `admin/stats.sparklines.revenue`</CardDescription>
+            <CardDescription>Ingresos diarios acumulados del período</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
@@ -445,6 +446,165 @@ export default function DashboardPage() {
 
         <FunnelCard funnel={funnel} analyticsLoading={analyticsQuery.isLoading} />
 
+        {/* Top categories + Top promoters */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Top categorías */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Tag className="size-4 text-primary" /> Top categorías
+              </CardTitle>
+              <CardDescription>Conversión por categoría en los últimos 7 días</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analyticsQuery.isLoading ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /><span className="text-sm">Cargando…</span>
+                </div>
+              ) : !analyticsQuery.data?.topCategories?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Sin datos de categorías.</p>
+              ) : (
+                <div className="space-y-3">
+                  {analyticsQuery.data.topCategories.slice(0, 6).map((cat, i) => {
+                    const maxViews = analyticsQuery.data!.topCategories[0]!.eventViewed || 1;
+                    const pct = Math.round((cat.eventViewed / maxViews) * 100);
+                    return (
+                      <div key={cat.categoryId} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2 font-medium">
+                            <span className="text-xs text-muted-foreground w-4 text-right tabular-nums">{i + 1}</span>
+                            {cat.categoryName}
+                          </span>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            <span className="tabular-nums">{cat.eventViewed.toLocaleString("es-DO")} vistas</span>
+                            <span className={`font-semibold tabular-nums ${cat.conversionRatePct >= 5 ? "text-emerald-400" : "text-muted-foreground"}`}>
+                              {cat.conversionRatePct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary/70 transition-[width] duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top promotores */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users2 className="size-4 text-primary" /> Top promotores
+              </CardTitle>
+              <CardDescription>Ranking por revenue generado en los últimos 7 días</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analyticsQuery.isLoading ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" /><span className="text-sm">Cargando…</span>
+                </div>
+              ) : !analyticsQuery.data?.topPromoters?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Sin datos de promotores.</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {analyticsQuery.data.topPromoters.slice(0, 6).map((p, i) => {
+                    const maxRev = analyticsQuery.data!.topPromoters[0]!.grossRevenue || 1;
+                    const pct = Math.round((p.grossRevenue / maxRev) * 100);
+                    return (
+                      <div key={p.promoterId} className="flex items-center gap-3">
+                        <span className="flex size-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
+                          {i + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-sm font-medium truncate">{p.promoterName}</span>
+                            <span className="text-xs font-semibold tabular-nums text-primary ml-2 shrink-0">
+                              {fmtCurrency(p.grossRevenue)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="h-1.5 rounded-full bg-secondary overflow-hidden flex-1 mr-3">
+                              <div
+                                className="h-full rounded-full bg-primary/60 transition-[width] duration-500"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {p.eventsCreated} eventos · {p.conversionRatePct.toFixed(1)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Ops checklist alerts */}
+        {checklist && (() => {
+          const alertItems = Object.values(checklist.items).filter(
+            (item) => item.level === "breach" || item.level === "warning"
+          );
+          if (alertItems.length === 0) {
+            return (
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-300">
+                <CheckCircle2 className="size-4 shrink-0" />
+                Todas las operaciones están en orden — sin alertas activas.
+              </div>
+            );
+          }
+          return (
+            <Card className="border-amber-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertCircle className="size-4 text-amber-400" /> Alertas operativas
+                </CardTitle>
+                <CardDescription>
+                  {alertItems.filter((i) => i.level === "breach").length} crítica(s) · {alertItems.filter((i) => i.level === "warning").length} advertencia(s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {alertItems
+                  .sort((a, b) => (b.level === "breach" ? 1 : 0) - (a.level === "breach" ? 1 : 0))
+                  .map((item) => (
+                    <div
+                      key={item.key}
+                      className={`rounded-md border p-3 flex items-start justify-between gap-3 ${
+                        item.level === "breach"
+                          ? "border-red-500/30 bg-red-500/5"
+                          : "border-amber-500/20 bg-amber-500/5"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium ${item.level === "breach" ? "text-red-300" : "text-amber-300"}`}>
+                          {item.label}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {item.pendingCount} pendiente{item.pendingCount !== 1 ? "s" : ""}
+                          {item.oldestAgeHours != null && ` · más antiguo: ${Math.round(item.oldestAgeHours)}h`}
+                        </p>
+                      </div>
+                      <Button asChild variant="ghost" size="icon" className="size-7 shrink-0">
+                        <Link href={item.href}>
+                          <ArrowRight className="size-3.5" />
+                        </Link>
+                      </Button>
+                    </div>
+                  ))}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         <div className="grid gap-6 lg:grid-cols-2">
           <ActivityFeed initialItems={initialFeedItems} source={feedSource} />
           <AuditTimeline items={timelineItems} />
@@ -480,7 +640,7 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base">Conciliación de liquidaciones</CardTitle>
             <CardDescription>
-              Diferencia entre transacciones `SUCCESS` y payouts realmente `PAID`.
+              Diferencia entre transacciones exitosas y payouts realmente pagados.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

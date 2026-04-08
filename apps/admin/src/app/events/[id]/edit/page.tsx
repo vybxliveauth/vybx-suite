@@ -408,7 +408,7 @@ export default function EditEventPage() {
                     {/* Sold progress */}
                     {isExisting && sold > 0 && (tiersValues[i]?.quantity ?? 0) > 0 && (
                       <div className="pl-0.5">
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                           <span>Ocupación actual</span>
                           <span className="tabular-nums">
                             {sold} / {tiersValues[i]?.quantity} ({Math.round((sold / (tiersValues[i]?.quantity ?? 1)) * 100)}%)

@@ -392,11 +392,13 @@ export async function fetchProfile(): Promise<AuthUser> {
 export interface Category {
   id: string;
   name: string;
-  icon?: string;
+  icon?: string | null;
+  order?: number;
+  isActive?: boolean;
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const categories = await request<Category[]>("/categories");
+  const categories = await request<Category[]>("/categories/active");
   return categories;
 }
 

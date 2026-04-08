@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, ShieldAlert, TrendingUp, Users, Wallet, Clock3 } from "lucide-react";
+import { Loader2, ShieldAlert, TrendingUp, Users, Wallet, Clock3, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 import {
   Badge,
   Button,
@@ -24,9 +24,11 @@ import {
   useAdminRevenueOpsLeaderboard,
   useAdminRevenueOpsRisk,
   useAdminRevenueOpsSupply,
+  useUpdateEventApproval,
 } from "@/lib/queries";
 import { useAuthUser } from "@/lib/auth";
 import { fmtCurrency, fmtDateShort as fmtDate } from "@/lib/format";
+import Link from "next/link";
 
 type RevenueOpsView = "funnel" | "supply" | "risk" | "leaderboard";
 
@@ -50,10 +52,23 @@ export default function RevenueOpsPage() {
   const user = useAuthUser();
   const authReady = user !== null;
 
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
   const funnelQuery = useAdminRevenueOpsFunnel(funnelWindowDays, { enabled: authReady });
   const supplyQuery = useAdminRevenueOpsSupply(30, { enabled: authReady });
   const riskQuery = useAdminRevenueOpsRisk(7, 60, { enabled: authReady });
   const leaderboardQuery = useAdminRevenueOpsLeaderboard(30, { enabled: authReady });
+  const approvalMutation = useUpdateEventApproval();
+
+  async function handleApproval(id: string, status: "APPROVED" | "REJECTED") {
+    setProcessingId(id);
+    try {
+      await approvalMutation.mutateAsync({ id, status });
+      supplyQuery.refetch();
+    } finally {
+      setProcessingId(null);
+    }
+  }
 
   const activeError =
     activeView === "funnel" ? funnelQuery.isError
@@ -251,22 +266,68 @@ export default function RevenueOpsPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-base">Cola de eventos pendientes</CardTitle>
+                      <CardDescription>Aprueba o rechaza directamente sin salir de esta vista.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {supply.queue.pendingEvents.length === 0 ? (
                         <p className="text-sm text-muted-foreground">No hay eventos pendientes.</p>
                       ) : (
-                        supply.queue.pendingEvents.map((event) => (
-                          <div key={event.id} className="rounded-md border border-border/70 p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm font-medium truncate">{event.title}</p>
-                              <Badge variant="outline">{Math.round(event.ageHours)}h</Badge>
+                        supply.queue.pendingEvents.map((event) => {
+                          const isProcessing = processingId === event.id;
+                          return (
+                            <div key={event.id} className="rounded-md border border-border/70 p-3 space-y-2">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{event.title}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {fmtDate(event.eventDate)} · {event.ownerName ?? "Sin responsable"}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <Badge variant="outline" className="text-xs">{Math.round(event.ageHours)}h</Badge>
+                                  <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-7"
+                                  >
+                                    <Link href={`/events/${event.id}`} title="Ver evento completo">
+                                      <ExternalLink className="size-3.5" />
+                                    </Link>
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-3 text-xs flex-1 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
+                                  disabled={isProcessing}
+                                  onClick={() => handleApproval(event.id, "APPROVED")}
+                                >
+                                  {isProcessing ? (
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                  ) : (
+                                    <><CheckCircle2 className="size-3.5 mr-1" /> Aprobar</>
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-3 text-xs flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                                  disabled={isProcessing}
+                                  onClick={() => handleApproval(event.id, "REJECTED")}
+                                >
+                                  {isProcessing ? (
+                                    <Loader2 className="size-3.5 animate-spin" />
+                                  ) : (
+                                    <><XCircle className="size-3.5 mr-1" /> Rechazar</>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {fmtDate(event.eventDate)} · {event.ownerName ?? "Sin responsable"}
-                            </p>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </CardContent>
                   </Card>

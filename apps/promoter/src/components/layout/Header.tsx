@@ -171,7 +171,7 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
                 <button
                   onClick={() => void handleMarkAll()}
                   disabled={markingAll}
-                  className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 disabled:opacity-50"
                 >
                   <CheckCheck className="size-3" />
                   {markingAll ? "Marcando…" : "Marcar todas"}

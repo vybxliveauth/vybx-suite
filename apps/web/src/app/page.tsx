@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Drawer } from "vaul";
 import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X, Menu } from "lucide-react";
@@ -21,6 +22,7 @@ import { SearchIllustration, EventsIllustration } from "@/components/features/Em
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useAuthStore } from "@/store/useAuthStore";
 import { tracker, AnalyticsEvents } from "@/lib/analytics";
+import { fetchCategories, type Category as CatalogCategory } from "@/lib/api";
 
 function normalizeCategory(value: string): string {
   return value.trim().toLowerCase();
@@ -34,11 +36,14 @@ function formatCategoryLabel(value: string): string {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function categoryIconFor(value: string) {
-  if (/electr|edm|house|techno/.test(value)) return Zap;
-  if (/jazz/.test(value)) return Music;
-  if (/indie|rock|alternative|alt/.test(value)) return Flame;
-  if (/urban|reggaeton|hip hop|hip-hop|trap/.test(value)) return Ticket;
+function categoryIconFor(value: string, iconHint?: string | null) {
+  const source = `${iconHint ?? ""} ${value}`.toLowerCase();
+
+  if (/electr|edm|house|techno|music|concierto|show/.test(source)) return Zap;
+  if (/jazz|art|culture|cinema|drama|film/.test(source)) return Music;
+  if (/indie|rock|alternative|alt|sports|competition|gaming|game/.test(source)) return Flame;
+  if (/urban|reggaeton|hip hop|hip-hop|trap|ticket|party/.test(source)) return Ticket;
+  if (/food|gastro|restaurant|culinar|utensil/.test(source)) return MapPin;
   return Star;
 }
 
@@ -563,8 +568,9 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
   );
 }
 
-function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
+function EventsSection({ allEvents, categoryCatalog, isLoading, isError, search, onSearch }: {
   allEvents: Event[];
+  categoryCatalog: CatalogCategory[];
   isLoading: boolean;
   isError: boolean;
   search: string;
@@ -576,24 +582,50 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
   const sectionRef = useRef<HTMLDivElement>(null);
   useScrollReveal();
   const categoryOptions = useMemo(() => {
-    const map = new Map<string, string>();
+    const catalogMeta = new Map<string, { label: string; iconHint?: string | null }>();
+    categoryCatalog
+      .filter((category) => category.isActive !== false)
+      .forEach((category) => {
+        const key = normalizeCategory(category.name);
+        if (!key) return;
+        catalogMeta.set(key, {
+          label: formatCategoryLabel(category.name),
+          iconHint: category.icon,
+        });
+      });
+
+    const map = new Map<string, { label: string; count: number }>();
+
     allEvents.forEach((event) => {
+      const seen = new Set<string>();
       event.tags.forEach((tag) => {
         const key = normalizeCategory(tag);
-        if (!key || map.has(key)) return;
-        map.set(key, formatCategoryLabel(tag));
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        const existing = map.get(key);
+        if (existing) {
+          existing.count += 1;
+          map.set(key, existing);
+          return;
+        }
+        map.set(key, {
+          label: formatCategoryLabel(tag),
+          count: 1,
+        });
       });
     });
+
     const dynamic = Array.from(map.entries())
-      .sort((a, b) => a[1].localeCompare(b[1], "es"))
-      .map(([key, label]) => ({
+      .sort((a, b) => a[1].label.localeCompare(b[1].label, "es"))
+      .map(([key, value]) => ({
         key,
-        label,
-        icon: categoryIconFor(key),
+        label: catalogMeta.get(key)?.label ?? value.label,
+        icon: categoryIconFor(key, catalogMeta.get(key)?.iconHint),
+        count: value.count,
       }));
 
-    return [{ key: "all", label: "Todos", icon: Star }, ...dynamic];
-  }, [allEvents]);
+    return [{ key: "all", label: "Todos", icon: Star, count: allEvents.length }, ...dynamic];
+  }, [allEvents, categoryCatalog]);
 
   useEffect(() => {
     if (!categoryOptions.some((category) => category.key === activeCategory)) {
@@ -688,7 +720,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
       </div>
 
       <div className="events-filter-desktop-row events-filter-segmented" role="toolbar" aria-label="Filtros por categoría">
-        {categoryOptions.map(({ key, label, icon: Icon }) => (
+        {categoryOptions.map(({ key, label, icon: Icon, count }) => (
           <button
             key={key}
             type="button"
@@ -697,6 +729,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             aria-pressed={activeCategory === key}
           >
             <Icon size={14} /> {label}
+            {(count > 0 || key === "all") && <span className="chip-count">{count}</span>}
           </button>
         ))}
       </div>
@@ -840,7 +873,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             </div>
 
             <div style={{ overflowY: "auto", padding: "1rem", display: "flex", flexWrap: "wrap", gap: "0.55rem" }}>
-              {categoryOptions.map(({ key, label, icon: Icon }) => (
+              {categoryOptions.map(({ key, label, icon: Icon, count }) => (
                 <button
                   key={`mobile-filter-${key}`}
                   type="button"
@@ -852,6 +885,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
                   aria-pressed={activeCategory === key}
                 >
                   <Icon size={14} /> {label}
+                  {(count > 0 || key === "all") && <span className="chip-count">{count}</span>}
                 </button>
               ))}
             </div>
@@ -881,7 +915,13 @@ export default function HomePage() {
   }, [search]);
 
   const { data, isLoading, isError } = useEvents(1, 100, debouncedSearch || undefined);
+  const categoriesQuery = useQuery({
+    queryKey: ["categories", "active"],
+    queryFn: fetchCategories,
+    staleTime: 60_000,
+  });
   const events = data?.data ?? [];
+  const categories = categoriesQuery.data ?? [];
 
   return (
     <>
@@ -897,7 +937,14 @@ export default function HomePage() {
             <EventHighlightsCarousel events={events} />
           </div>
         </div>
-        <EventsSection allEvents={events} isLoading={isLoading} isError={isError} search={search} onSearch={setSearch} />
+        <EventsSection
+          allEvents={events}
+          categoryCatalog={categories}
+          isLoading={isLoading}
+          isError={isError}
+          search={search}
+          onSearch={setSearch}
+        />
       </main>
       <EventCommandPalette
         events={events}

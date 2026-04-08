@@ -231,8 +231,8 @@ export default function StaffPage() {
                   <Badge
                     variant="outline"
                     className={selectedEvent.isActive
-                      ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/10 text-[11px]"
-                      : "text-slate-400 border-slate-500/20 bg-slate-500/10 text-[11px]"}
+                      ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/10 text-xs"
+                      : "text-slate-400 border-slate-500/20 bg-slate-500/10 text-xs"}
                   >
                     {selectedEvent.isActive ? "Activo" : "Inactivo"}
                   </Badge>
