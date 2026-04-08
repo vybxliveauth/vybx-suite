@@ -31,17 +31,17 @@ type CommandItem = {
 const ITEMS: CommandItem[] = [
   {
     id: "dashboard",
-    label: "Global Command Center",
+    label: "Centro de mando global",
     description: "KPIs, actividad y salud general de la plataforma",
     href: "/dashboard",
-    keywords: ["kpi", "centro", "metrics", "inicio"],
+    keywords: ["kpi", "centro", "metricas", "inicio"],
     source: "module",
     permission: "dashboard:view",
   },
   {
     id: "events",
-    label: "Moderacion de Eventos",
-    description: "Pausar, publicar, rechazar y acciones masivas",
+    label: "Moderación de eventos",
+    description: "Pausar, publicar, rechazar y ejecutar acciones masivas",
     href: "/events",
     keywords: ["eventos", "moderacion", "bulk", "aprobar", "rechazar"],
     source: "module",
@@ -50,7 +50,7 @@ const ITEMS: CommandItem[] = [
   {
     id: "promoters",
     label: "Promotores (KYC)",
-    description: "Aprobacion de promotores y verificacion de documentos",
+    description: "Aprobación de promotores y verificación de documentos",
     href: "/promoters",
     keywords: ["kyc", "promotor", "verificacion", "documentos"],
     source: "module",
@@ -70,23 +70,23 @@ const ITEMS: CommandItem[] = [
     label: "Ventas",
     description: "Actividad de transacciones, volumen y tendencias",
     href: "/sales",
-    keywords: ["ventas", "transactions", "ingresos", "gmv"],
+    keywords: ["ventas", "transacciones", "ingresos", "gmv"],
     source: "module",
     permission: "sales:view",
   },
   {
     id: "revenue-ops",
-    label: "Revenue Ops",
-    description: "Cabina comercial con funnel, supply, risk y leaderboard",
+    label: "Operaciones de ingresos",
+    description: "Cabina comercial con embudo, suministro, riesgo y ranking",
     href: "/revenue-ops",
-    keywords: ["revenue", "ops", "funnel", "supply", "risk", "leaderboard"],
+    keywords: ["ingresos", "operaciones", "embudo", "suministro", "riesgo", "ranking"],
     source: "module",
     permission: "sales:view",
   },
   {
     id: "refunds",
     label: "Reembolsos y Disputas",
-    description: "Gestion de solicitudes y aprobaciones one-click",
+    description: "Gestión de solicitudes y aprobaciones rápidas",
     href: "/refunds",
     keywords: ["refund", "disputa", "devolucion"],
     source: "module",
@@ -104,7 +104,7 @@ const ITEMS: CommandItem[] = [
   {
     id: "security",
     label: "Seguridad y Fraude",
-    description: "Senales de abuso, bloqueos y respuesta operativa",
+    description: "Señales de abuso, bloqueos y respuesta operativa",
     href: "/security",
     keywords: ["fraude", "abuse", "riesgo", "seguridad", "block"],
     source: "module",
@@ -112,7 +112,7 @@ const ITEMS: CommandItem[] = [
   },
   {
     id: "audit",
-    label: "Audit Logs",
+    label: "Registro de auditoría",
     description: "Timeline de cambios por usuario",
     href: "/audit",
     keywords: ["logs", "auditoria", "timeline", "historial"],
@@ -121,7 +121,7 @@ const ITEMS: CommandItem[] = [
   },
   {
     id: "staff",
-    label: "Staff",
+    label: "Personal",
     description: "Asignación operativa de escáneres y supervisores",
     href: "/staff",
     keywords: ["staff", "scanner", "supervisor", "checkin"],
@@ -139,7 +139,7 @@ const ITEMS: CommandItem[] = [
   },
   {
     id: "settings",
-    label: "Configuracion",
+    label: "Configuración",
     description: "Ajustes de cuenta y seguridad",
     href: "/settings",
     keywords: ["perfil", "seguridad", "password"],
@@ -164,7 +164,7 @@ function sourceBadge(source: CommandItem["source"]) {
   if (source === "promoter") return "Promotor";
   if (source === "application") return "Solicitud";
   if (source === "transaction") return "Pago";
-  return "Modulo";
+  return "Módulo";
 }
 
 type QuickActionId =

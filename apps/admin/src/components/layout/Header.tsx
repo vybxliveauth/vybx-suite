@@ -24,17 +24,17 @@ import { api } from "@/lib/api";
 import type { AdminOpsChecklistItem, AdminOpsChecklistResponse } from "@/lib/types";
 
 const MODULES = [
-  { label: "Dashboard",      href: "/dashboard",  keywords: ["dashboard", "inicio", "command"] },
+  { label: "Centro de mando", href: "/dashboard",  keywords: ["dashboard", "inicio", "mando"] },
   { label: "Eventos",        href: "/events",     keywords: ["events", "eventos", "moderacion"] },
   { label: "Promotores",     href: "/promoters",  keywords: ["promotores", "kyc", "verification"] },
   { label: "Liquidaciones",  href: "/payouts",    keywords: ["payouts", "pagos", "stripe", "batches"] },
   { label: "Ventas",         href: "/sales",      keywords: ["sales", "ventas", "ingresos"] },
-  { label: "Revenue Ops",    href: "/revenue-ops",keywords: ["revenue", "funnel", "supply", "risk", "leaderboard"] },
+  { label: "Operaciones de ingresos", href: "/revenue-ops", keywords: ["ingresos", "embudo", "suministro", "riesgo", "ranking"] },
   { label: "Reembolsos",     href: "/refunds",    keywords: ["refunds", "reembolsos", "cancelaciones"] },
   { label: "Usuarios",       href: "/users",      keywords: ["usuarios", "roles", "bloqueo", "acceso"] },
   { label: "Seguridad",      href: "/security",   keywords: ["fraude", "seguridad", "abuse", "risk", "bloqueo"] },
-  { label: "Audit Logs",     href: "/audit",      keywords: ["audit", "logs", "timeline"] },
-  { label: "Staff",          href: "/staff",      keywords: ["staff", "escaner", "scanner", "personal"] },
+  { label: "Registro de auditoría", href: "/audit", keywords: ["auditoria", "registro", "timeline"] },
+  { label: "Personal",       href: "/staff",      keywords: ["staff", "escaner", "scanner", "personal"] },
   { label: "Categorías",     href: "/categories", keywords: ["categorias", "categories", "catalogo"] },
   { label: "Configuración",  href: "/settings",   keywords: ["settings", "configuracion", "perfil"] },
   { label: "Nuevo evento",   href: "/events/new", keywords: ["new", "crear", "nuevo", "create"] },

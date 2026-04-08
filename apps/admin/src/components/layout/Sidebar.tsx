@@ -27,17 +27,17 @@ import { usePermissions } from "@/lib/use-permissions";
 import type { Permission } from "@/lib/permissions";
 
 const NAV: { href: string; label: string; icon: React.ElementType; permission: Permission }[] = [
-  { href: "/dashboard", label: "Command Center", icon: LayoutDashboard, permission: "dashboard:view" },
+  { href: "/dashboard", label: "Centro de mando", icon: LayoutDashboard, permission: "dashboard:view" },
   { href: "/events",    label: "Eventos",        icon: CalendarDays,    permission: "events:view"    },
   { href: "/promoters", label: "Promotores",     icon: ShieldCheck,     permission: "promoters:view" },
   { href: "/payouts",   label: "Liquidaciones",  icon: Landmark,        permission: "payouts:view"   },
   { href: "/sales",     label: "Ventas",         icon: BarChart3,       permission: "sales:view"     },
-  { href: "/revenue-ops", label: "Revenue Ops",  icon: Gauge,           permission: "sales:view"     },
+  { href: "/revenue-ops", label: "Operaciones de ingresos", icon: Gauge, permission: "sales:view"    },
   { href: "/refunds",   label: "Reembolsos",     icon: RotateCcw,       permission: "refunds:view"   },
   { href: "/users",     label: "Usuarios",       icon: UserCog,         permission: "users:view"     },
   { href: "/security",  label: "Seguridad",      icon: ShieldAlert,     permission: "security:view"  },
-  { href: "/audit",     label: "Audit Logs",     icon: ClipboardList,   permission: "audit:view"     },
-  { href: "/staff",     label: "Staff",          icon: Users,           permission: "staff:view"     },
+  { href: "/audit",     label: "Registro de auditoría", icon: ClipboardList, permission: "audit:view" },
+  { href: "/staff",     label: "Personal",       icon: Users,           permission: "staff:view"     },
   { href: "/categories",label: "Categorías",     icon: FolderTree,      permission: "settings:view"  },
   { href: "/settings",  label: "Configuración",  icon: Settings,        permission: "settings:view"  },
 ];

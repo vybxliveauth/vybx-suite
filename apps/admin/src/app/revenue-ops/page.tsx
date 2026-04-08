@@ -25,15 +25,16 @@ import {
   useAdminRevenueOpsRisk,
   useAdminRevenueOpsSupply,
 } from "@/lib/queries";
+import { useAuthUser } from "@/lib/auth";
 import { fmtCurrency, fmtDateShort as fmtDate } from "@/lib/format";
 
 type RevenueOpsView = "funnel" | "supply" | "risk" | "leaderboard";
 
 const VIEW_OPTIONS: Array<{ id: RevenueOpsView; label: string }> = [
-  { id: "funnel", label: "Funnel diario" },
-  { id: "supply", label: "Supply ops" },
-  { id: "risk", label: "Risk ops" },
-  { id: "leaderboard", label: "Promoter leaderboard" },
+  { id: "funnel", label: "Embudo diario" },
+  { id: "supply", label: "Operaciones de suministro" },
+  { id: "risk", label: "Operaciones de riesgo" },
+  { id: "leaderboard", label: "Ranking de promotores" },
 ];
 
 const FUNNEL_WINDOWS = [
@@ -46,16 +47,19 @@ export default function RevenueOpsPage() {
   const [activeView, setActiveView] = useState<RevenueOpsView>("funnel");
   const [funnelWindowDays, setFunnelWindowDays] = useState(1);
 
-  const funnelQuery = useAdminRevenueOpsFunnel(funnelWindowDays);
-  const supplyQuery = useAdminRevenueOpsSupply(30);
-  const riskQuery = useAdminRevenueOpsRisk(7, 60);
-  const leaderboardQuery = useAdminRevenueOpsLeaderboard(30);
+  const user = useAuthUser();
+  const authReady = user !== null;
 
-  const hasAnyError =
-    funnelQuery.isError ||
-    supplyQuery.isError ||
-    riskQuery.isError ||
-    leaderboardQuery.isError;
+  const funnelQuery = useAdminRevenueOpsFunnel(funnelWindowDays, { enabled: authReady });
+  const supplyQuery = useAdminRevenueOpsSupply(30, { enabled: authReady });
+  const riskQuery = useAdminRevenueOpsRisk(7, 60, { enabled: authReady });
+  const leaderboardQuery = useAdminRevenueOpsLeaderboard(30, { enabled: authReady });
+
+  const activeError =
+    activeView === "funnel" ? funnelQuery.isError
+    : activeView === "supply" ? supplyQuery.isError
+    : activeView === "risk" ? riskQuery.isError
+    : leaderboardQuery.isError;
 
   const funnel = funnelQuery.data;
   const supply = supplyQuery.data;
@@ -63,18 +67,18 @@ export default function RevenueOpsPage() {
   const leaderboard = leaderboardQuery.data;
 
   return (
-    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Revenue Ops" }]} />}>
+    <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Operaciones de ingresos" }]} />}>
       <div className="space-y-6">
         <div>
-          <h1 className="text-xl font-semibold">Revenue Ops</h1>
+          <h1 className="text-xl font-semibold">Operaciones de ingresos</h1>
           <p className="text-sm text-muted-foreground">
-            Cabina de crecimiento: conversion, supply, riesgo y performance comercial.
+            Cabina de crecimiento: conversión, suministro, riesgo y rendimiento comercial.
           </p>
         </div>
 
-        {hasAnyError && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Algunos bloques no pudieron cargarse. Revisa conectividad backend/admin.
+        {activeError && (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            Error al cargar datos. Revisa conectividad con el backend.
           </div>
         )}
 
@@ -124,18 +128,18 @@ export default function RevenueOpsPage() {
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Checkout started</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Checkouts iniciados</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{funnel.totals.checkoutStarted.toLocaleString("es-DO")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        View → Checkout: {funnel.totals.viewToCheckoutRatePct.toFixed(2)}%
+                        Visita → Checkout: {funnel.totals.viewToCheckoutRatePct.toFixed(2)}%
                       </p>
                     </CardContent>
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Payment approved</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Pagos aprobados</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{funnel.totals.paymentApproved.toLocaleString("es-DO")}</p>
@@ -146,12 +150,12 @@ export default function RevenueOpsPage() {
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Payment failed</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Pagos fallidos</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{funnel.totals.paymentFailed.toLocaleString("es-DO")}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Failure rate: {funnel.totals.paymentFailureRatePct.toFixed(2)}%
+                        Tasa de fallo: {funnel.totals.paymentFailureRatePct.toFixed(2)}%
                       </p>
                     </CardContent>
                   </Card>
@@ -167,11 +171,11 @@ export default function RevenueOpsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Día</TableHead>
-                          <TableHead>Views</TableHead>
-                          <TableHead>Checkout</TableHead>
+                          <TableHead>Visitas</TableHead>
+                          <TableHead>Checkouts</TableHead>
                           <TableHead>Aprobados</TableHead>
                           <TableHead>Fallidos</TableHead>
-                          <TableHead className="text-right">Conv.</TableHead>
+                          <TableHead className="text-right">Conversión</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -198,7 +202,7 @@ export default function RevenueOpsPage() {
           <div className="space-y-4">
             {supplyQuery.isLoading || !supply ? (
               <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin" /> Cargando supply ops...
+                <Loader2 className="size-4 animate-spin" /> Cargando operaciones de suministro...
               </div>
             ) : (
               <>
@@ -224,7 +228,7 @@ export default function RevenueOpsPage() {
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Promoters esperando revisión</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Promotores esperando revisión</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{supply.summary.promotersPendingReview.toLocaleString("es-DO")}</p>
@@ -232,12 +236,12 @@ export default function RevenueOpsPage() {
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Tiempo a primer publish</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Tiempo al primer evento publicado</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{supply.summary.averageFirstPublishLeadTimeHours.toFixed(2)}h</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Base: {supply.summary.firstPublishMeasuredPromoters} promoters
+                        Base: {supply.summary.firstPublishMeasuredPromoters} promotores
                       </p>
                     </CardContent>
                   </Card>
@@ -259,7 +263,7 @@ export default function RevenueOpsPage() {
                               <Badge variant="outline">{Math.round(event.ageHours)}h</Badge>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {fmtDate(event.eventDate)} · {event.ownerName ?? "Sin owner"}
+                              {fmtDate(event.eventDate)} · {event.ownerName ?? "Sin responsable"}
                             </p>
                           </div>
                         ))
@@ -269,7 +273,7 @@ export default function RevenueOpsPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Cola de revisión de promoters</CardTitle>
+                      <CardTitle className="text-base">Cola de revisión de promotores</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {supply.queue.pendingPromoterApplications.length === 0 ? (
@@ -299,7 +303,7 @@ export default function RevenueOpsPage() {
           <div className="space-y-4">
             {riskQuery.isLoading || !risk ? (
               <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin" /> Cargando risk ops...
+                <Loader2 className="size-4 animate-spin" /> Cargando operaciones de riesgo...
               </div>
             ) : (
               <>
@@ -322,7 +326,7 @@ export default function RevenueOpsPage() {
                   </Card>
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Auth failures</CardTitle>
+                      <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground">Fallos de autenticación</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-2xl font-bold">{risk.summary.authFailures.toLocaleString("es-DO")}</p>
@@ -375,11 +379,11 @@ export default function RevenueOpsPage() {
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-sm font-medium truncate">{row.eventTitle}</p>
                               <Badge variant={row.highRiskCases > 0 ? "destructive" : "outline"}>
-                                Score {row.score}
+                                Puntuación {row.score}
                               </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Casos {row.cases} · Intentos {row.attempts} · High risk {row.highRiskCases}
+                              Casos {row.cases} · Intentos {row.attempts} · Alto riesgo {row.highRiskCases}
                             </p>
                           </div>
                         ))
@@ -396,7 +400,7 @@ export default function RevenueOpsPage() {
           <div className="space-y-4">
             {leaderboardQuery.isLoading || !leaderboard ? (
               <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-                <Loader2 className="size-4 animate-spin" /> Cargando leaderboard...
+                <Loader2 className="size-4 animate-spin" /> Cargando ranking...
               </div>
             ) : (
               <>
@@ -404,7 +408,7 @@ export default function RevenueOpsPage() {
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                        <Wallet className="size-4 text-primary" /> Revenue total
+                        <Wallet className="size-4 text-primary" /> Ingresos totales
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -414,7 +418,7 @@ export default function RevenueOpsPage() {
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                        <Users className="size-4 text-primary" /> Promoters activos
+                        <Users className="size-4 text-primary" /> Promotores activos
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -434,7 +438,7 @@ export default function RevenueOpsPage() {
                   <Card className="kpi-card">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                        <Clock3 className="size-4 text-primary" /> Velocidad publish
+                        <Clock3 className="size-4 text-primary" /> Velocidad de publicación
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -445,21 +449,21 @@ export default function RevenueOpsPage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Promoter leaderboard</CardTitle>
+                    <CardTitle className="text-base">Ranking de promotores</CardTitle>
                     <CardDescription>
-                      Revenue, tickets vendidos, conversión y velocidad de publicación.
+                      Ingresos, tickets vendidos, conversión y velocidad de publicación.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-0 overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Promoter</TableHead>
-                          <TableHead>Revenue</TableHead>
+                          <TableHead>Promotor</TableHead>
+                          <TableHead>Ingresos</TableHead>
                           <TableHead>Tickets</TableHead>
                           <TableHead>Conversión</TableHead>
                           <TableHead>Eventos</TableHead>
-                          <TableHead>Publish rate</TableHead>
+                          <TableHead>Tasa de publicación</TableHead>
                           <TableHead className="text-right">Velocidad</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -467,7 +471,7 @@ export default function RevenueOpsPage() {
                         {leaderboard.rows.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                              Sin datos de leaderboard en la ventana seleccionada.
+                              Sin datos del ranking en la ventana seleccionada.
                             </TableCell>
                           </TableRow>
                         ) : (
@@ -502,20 +506,20 @@ export default function RevenueOpsPage() {
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-md border border-border/70 p-3">
-              <p className="text-sm font-medium">Funnel diario</p>
-              <p className="text-xs text-muted-foreground mt-1">Views, checkout y pagos reales por día.</p>
+              <p className="text-sm font-medium">Embudo diario</p>
+              <p className="text-xs text-muted-foreground mt-1">Visitas, checkout y pagos reales por día.</p>
             </div>
             <div className="rounded-md border border-border/70 p-3">
-              <p className="text-sm font-medium">Supply ops</p>
-              <p className="text-xs text-muted-foreground mt-1">SLA de aprobación y cola de onboarding promoter.</p>
+              <p className="text-sm font-medium">Operaciones de suministro</p>
+              <p className="text-xs text-muted-foreground mt-1">SLA de aprobación y cola de incorporación de promotores.</p>
             </div>
             <div className="rounded-md border border-border/70 p-3">
-              <p className="text-sm font-medium">Risk ops</p>
-              <p className="text-xs text-muted-foreground mt-1">Fallos por provider, cancelaciones y abuso.</p>
+              <p className="text-sm font-medium">Operaciones de riesgo</p>
+              <p className="text-xs text-muted-foreground mt-1">Fallos por proveedor, cancelaciones y abuso.</p>
             </div>
             <div className="rounded-md border border-border/70 p-3">
-              <p className="text-sm font-medium">Leaderboard</p>
-              <p className="text-xs text-muted-foreground mt-1">Revenue por promoter y velocidad de publicación.</p>
+              <p className="text-sm font-medium">Ranking</p>
+              <p className="text-xs text-muted-foreground mt-1">Ingresos por promotor y velocidad de publicación.</p>
             </div>
           </CardContent>
         </Card>
@@ -527,10 +531,10 @@ export default function RevenueOpsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-xs text-muted-foreground space-y-1">
-            <p>Funnel: {funnelWindowDays} día(s)</p>
-            <p>Supply: 30 días</p>
-            <p>Risk: 7 días · observabilidad 60 min</p>
-            <p>Leaderboard: 30 días</p>
+            <p>Embudo: {funnelWindowDays} día(s)</p>
+            <p>Suministro: 30 días</p>
+            <p>Riesgo: 7 días · observabilidad 60 min</p>
+            <p>Ranking: 30 días</p>
           </CardContent>
         </Card>
       </div>
