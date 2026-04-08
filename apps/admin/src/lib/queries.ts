@@ -5,6 +5,10 @@ import type {
   AdminAnalyticsFailureFlow,
   AdminAnalyticsOverviewResponse,
   AdminAnalyticsPromoterPerformance,
+  AdminRevenueOpsFunnelResponse,
+  AdminRevenueOpsSupplyResponse,
+  AdminRevenueOpsRiskResponse,
+  AdminRevenueOpsLeaderboardResponse,
   AdminAnalyticsFunnelSnapshot,
   AdminAuditLogsResponse,
   AdminObservabilityResponse,
@@ -340,6 +344,14 @@ export const qk = {
   adminStats: ["admin", "stats"] as const,
   adminAnalyticsOverview: (windowDays: number) =>
     ["admin", "analytics", "overview", windowDays] as const,
+  adminRevenueOpsFunnel: (windowDays: number) =>
+    ["admin", "revenue-ops", "funnel", windowDays] as const,
+  adminRevenueOpsSupply: (windowDays: number) =>
+    ["admin", "revenue-ops", "supply", windowDays] as const,
+  adminRevenueOpsRisk: (windowDays: number, windowMinutes: number) =>
+    ["admin", "revenue-ops", "risk", windowDays, windowMinutes] as const,
+  adminRevenueOpsLeaderboard: (windowDays: number) =>
+    ["admin", "revenue-ops", "leaderboard", windowDays] as const,
   adminOpsChecklist: ["admin", "ops-checklist"] as const,
   adminObservability: (windowMinutes: number) =>
     ["admin", "observability", windowMinutes] as const,
@@ -494,6 +506,50 @@ export function useAdminAnalyticsOverview(windowDays = 7) {
         "fallback"
       );
     },
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminRevenueOpsFunnel(windowDays = 1) {
+  return useQuery({
+    queryKey: qk.adminRevenueOpsFunnel(windowDays),
+    queryFn: () =>
+      api.get<AdminRevenueOpsFunnelResponse>(
+        `/admin/revenue-ops/funnel?${makeQueryString({ windowDays })}`
+      ),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminRevenueOpsSupply(windowDays = 30) {
+  return useQuery({
+    queryKey: qk.adminRevenueOpsSupply(windowDays),
+    queryFn: () =>
+      api.get<AdminRevenueOpsSupplyResponse>(
+        `/admin/revenue-ops/supply?${makeQueryString({ windowDays })}`
+      ),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminRevenueOpsRisk(windowDays = 7, windowMinutes = 60) {
+  return useQuery({
+    queryKey: qk.adminRevenueOpsRisk(windowDays, windowMinutes),
+    queryFn: () =>
+      api.get<AdminRevenueOpsRiskResponse>(
+        `/admin/revenue-ops/risk?${makeQueryString({ windowDays, windowMinutes })}`
+      ),
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAdminRevenueOpsLeaderboard(windowDays = 30) {
+  return useQuery({
+    queryKey: qk.adminRevenueOpsLeaderboard(windowDays),
+    queryFn: () =>
+      api.get<AdminRevenueOpsLeaderboardResponse>(
+        `/admin/revenue-ops/leaderboard?${makeQueryString({ windowDays })}`
+      ),
     staleTime: 30 * 1000,
   });
 }

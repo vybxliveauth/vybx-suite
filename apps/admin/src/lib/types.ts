@@ -223,6 +223,133 @@ export interface AdminAnalyticsOverviewResponse {
   topPromoters: AdminAnalyticsPromoterPerformance[];
 }
 
+export interface AdminRevenueOpsFunnelDay {
+  date: string;
+  eventViewed: number;
+  checkoutStarted: number;
+  paymentApproved: number;
+  paymentFailed: number;
+  viewToCheckoutRatePct: number;
+  checkoutToApprovedPaymentRatePct: number;
+  paymentFailureRatePct: number;
+}
+
+export interface AdminRevenueOpsFunnelResponse {
+  generatedAt: string;
+  windowDays: number;
+  totals: {
+    visits: number;
+    eventViewed: number;
+    checkoutStarted: number;
+    paymentApproved: number;
+    paymentFailed: number;
+    viewToCheckoutRatePct: number;
+    checkoutToApprovedPaymentRatePct: number;
+    paymentFailureRatePct: number;
+  };
+  byDay: AdminRevenueOpsFunnelDay[];
+}
+
+export interface AdminRevenueOpsSupplyResponse {
+  generatedAt: string;
+  windowDays: number;
+  summary: {
+    pendingEvents: number;
+    pendingEventsOldestAgeHours: number | null;
+    averageApprovalLeadTimeHours: number;
+    approvalsMeasured: number;
+    promotersPendingReview: number;
+    averageFirstPublishLeadTimeHours: number;
+    firstPublishMeasuredPromoters: number;
+  };
+  queue: {
+    pendingEvents: Array<{
+      id: string;
+      title: string;
+      eventDate: string;
+      createdAt: string;
+      ageHours: number;
+      ownerId: string | null;
+      ownerName: string | null;
+    }>;
+    pendingPromoterApplications: Array<{
+      id: string;
+      email: string;
+      submittedAt: string;
+      ageHours: number;
+    }>;
+  };
+}
+
+export interface AdminRevenueOpsRiskResponse {
+  generatedAt: string;
+  windowDays: number;
+  observabilityWindowMinutes: number;
+  summary: {
+    paymentFailed: number;
+    cancellationsTotal: number;
+    authFailures: number;
+    abuseHighRiskCount: number;
+    anomaliesDetected: number;
+  };
+  paymentFailuresByProvider: Array<{
+    provider: string;
+    failedCount: number;
+    totalCount: number;
+    failureRatePct: number;
+    failedAmount: number;
+  }>;
+  cancellations: {
+    requested: number;
+    approved: number;
+    rejected: number;
+    total: number;
+  };
+  anomaliesByEvent: Array<{
+    eventId: string;
+    eventTitle: string;
+    cases: number;
+    attempts: number;
+    highRiskCases: number;
+    score: number;
+  }>;
+  observability: {
+    authFailures: number;
+    notFound: number;
+    serverErrors: number;
+    p95LatencyMs: number;
+  };
+  abuse: {
+    checkoutLocksCount: number;
+    managedUserBlocksCount: number;
+    highRiskCount: number;
+  };
+}
+
+export interface AdminRevenueOpsLeaderboardResponse {
+  generatedAt: string;
+  windowDays: number;
+  summary: {
+    activePromoters: number;
+    totalRevenue: number;
+    totalTicketsSold: number;
+    averageConversionRatePct: number;
+    averagePublishVelocityHours: number;
+  };
+  rows: Array<{
+    promoterId: string;
+    promoterName: string;
+    revenue: number;
+    ticketsSold: number;
+    checkoutCompleted: number;
+    eventsCreated: number;
+    conversionRatePct: number;
+    publishRatePct: number;
+    averagePublishVelocityHours: number | null;
+    firstPublishLeadHours: number | null;
+  }>;
+}
+
 export type AdminFraudDimension = "IP" | "USER" | "DEVICE";
 export type AdminFraudSeverity = "low" | "medium" | "high";
 
