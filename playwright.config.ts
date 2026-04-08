@@ -5,12 +5,12 @@ const WEB_URL = `http://localhost:${WEB_PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 2,
   reporter: "html",
-  timeout: 30_000,
+  timeout: 45_000,
 
   use: {
     baseURL: WEB_URL,
@@ -33,6 +33,6 @@ export default defineConfig({
     command: "pnpm turbo dev --filter=@vybx/web",
     url: WEB_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 });

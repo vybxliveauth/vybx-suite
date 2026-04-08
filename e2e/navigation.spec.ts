@@ -1,10 +1,29 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * Navigation and shell E2E tests.
  * Covers navbar, footer, mobile menu, auth modal gate, and
  * key static pages that must always load.
  */
+
+async function openAuthModal(page: Page) {
+  const desktopLoginBtn = page.locator("button.nav-auth-btn");
+  if (await desktopLoginBtn.isVisible().catch(() => false)) {
+    await desktopLoginBtn.click();
+  } else {
+    const menuBtn = page.getByLabel(/abrir menú|open menu|menú/i);
+    await expect(menuBtn).toBeVisible({ timeout: 5000 });
+    await menuBtn.click();
+
+    const drawer = page.getByLabel(/menú de navegación/i);
+    await expect(drawer).toBeVisible({ timeout: 5000 });
+    await drawer.getByRole("button", { name: /^ingresar$/i }).click();
+  }
+
+  const modal = page.getByRole("dialog", { name: /autenticación/i });
+  await expect(modal).toBeVisible({ timeout: 5000 });
+  return modal;
+}
 
 test.describe("Navbar", () => {
   test("logo links to home", async ({ page }) => {
@@ -19,13 +38,7 @@ test.describe("Navbar", () => {
 
   test("auth button opens modal", async ({ page }) => {
     await page.goto("/");
-
-    const loginBtn = page.getByRole("button", { name: /ingresar|login|iniciar/i });
-    await expect(loginBtn).toBeVisible({ timeout: 5000 });
-    await loginBtn.click();
-
-    const modal = page.getByRole("dialog");
-    await expect(modal).toBeVisible({ timeout: 5000 });
+    const modal = await openAuthModal(page);
 
     const emailInput = modal.getByRole("textbox").first();
     await expect(emailInput).toBeVisible();
@@ -33,14 +46,11 @@ test.describe("Navbar", () => {
 
   test("auth modal closes with Escape", async ({ page }) => {
     await page.goto("/");
-
-    const loginBtn = page.getByRole("button", { name: /ingresar|login|iniciar/i });
-    await expect(loginBtn).toBeVisible({ timeout: 5000 });
-    await loginBtn.click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 5000 });
+    const modal = await openAuthModal(page);
 
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).not.toBeVisible({ timeout: 3000 });
+    await expect(modal).toHaveCSS("opacity", "0");
+    await expect(modal).toHaveCSS("pointer-events", "none");
   });
 });
 
@@ -53,8 +63,9 @@ test.describe("Navbar — mobile", () => {
     const menuBtn = page.getByLabel(/abrir menú|open menu|menú/i);
     await expect(menuBtn).toBeVisible({ timeout: 5000 });
     await menuBtn.click();
-    await expect(page.getByLabel(/menú de navegación/i)).toBeVisible({ timeout: 5000 });
-    await expect(page.getByRole("button", { name: /ingresar|iniciar|login/i })).toBeVisible({ timeout: 5000 });
+    const drawer = page.getByLabel(/menú de navegación/i);
+    await expect(drawer).toBeVisible({ timeout: 5000 });
+    await expect(drawer.getByRole("button", { name: /^ingresar$/i })).toBeVisible({ timeout: 5000 });
   });
 });
 

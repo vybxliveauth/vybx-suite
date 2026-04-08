@@ -38,7 +38,8 @@ export function AuthModal({
   defaultTab?: "login" | "register";
 }) {
   const { resolvedTheme } = useTheme();
-  const isLightTheme = resolvedTheme === "light";
+  const [isHydrated, setIsHydrated] = useState(false);
+  const isLightTheme = isHydrated ? resolvedTheme === "light" : false;
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [emailNotice, setEmailNotice] = useState<string | null>(null);
@@ -51,6 +52,10 @@ export function AuthModal({
   const { setUser } = useAuthStore();
   const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     if (open) {

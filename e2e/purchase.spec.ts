@@ -76,14 +76,15 @@ test.describe("Purchase funnel — event detail", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    const firstCard = page.locator(".glass-card").first();
-    const cardCount = await page.locator(".glass-card").count();
-    if (cardCount === 0) {
+    const cardLink = page.locator("a[href^='/events/']").first();
+    const linkCount = await page.locator("a[href^='/events/']").count();
+    if (linkCount === 0) {
       test.skip(); // no events seeded
       return;
     }
 
-    await firstCard.click();
+    await expect(cardLink).toBeVisible();
+    await cardLink.click();
 
     // Should navigate to /events/[slug]
     await page.waitForURL(/\/events\/.+/, { timeout: 10_000 });

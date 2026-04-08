@@ -41,9 +41,10 @@ test.describe("Home page", () => {
   test("navigation links are present", async ({ page }) => {
     await page.goto("/");
 
-    // Footer or nav should have legal links
-    await expect(page.getByRole("link", { name: /privacidad/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /términos/i })).toBeVisible();
+    const footer = page.getByRole("contentinfo");
+    await expect(footer).toBeVisible();
+    await expect(footer.getByRole("link", { name: /privacidad/i })).toBeVisible();
+    await expect(footer.getByRole("link", { name: /términos/i })).toBeVisible();
   });
 });
 
