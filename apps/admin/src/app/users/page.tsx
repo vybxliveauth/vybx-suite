@@ -39,6 +39,7 @@ import {
 } from "@/lib/queries";
 import type { AdminUserManageRecord, UserRole } from "@/lib/types";
 import { fmtDateTimeSafe } from "@/lib/format";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 const ALL_ROLES: UserRole[] = ["USER", "PROMOTER", "ADMIN", "SUPER_ADMIN"];
 const SAFE_ROLES: UserRole[] = ["USER", "PROMOTER"];
@@ -155,6 +156,8 @@ export default function UsersPage() {
           password,
           role: newRole,
         });
+        const emailDomain = email.includes("@") ? email.split("@")[1] : "unknown";
+        tracker.track(AnalyticsEvents.ADMIN_USER_CREATED, { emailDomain, role: newRole });
         setNewEmail("");
         setNewPassword("");
         setPage(1);
