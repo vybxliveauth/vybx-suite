@@ -30,7 +30,8 @@ type FormValues = z.infer<typeof schema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const rawNext = searchParams.get("next") ?? "/";
+  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   const [serverError, setServerError] = useState<string | null>(null);
   const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
