@@ -62,6 +62,11 @@ export const AnalyticsEvents = {
   PROMOTER_REFUND_REVIEWED: "promoter_refund_reviewed",
 
   // Admin
+  ADMIN_EVENT_APPROVED: "admin_event_approved",
+  ADMIN_EVENT_REJECTED: "admin_event_rejected",
+  ADMIN_PROMOTER_APPLICATION_REVIEWED: "admin_promoter_application_reviewed",
+  ADMIN_REFUND_REVIEWED: "admin_refund_reviewed",
+  ADMIN_OPERATION_UPDATED: "admin_operation_updated",
   ADMIN_CONFIG_UPDATED: "admin_config_updated",
   ADMIN_USER_CREATED: "admin_user_created",
 } as const;

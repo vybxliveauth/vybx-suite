@@ -36,6 +36,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import { setUser, displayName, useAuthUser, hydrateUserFromSession } from "@/lib/auth";
 import { usePromoters } from "@/lib/queries";
 import {
@@ -452,6 +453,13 @@ export default function SettingsPage() {
           ? "Cambios de operación guardados automáticamente."
           : "Ajustes de operación global guardados correctamente."
       );
+      tracker.track(AnalyticsEvents.ADMIN_OPERATION_UPDATED, {
+        area: "ops",
+        autosave: Boolean(options?.autosave),
+        maintenanceMode: snapshot.maintenanceMode,
+        waitingRoomMode: snapshot.waitingRoomMode,
+        opsAlertsEnabled: snapshot.opsAlertsEnabled,
+      });
     } catch (error) {
       setOpsError((error as Error).message || "No se pudieron guardar los ajustes.");
     } finally {
@@ -576,6 +584,16 @@ export default function SettingsPage() {
 
       writePlatformConfigCache(platformConfigCacheKey, snapshot);
       setFeesNotice("Configuración de comisiones guardada correctamente.");
+      tracker.track(AnalyticsEvents.ADMIN_OPERATION_UPDATED, {
+        area: "fees",
+        platformFeePercent: normalizedPlatformFee,
+        vipOverrideCount: normalizedOverrides.length,
+      });
+      tracker.track(AnalyticsEvents.ADMIN_CONFIG_UPDATED, {
+        area: "fees",
+        platformFeePercent: normalizedPlatformFee,
+        vipOverrideCount: normalizedOverrides.length,
+      });
     } catch (error) {
       setFeesError(
         (error as Error).message || "No se pudo guardar la configuración de comisiones."

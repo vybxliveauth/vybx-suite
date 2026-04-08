@@ -33,6 +33,7 @@ import {
   useUpdateAdminRefundDispute,
   useUpdateAdminRefundExecution,
 } from "@/lib/queries";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 
 type UiStatus = "REQUESTED" | "APPROVED" | "REJECTED";
@@ -203,6 +204,10 @@ export default function RefundsPage() {
         ...prev,
         [id]: decision === "APPROVE" ? "APPROVED" : "REJECTED",
       }));
+      tracker.track(AnalyticsEvents.ADMIN_REFUND_REVIEWED, {
+        action: decision,
+        refundId: id,
+      });
     } catch (err) {
       setActionError((err as Error).message || "Error al procesar la solicitud.");
     } finally {
@@ -382,6 +387,12 @@ export default function RefundsPage() {
       );
       const success = results.filter((result) => result.status === "fulfilled").length;
       const failed = results.length - success;
+      tracker.track(AnalyticsEvents.ADMIN_REFUND_REVIEWED, {
+        action: "APPROVE",
+        attemptedCount: targets.length,
+        successCount: success,
+        failedCount: failed,
+      });
       setStatusForSuccessful(
         targets.map((target) => target.id),
         results,
@@ -439,6 +450,12 @@ export default function RefundsPage() {
       );
       const success = results.filter((result) => result.status === "fulfilled").length;
       const failed = results.length - success;
+      tracker.track(AnalyticsEvents.ADMIN_REFUND_REVIEWED, {
+        action: "REJECT",
+        attemptedCount: targets.length,
+        successCount: success,
+        failedCount: failed,
+      });
       setStatusForSuccessful(
         targets.map((target) => target.id),
         results,

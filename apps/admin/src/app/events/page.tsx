@@ -17,6 +17,7 @@ import {
   useUpdateEventApproval,
   useUpdateEventFeatured,
 } from "@/lib/queries";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import type { Event, EventStatus } from "@/lib/types";
 import { fmtCurrency, fmtDate } from "@/lib/format";
 
@@ -237,6 +238,13 @@ export default function EventsPage() {
 
     const approveStats = settledStats(approveResults);
     const activateStats = settledStats(activateResults);
+    tracker.track(AnalyticsEvents.ADMIN_EVENT_APPROVED, {
+      selectedCount: selected.length,
+      approvedCount: approveStats.success,
+      approveFailedCount: approveStats.failed,
+      activatedCount: activateStats.success,
+      activateFailedCount: activateStats.failed,
+    });
     const tone = approveStats.failed + activateStats.failed > 0 ? "error" : "success";
     setBulkNotice({
       tone,
@@ -372,6 +380,13 @@ export default function EventsPage() {
 
     const rejectStats = settledStats(rejectResults);
     const deactivateStats = settledStats(deactivateResults);
+    tracker.track(AnalyticsEvents.ADMIN_EVENT_REJECTED, {
+      selectedCount: selected.length,
+      rejectedCount: rejectStats.success,
+      rejectFailedCount: rejectStats.failed,
+      deactivatedCount: deactivateStats.success,
+      deactivateFailedCount: deactivateStats.failed,
+    });
     const tone = rejectStats.failed + deactivateStats.failed > 0 ? "error" : "success";
     setBulkNotice({
       tone,

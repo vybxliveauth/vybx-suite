@@ -26,6 +26,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import { useActiveCategories } from "@/lib/queries";
 
 const tierSchema = z.object({
@@ -174,6 +175,20 @@ export default function NewEventPage() {
           name: tier.name,
           price: tier.price,
           quantity: tier.quantity,
+        });
+      }
+
+      tracker.track(AnalyticsEvents.PROMOTER_EVENT_CREATED, {
+        eventId: event.id,
+        isActive: values.isActive,
+        tierCount: values.tiers.length,
+        hasCategory: Boolean(values.categoryId),
+      });
+      if (values.isActive) {
+        tracker.track(AnalyticsEvents.PROMOTER_EVENT_PUBLISHED, {
+          eventId: event.id,
+          source: "create",
+          tierCount: values.tiers.length,
         });
       }
 

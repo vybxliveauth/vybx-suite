@@ -12,6 +12,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@tanstack/react-query": "^5.95.0",
+    "@vybx/analytics": "workspace:*",
     "@vybx/api-client": "workspace:*",
     "@vybx/auth-client": "workspace:*",
     "@vybx/edge-auth": "workspace:*",

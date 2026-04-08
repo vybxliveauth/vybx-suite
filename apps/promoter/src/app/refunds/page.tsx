@@ -15,6 +15,7 @@ import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useRefunds } from "@/lib/queries";
 import type { RefundStatus } from "@/lib/queries";
 import { api } from "@/lib/api";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat("es-MX", {
@@ -82,6 +83,10 @@ export default function RefundsPage() {
         ...prev,
         [id]: action === "APPROVE" ? "APPROVED" : "REJECTED",
       }));
+      tracker.track(AnalyticsEvents.PROMOTER_REFUND_REVIEWED, {
+        refundId: id,
+        action,
+      });
     } catch (err) {
       setActionError((err as Error).message || "Error al procesar la solicitud.");
     } finally {

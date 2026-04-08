@@ -17,6 +17,7 @@ import {
   useRejectPromoterApplication,
   useUpdatePromoterBankVerification,
 } from "@/lib/queries";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import type { PromoterApplicationStatus, PromoterPayoutMethod } from "@/lib/types";
 import { fmtDate } from "@/lib/format";
 
@@ -290,6 +291,12 @@ export default function PromotersPage() {
     }
     const results = await Promise.allSettled(pending.map((item) => approveMutation.mutateAsync(item.id)));
     const stats = settledStats(results);
+    tracker.track(AnalyticsEvents.ADMIN_PROMOTER_APPLICATION_REVIEWED, {
+      action: "APPROVE",
+      attemptedCount: pending.length,
+      successCount: stats.success,
+      failedCount: stats.failed,
+    });
     setBulkNotice({
       tone: stats.failed > 0 ? "error" : "success",
       text: `Resumen aprobacion -> Aprobadas: ${stats.success}/${pending.length}, Errores: ${stats.failed}.`,
@@ -324,6 +331,12 @@ export default function PromotersPage() {
       )
     );
     const stats = settledStats(results);
+    tracker.track(AnalyticsEvents.ADMIN_PROMOTER_APPLICATION_REVIEWED, {
+      action: "REJECT",
+      attemptedCount: pending.length,
+      successCount: stats.success,
+      failedCount: stats.failed,
+    });
     setBulkNotice({
       tone: stats.failed > 0 ? "error" : "success",
       text: `Resumen rechazo -> Rechazadas: ${stats.success}/${pending.length}, Errores: ${stats.failed}.`,

@@ -47,6 +47,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { useEventDetail, useEventAnalytics, useToggleEvent, useDuplicateEvent, useDeleteEvent } from "@/lib/queries";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import type { EventDetail, EventStatus } from "@/lib/types";
 import { EventAnalyticsCharts } from "@/components/features/EventAnalyticsCharts";
 
@@ -145,7 +146,20 @@ export default function EventDetailPage() {
 
   async function handleToggleActive() {
     if (!event) return;
-    toggleEvent.mutate({ id: event.id, isActive: !event.isActive });
+    const nextIsActive = !event.isActive;
+    toggleEvent.mutate(
+      { id: event.id, isActive: nextIsActive },
+      {
+        onSuccess: () => {
+          if (nextIsActive) {
+            tracker.track(AnalyticsEvents.PROMOTER_EVENT_PUBLISHED, {
+              eventId: event.id,
+              source: "toggle",
+            });
+          }
+        },
+      }
+    );
   }
 
   async function handleDuplicate() {

@@ -17,6 +17,7 @@ import {
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { api } from "@/lib/api";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import { useActiveCategories, useEventDetail } from "@/lib/queries";
 import type { EventDetail } from "@/lib/types";
 
@@ -144,6 +145,7 @@ export default function EditEventPage() {
     setServerError(null);
     try {
       const dateTime = new Date(`${values.date}T${values.time}`).toISOString();
+      const wasActiveBefore = eventQuery.data?.isActive ?? false;
 
       // 1 — Update event fields
       await api.patch(`/events/${id}`, {
@@ -180,6 +182,13 @@ export default function EditEventPage() {
             quantity: tier.quantity,
           });
         }
+      }
+
+      if (!wasActiveBefore && values.isActive) {
+        tracker.track(AnalyticsEvents.PROMOTER_EVENT_PUBLISHED, {
+          eventId: id,
+          source: "edit",
+        });
       }
 
       router.push(`/events/${id}`);

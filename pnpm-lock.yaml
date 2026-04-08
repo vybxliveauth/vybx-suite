@@ -48,6 +48,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@vybx/analytics':
+        specifier: workspace:*
+        version: link:../../packages/analytics
       '@vybx/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -127,6 +130,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.95.0
         version: 5.95.2(react@19.2.4)
+      '@vybx/analytics':
+        specifier: workspace:*
+        version: link:../../packages/analytics
       '@vybx/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
