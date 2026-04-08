@@ -58,8 +58,8 @@
   --nav-bg: rgba(10, 10, 18, 0.88);
 
   /* Typography */
-  --font-heading: 'Avenir Next', 'Montserrat', 'Segoe UI', sans-serif;
-  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
 
   /* Radius */
   --radius: 7px;

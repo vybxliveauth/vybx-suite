@@ -1,10 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { Outfit, Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { Footer } from "@/components/features/Footer";
 import { PwaServiceWorker } from "@/components/features/PwaServiceWorker";
 import { PwaInstallBanner } from "@/components/features/PwaInstallBanner";
 import { resolveServerApiBaseUrl } from "@/lib/api-base-url";
 import "./globals.css";
+
+const outfit = Outfit({
+  variable: "--font-heading",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-body",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 function resolveMetadataBase(): URL {
   const fallback = "http://localhost:3000";
@@ -165,7 +179,7 @@ export default async function RootLayout({
   return (
     <html
       lang="es"
-      className="h-full antialiased"
+      className={`${outfit.variable} ${inter.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body
