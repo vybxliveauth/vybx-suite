@@ -29,6 +29,7 @@ const MODULES = [
   { label: "Promotores",     href: "/promoters",  keywords: ["promotores", "kyc", "verification"] },
   { label: "Liquidaciones",  href: "/payouts",    keywords: ["payouts", "pagos", "stripe", "batches"] },
   { label: "Ventas",         href: "/sales",      keywords: ["sales", "ventas", "ingresos"] },
+  { label: "Revenue Ops",    href: "/revenue-ops",keywords: ["revenue", "funnel", "supply", "risk", "leaderboard"] },
   { label: "Reembolsos",     href: "/refunds",    keywords: ["refunds", "reembolsos", "cancelaciones"] },
   { label: "Usuarios",       href: "/users",      keywords: ["usuarios", "roles", "bloqueo", "acceso"] },
   { label: "Seguridad",      href: "/security",   keywords: ["fraude", "seguridad", "abuse", "risk", "bloqueo"] },

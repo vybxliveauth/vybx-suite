@@ -75,6 +75,15 @@ const ITEMS: CommandItem[] = [
     permission: "sales:view",
   },
   {
+    id: "revenue-ops",
+    label: "Revenue Ops",
+    description: "Cabina comercial con funnel, supply, risk y leaderboard",
+    href: "/revenue-ops",
+    keywords: ["revenue", "ops", "funnel", "supply", "risk", "leaderboard"],
+    source: "module",
+    permission: "sales:view",
+  },
+  {
     id: "refunds",
     label: "Reembolsos y Disputas",
     description: "Gestion de solicitudes y aprobaciones one-click",
