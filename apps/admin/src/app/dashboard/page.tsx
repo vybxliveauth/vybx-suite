@@ -17,6 +17,7 @@ import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
 import { ActivityFeed, type ActivityItem } from "@/components/pro/ActivityFeed";
 import { AuditTimeline, type AuditItem } from "@/components/pro/AuditTimeline";
 import {
+  useAdminAnalyticsOverview,
   useAdminAuditLogs,
   useAdminObservability,
   useAdminOpsChecklist,
@@ -58,6 +59,7 @@ function resolvePlatformFeePercent(raw: number | undefined): number {
 
 export default function DashboardPage() {
   const statsQuery = useAdminStats();
+  const analyticsQuery = useAdminAnalyticsOverview(7);
   const auditQuery = useAdminAuditLogs(1, 8);
   const observabilityQuery = useAdminObservability(60);
   const opsChecklistQuery = useAdminOpsChecklist();
@@ -76,6 +78,7 @@ export default function DashboardPage() {
   const observability = observabilityQuery.data;
   const checklist = opsChecklistQuery.data;
   const payoutReconciliation = payoutReconciliationQuery.data;
+  const funnel = analyticsQuery.data?.funnel;
 
   const trend = useMemo(
     () => buildTrend(stats?.sparklines.revenue ?? []),
@@ -207,6 +210,12 @@ export default function DashboardPage() {
           </p>
         </div>
 
+        {analyticsQuery.isError && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Analytics de conversión no disponible: {analyticsQuery.error instanceof Error ? analyticsQuery.error.message : "endpoint no disponible."}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="kpi-card">
             <CardHeader className="pb-2">
@@ -312,6 +321,42 @@ export default function DashboardPage() {
                 />
               </LineChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Conversión Semana 1</CardTitle>
+            <CardDescription>
+              View → Checkout → Pago aprobado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-xs text-muted-foreground">Event viewed</p>
+              <p className="text-lg font-semibold">{(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Checkout started</p>
+              <p className="text-lg font-semibold">{(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}</p>
+              <p className="text-xs text-muted-foreground">
+                {(funnel?.viewToCheckoutRatePct ?? 0).toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Checkout completed</p>
+              <p className="text-lg font-semibold">{(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}</p>
+              <p className="text-xs text-muted-foreground">
+                {(funnel?.checkoutToApprovedPaymentRatePct ?? 0).toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Payment failed</p>
+              <p className="text-lg font-semibold">{(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}</p>
+              <p className="text-xs text-muted-foreground">
+                {(funnel?.paymentFailureRatePct ?? 0).toFixed(2)}%
+              </p>
+            </div>
           </CardContent>
         </Card>
 

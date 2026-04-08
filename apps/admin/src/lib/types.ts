@@ -178,6 +178,51 @@ export interface AdminObservabilityResponse {
   };
 }
 
+export interface AdminAnalyticsFunnelSnapshot {
+  eventViewed: number;
+  checkoutStarted: number;
+  checkoutCompleted: number;
+  paymentFailed: number;
+  viewToCheckoutRatePct: number;
+  checkoutToApprovedPaymentRatePct: number;
+  paymentFailureRatePct: number;
+}
+
+export interface AdminAnalyticsFailureFlow {
+  flow: string;
+  failed: number;
+  total: number;
+  failureRatePct: number;
+}
+
+export interface AdminAnalyticsCategoryPerformance {
+  categoryId: string;
+  categoryName: string;
+  eventViewed: number;
+  checkoutStarted: number;
+  checkoutCompleted: number;
+  conversionRatePct: number;
+}
+
+export interface AdminAnalyticsPromoterPerformance {
+  promoterId: string;
+  promoterName: string;
+  eventsCreated: number;
+  checkoutCompleted: number;
+  grossRevenue: number;
+  conversionRatePct: number;
+}
+
+export interface AdminAnalyticsOverviewResponse {
+  generatedAt: string;
+  windowDays: number;
+  source: "combined" | "fallback";
+  funnel: AdminAnalyticsFunnelSnapshot;
+  failuresByFlow: AdminAnalyticsFailureFlow[];
+  topCategories: AdminAnalyticsCategoryPerformance[];
+  topPromoters: AdminAnalyticsPromoterPerformance[];
+}
+
 export type AdminFraudDimension = "IP" | "USER" | "DEVICE";
 export type AdminFraudSeverity = "low" | "medium" | "high";
 

@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { ArrowRight, RotateCcw, TrendingUp, Ticket, CreditCard } from "lucide-react";
+import { ArrowRight, RotateCcw, TrendingUp, Ticket, CreditCard, Eye, ShoppingCart, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   Badge,
   Card,
@@ -28,7 +28,7 @@ import {
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
-import { useAdminRefunds, useAdminStats, useAdminTransactions } from "@/lib/queries";
+import { useAdminAnalyticsOverview, useAdminRefunds, useAdminStats, useAdminTransactions } from "@/lib/queries";
 import { fmtCurrency, fmtDateShort as fmtDate, fmtDateTime } from "@/lib/format";
 
 const CHART_TICK_COLOR = "hsl(var(--muted-foreground))";
@@ -74,8 +74,13 @@ function buildSparkline(values: Array<{ v: number }>) {
   });
 }
 
+function fmtPct(value: number) {
+  return `${Number(value || 0).toFixed(2)}%`;
+}
+
 export default function SalesPage() {
   const statsQuery = useAdminStats();
+  const analyticsQuery = useAdminAnalyticsOverview(7);
   const refundsQuery = useAdminRefunds(1, 100, "REQUESTED");
   const transactionsQuery = useAdminTransactions(1, 25);
 
@@ -85,6 +90,11 @@ export default function SalesPage() {
   const pendingRefunds = refundsQuery.data?.total ?? 0;
   const sparkline = buildSparkline(statsQuery.data?.sparklines.revenue ?? []);
   const transactions = transactionsQuery.data?.data ?? [];
+  const analytics = analyticsQuery.data;
+  const funnel = analytics?.funnel;
+  const topCategories = analytics?.topCategories.slice(0, 5) ?? [];
+  const topPromoters = analytics?.topPromoters.slice(0, 5) ?? [];
+  const failuresByFlow = analytics?.failuresByFlow.slice(0, 5) ?? [];
 
   const kpis = [
     { label: "Ingresos totales", value: fmtCurrency(totalRevenue), icon: TrendingUp },
@@ -104,6 +114,11 @@ export default function SalesPage() {
         {(statsQuery.isError || transactionsQuery.isError) && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             Error al cargar datos de ventas: {(statsQuery.error ?? transactionsQuery.error) instanceof Error ? (statsQuery.error ?? transactionsQuery.error)?.message : "No se pudo conectar con el servidor."}
+          </div>
+        )}
+        {analyticsQuery.isError && (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            Analytics Semana 1 no disponible: {analyticsQuery.error instanceof Error ? analyticsQuery.error.message : "endpoint no disponible."}
           </div>
         )}
 
@@ -132,6 +147,121 @@ export default function SalesPage() {
                   </CardContent>
                 </Card>
               ))}
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Semana 1: Funnel de conversión</CardTitle>
+            <CardDescription>
+              View → Checkout → Pago aprobado, con tasa de fallo por flujo.
+              {analytics?.source === "fallback" ? " Fuente: fallback multi-endpoint." : " Fuente: endpoint combinado."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Eye className="size-3.5" /> Event viewed
+              </p>
+              <p className="text-xl font-semibold tabular-nums mt-1">
+                {(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <ShoppingCart className="size-3.5" /> Checkout started
+              </p>
+              <p className="text-xl font-semibold tabular-nums mt-1">
+                {(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                View → Checkout: {fmtPct(funnel?.viewToCheckoutRatePct ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <CheckCircle2 className="size-3.5" /> Checkout completed
+              </p>
+              <p className="text-xl font-semibold tabular-nums mt-1">
+                {(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Checkout → Pago: {fmtPct(funnel?.checkoutToApprovedPaymentRatePct ?? 0)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <AlertTriangle className="size-3.5" /> Payment failed
+              </p>
+              <p className="text-xl font-semibold tabular-nums mt-1">
+                {(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Fallo de pago: {fmtPct(funnel?.paymentFailureRatePct ?? 0)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Top categorías que convierten</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {topCategories.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
+              ) : (
+                topCategories.map((row) => (
+                  <div key={row.categoryId} className="rounded-md border border-border/70 px-3 py-2">
+                    <p className="text-sm font-medium">{row.categoryName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      views {row.eventViewed.toLocaleString("es-DO")} · checkout {row.checkoutCompleted.toLocaleString("es-DO")} · conv {fmtPct(row.conversionRatePct)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Top promoters con ventas reales</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {topPromoters.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
+              ) : (
+                topPromoters.map((row) => (
+                  <div key={row.promoterId} className="rounded-md border border-border/70 px-3 py-2">
+                    <p className="text-sm font-medium">{row.promoterName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      eventos {row.eventsCreated.toLocaleString("es-DO")} · checkouts {row.checkoutCompleted.toLocaleString("es-DO")} · {fmtCurrency(row.grossRevenue)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Fallos por flujo</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {failuresByFlow.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
+              ) : (
+                failuresByFlow.map((row) => (
+                  <div key={row.flow} className="rounded-md border border-border/70 px-3 py-2">
+                    <p className="text-sm font-medium">{row.flow}</p>
+                    <p className="text-xs text-muted-foreground">
+                      fallos {row.failed.toLocaleString("es-DO")} / total {row.total.toLocaleString("es-DO")} · {fmtPct(row.failureRatePct)}
+                    </p>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
