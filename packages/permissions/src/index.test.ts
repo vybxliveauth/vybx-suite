@@ -5,6 +5,7 @@ import {
   normalizeAdminPermissionClaims,
   resolvePromoterPermissions,
   normalizePromoterPermissionClaims,
+  resolvePromoterRequiredPermissionForPath,
   ADMIN_ALL_PERMISSIONS,
   ADMIN_DEFAULT_PERMISSIONS,
   PROMOTER_ALL_PERMISSIONS,
@@ -160,5 +161,36 @@ describe("normalizePromoterPermissionClaims", () => {
       "events:create",
     ]);
     expect(result).toEqual(["dashboard:view", "events:create"]);
+  });
+});
+
+describe("resolvePromoterRequiredPermissionForPath", () => {
+  it("maps root/login correctly", () => {
+    expect(resolvePromoterRequiredPermissionForPath("/")).toBe("dashboard:view");
+    expect(resolvePromoterRequiredPermissionForPath("/login")).toBeNull();
+    expect(resolvePromoterRequiredPermissionForPath("/login/callback")).toBeNull();
+  });
+
+  it("maps promoter routes to expected permissions", () => {
+    const cases: [string, string][] = [
+      ["/dashboard", "dashboard:view"],
+      ["/events", "events:view"],
+      ["/events/new", "events:create"],
+      ["/events/abc/edit", "events:edit"],
+      ["/events/abc", "events:view"],
+      ["/sales", "sales:view"],
+      ["/refunds", "refunds:view"],
+      ["/staff", "staff:view"],
+      ["/scan/evt-1", "staff:view"],
+      ["/settings", "settings:view"],
+    ];
+    for (const [path, expected] of cases) {
+      expect(resolvePromoterRequiredPermissionForPath(path)).toBe(expected);
+    }
+  });
+
+  it("returns null for unknown paths", () => {
+    expect(resolvePromoterRequiredPermissionForPath("/unknown")).toBeNull();
+    expect(resolvePromoterRequiredPermissionForPath("/api/health")).toBeNull();
   });
 });

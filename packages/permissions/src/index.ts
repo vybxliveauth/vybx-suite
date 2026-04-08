@@ -200,3 +200,41 @@ export function normalizePromoterPermissionClaims(input: unknown): PromoterPermi
   }
   return out;
 }
+
+export function resolvePromoterRequiredPermissionForPath(
+  pathname: string,
+): PromoterPermission | null {
+  if (!pathname || pathname === "/") return "dashboard:view";
+  if (pathname === "/login" || pathname.startsWith("/login/")) return null;
+  if (pathname === "/promoter" || pathname.startsWith("/promoter/")) {
+    return "dashboard:view";
+  }
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) {
+    return "dashboard:view";
+  }
+  if (pathname === "/events/new" || pathname.startsWith("/events/new/")) {
+    return "events:create";
+  }
+  if (pathname === "/events/[id]/edit" || pathname.endsWith("/edit")) {
+    return "events:edit";
+  }
+  if (pathname === "/events" || pathname.startsWith("/events/")) {
+    return "events:view";
+  }
+  if (pathname === "/sales" || pathname.startsWith("/sales/")) {
+    return "sales:view";
+  }
+  if (pathname === "/refunds" || pathname.startsWith("/refunds/")) {
+    return "refunds:view";
+  }
+  if (pathname === "/staff" || pathname.startsWith("/staff/")) {
+    return "staff:view";
+  }
+  if (pathname === "/scan" || pathname.startsWith("/scan/")) {
+    return "staff:view";
+  }
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) {
+    return "settings:view";
+  }
+  return null;
+}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell, Menu, LogOut, User as UserIcon, ChevronDown, Search,
-  CheckCheck, Command,
+  AlertTriangle, Command,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ import {
 } from "@vybx/ui";
 import { clearSession, useAuthUser, displayName } from "@/lib/auth";
 import { api } from "@/lib/api";
-import type { NotificationItem, NotificationsResponse } from "@/lib/types";
+import type { AdminOpsChecklistItem, AdminOpsChecklistResponse } from "@/lib/types";
 
 const MODULES = [
   { label: "Dashboard",      href: "/dashboard",  keywords: ["dashboard", "inicio", "command"] },
@@ -49,50 +49,46 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
   const pathname = usePathname();
   const user     = useAuthUser();
 
-  const [notifications,  setNotifications]  = useState<NotificationItem[]>([]);
-  const [unreadCount,    setUnreadCount]     = useState(0);
-  const [markingAll,     setMarkingAll]      = useState(false);
+  const [opsAlerts,      setOpsAlerts]       = useState<AdminOpsChecklistItem[]>([]);
+  const [opsSummary,     setOpsSummary]      = useState<AdminOpsChecklistResponse["summary"] | null>(null);
   const [moduleSearch,   setModuleSearch]    = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function loadNotifications() {
+  const activeAlertsCount = useMemo(() => {
+    if (!opsSummary) return 0;
+    return (opsSummary.warningItems ?? 0) + (opsSummary.breachedItems ?? 0);
+  }, [opsSummary]);
+
+  async function loadOpsAlerts() {
     try {
-      const res = await api.get<NotificationsResponse>("/promoter/notifications");
-      setNotifications(res.items ?? []);
-      setUnreadCount(res.unreadCount ?? 0);
+      const res = await api.get<AdminOpsChecklistResponse>("/admin/ops-checklist");
+      setOpsSummary(res.summary ?? null);
+      const ranked = Object.values(res.items ?? {})
+        .filter((item) => item.level !== "ok" || item.pendingCount > 0)
+        .sort((a, b) => {
+          const weight = (level: AdminOpsChecklistItem["level"]) => {
+            if (level === "breach") return 3;
+            if (level === "warning") return 2;
+            return 1;
+          };
+          return (
+            weight(b.level) - weight(a.level) ||
+            (b.pendingCount ?? 0) - (a.pendingCount ?? 0) ||
+            (b.oldestAgeHours ?? 0) - (a.oldestAgeHours ?? 0)
+          );
+        });
+      setOpsAlerts(ranked);
     } catch { /* ignore */ }
   }
 
   useEffect(() => {
-    void loadNotifications();
-    intervalRef.current = setInterval(() => void loadNotifications(), 45_000);
+    void loadOpsAlerts();
+    intervalRef.current = setInterval(() => void loadOpsAlerts(), 45_000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handleNotifClick(n: NotificationItem) {
-    if (!n.isRead) {
-      try {
-        await api.patch(`/promoter/notifications/${encodeURIComponent(n.key)}/read`, {});
-        setNotifications((prev) =>
-          prev.map((x) => x.key === n.key ? { ...x, isRead: true, readAt: new Date().toISOString() } : x)
-        );
-        setUnreadCount((c) => Math.max(0, c - 1));
-      } catch { /* ignore */ }
-    }
-    if (n.href && pathname !== n.href) router.push(n.href);
-  }
-
-  async function handleMarkAll() {
-    if (markingAll || unreadCount === 0) return;
-    setMarkingAll(true);
-    try {
-      await api.patch("/promoter/notifications/read-all", {});
-      const now = new Date().toISOString();
-      setNotifications((prev) => prev.map((x) => ({ ...x, isRead: true, readAt: now })));
-      setUnreadCount(0);
-    } catch { /* ignore */ }
-    finally { setMarkingAll(false); }
+  function handleAlertClick(alert: AdminOpsChecklistItem) {
+    if (alert.href && pathname !== alert.href) router.push(alert.href);
   }
 
   function handleSearch(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -178,49 +174,51 @@ export function Header({ onMenuClick, breadcrumb }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-white/5" aria-label="Notificaciones">
               <Bell className="size-4" />
-              {unreadCount > 0 && (
+              {activeAlertsCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground leading-none">
-                  {unreadCount > 9 ? "9+" : unreadCount}
+                  {activeAlertsCount > 9 ? "9+" : activeAlertsCount}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel className="flex items-center justify-between">
-              <span>Notificaciones</span>
-              {unreadCount > 0 && (
-                <button
-                  onClick={() => void handleMarkAll()}
-                  disabled={markingAll}
-                  className="flex items-center gap-1 text-[11px] text-primary hover:text-primary/80 disabled:opacity-50"
-                >
-                  <CheckCheck className="size-3" />
-                  {markingAll ? "Marcando…" : "Marcar todas"}
-                </button>
-              )}
+              <span>Alertas operativas</span>
+              <span className="text-[11px] text-muted-foreground">
+                {activeAlertsCount > 0 ? `${activeAlertsCount} activas` : "Todo al día"}
+              </span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {notifications.length === 0 ? (
+            {opsAlerts.length === 0 ? (
               <div className="px-3 py-4 text-sm text-muted-foreground text-center">
                 Sin alertas pendientes.
               </div>
             ) : (
-              notifications.slice(0, 8).map((n, i) => (
+              opsAlerts.slice(0, 8).map((alert) => (
                 <DropdownMenuItem
-                  key={`${n.key}-${i}`}
-                  onClick={() => void handleNotifClick(n)}
+                  key={alert.key}
+                  onClick={() => handleAlertClick(alert)}
                   className="items-start gap-2"
                 >
-                  {!n.isRead && (
-                    <span className="mt-1.5 size-1.5 rounded-full bg-primary shrink-0" />
-                  )}
-                  <div className={`min-w-0 ${n.isRead ? "pl-3.5" : ""}`}>
-                    <p className={`truncate text-sm ${n.isRead ? "text-muted-foreground" : "font-medium"}`}>
-                      {n.title}
+                  <AlertTriangle
+                    className={`mt-0.5 size-3.5 shrink-0 ${
+                      alert.level === "breach"
+                        ? "text-red-300"
+                        : alert.level === "warning"
+                          ? "text-amber-300"
+                          : "text-sky-300"
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {alert.label}
                     </p>
-                    {n.message && (
-                      <p className="truncate text-xs text-muted-foreground mt-0.5">{n.message}</p>
-                    )}
+                    <p className="truncate text-xs text-muted-foreground mt-0.5">
+                      {alert.pendingCount} pendientes · SLA {alert.targetHours}h
+                      {typeof alert.oldestAgeHours === "number"
+                        ? ` · más antiguo ${Math.round(alert.oldestAgeHours)}h`
+                        : ""}
+                    </p>
                   </div>
                 </DropdownMenuItem>
               ))

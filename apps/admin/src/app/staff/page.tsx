@@ -42,7 +42,7 @@ export default function StaffPage() {
   async function loadEvents() {
     setLoadingEvents(true);
     try {
-      const res = await api.get<PaginatedResponse<Event>>("/promoter/events?page=1&limit=100");
+      const res = await api.get<PaginatedResponse<Event>>("/events/admin/all?page=1&limit=100");
       const items = res.data ?? [];
       setEvents(items);
       setSelectedId((prev) => {
@@ -68,9 +68,8 @@ export default function StaffPage() {
     finally { setLoadingStaff(false); }
   }
 
-  useEffect(() => { void loadEvents(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { void loadStaff(); },       // eslint-disable-line react-hooks/exhaustive-deps
-    [selectedId, statusFilter]);               // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void loadEvents(); }, []);
+  useEffect(() => { void loadStaff(); }, [selectedId, statusFilter]);
 
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedId) ?? null,

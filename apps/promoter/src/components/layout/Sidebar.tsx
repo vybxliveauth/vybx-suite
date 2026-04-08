@@ -24,7 +24,7 @@ const NAV: { href: string; label: string; icon: React.ElementType; permission: P
   { href: "/events",    label: "Eventos",       icon: CalendarDays,    permission: "events:view"    },
   { href: "/sales",     label: "Ventas",        icon: BarChart3,       permission: "sales:view"     },
   { href: "/refunds",   label: "Reembolsos",    icon: RotateCcw,       permission: "refunds:view"   },
-  { href: "/staff",     label: "Staff",         icon: Users,           permission: "staff:assign"   },
+  { href: "/staff",     label: "Staff",         icon: Users,           permission: "staff:view"     },
   { href: "/settings",  label: "Configuración", icon: Settings,        permission: "settings:view"  },
 ];
 

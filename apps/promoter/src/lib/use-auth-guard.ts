@@ -4,7 +4,7 @@ import { useAuthGuardCore } from "@vybx/auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import { clearSession, getUser, hydrateUserFromSession } from "./auth";
 import type { Permission } from "./permissions";
-import { resolvePermissions } from "./permissions";
+import { resolvePermissions, resolveRequiredPermissionForPath } from "./permissions";
 import type { UserRole } from "./types";
 
 const ALLOWED_ROLES = new Set<UserRole>(["PROMOTER", "ADMIN", "SUPER_ADMIN"]);
@@ -31,6 +31,7 @@ export function useAuthGuard(permission?: Permission) {
     hydrateUserFromSession,
     clearSession,
     resolvePermissions: (user) => resolvePermissions(user),
+    resolveRequiredPermissionForPath,
     loginPath: "/login",
     fallbackPath: "/dashboard",
     defaultNextPath: "/dashboard",
