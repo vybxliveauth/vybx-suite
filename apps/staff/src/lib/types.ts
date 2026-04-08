@@ -1,8 +1,10 @@
 import type { AuthUserCore, UserRole as SharedUserRole } from "@vybx/types";
 
-export type UserRole = SharedUserRole;
+export type UserRole = SharedUserRole | "STAFF";
 
-export interface AuthUser extends AuthUserCore {}
+export interface AuthUser extends Omit<AuthUserCore, "role"> {
+  role: UserRole;
+}
 
 // ── Staff event (from GET /event-staff/my-events) ─────────────────────────────
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@vybx/ui";
 import { api } from "@/lib/api";
-import { useAuthUser, clearSession, displayName } from "@/lib/auth";
+import { useAuthUser, clearSession, displayName, hydrateUserFromSession } from "@/lib/auth";
 import type { StaffEvent } from "@/lib/types";
 
 function fmtDate(iso: string) {
@@ -30,15 +30,26 @@ function fmtDate(iso: string) {
 export default function EventsPage() {
   const router = useRouter();
   const user = useAuthUser();
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (user === null) router.replace("/login");
-  }, [user, router]);
+    let mounted = true;
+    void hydrateUserFromSession().finally(() => {
+      if (mounted) setAuthChecked(true);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (authChecked && user === null) router.replace("/login");
+  }, [authChecked, user, router]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["staff-events"],
     queryFn: () => api.get<{ items: StaffEvent[] }>("/event-staff/my-events"),
-    enabled: !!user,
+    enabled: authChecked && !!user,
   });
 
   const events = (data as any)?.items ?? [];
@@ -80,7 +91,14 @@ export default function EventsPage() {
           </p>
         </div>
 
-        {isLoading && (
+        {!authChecked && (
+          <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+            <span className="text-sm">Verificando sesión…</span>
+          </div>
+        )}
+
+        {authChecked && isLoading && (
           <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
             <Loader2 className="size-5 animate-spin" />
             <span className="text-sm">Cargando eventos…</span>
