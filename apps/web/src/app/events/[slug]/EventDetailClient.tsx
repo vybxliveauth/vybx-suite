@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Event } from "@/types";
@@ -19,6 +19,7 @@ import {
 } from "@/hooks/useSeatSelection";
 import { formatPrice } from "@/lib/utils";
 import { VybxLogo } from "@/components/ui/VybxLogo";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import {
   CalendarDays,
   Clock,
@@ -253,6 +254,7 @@ function EventInfoCard({ event }: { event: Event }) {
 export function EventDetailClient({ event }: { event: Event }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [ticketSheetOpen, setTicketSheetOpen] = useState(false);
+  const hasTrackedViewRef = useRef(false);
   const [seatFeedback, setSeatFeedback] = useState<{
     status: "success" | "error";
     message: string;
@@ -268,6 +270,19 @@ export function EventDetailClient({ event }: { event: Event }) {
         ? Math.min(...fallbackTierPrices)
         : 0;
   const displayCurrency = event.tiers[0]?.currency ?? "USD";
+
+  useEffect(() => {
+    if (hasTrackedViewRef.current) return;
+    hasTrackedViewRef.current = true;
+    tracker.track(AnalyticsEvents.EVENT_VIEWED, {
+      eventId: event.id,
+      eventSlug: event.slug,
+      eventTitle: event.title,
+      isFeatured: Boolean(event.isFeatured),
+      isTrending: Boolean(event.isTrending),
+      tags: event.tags,
+    });
+  }, [event]);
 
   useEffect(() => {
     const handleSeatFeedback = (nativeEvent: globalThis.Event) => {

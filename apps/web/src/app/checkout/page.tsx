@@ -750,7 +750,6 @@ export default function CheckoutPage() {
   const submitCheckout = async (_data: BuyerFields) => {
     const items = session?.items ?? [];
     if (items.length === 0) return;
-    tracker.track(AnalyticsEvents.CHECKOUT_STARTED);
     setCheckoutError(null);
     const eventId = items[0]?.eventId;
     if (!eventId) {
@@ -822,6 +821,14 @@ export default function CheckoutPage() {
       }
     }
 
+    const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
+    tracker.track(AnalyticsEvents.CHECKOUT_STARTED, {
+      eventId,
+      itemCount,
+      tierCount: items.length,
+      totalAmount: session?.total ?? 0,
+      currency: session?.currency ?? items[0]?.currency ?? "USD",
+    });
     setCheckoutPending(true);
     const checkoutPayload = {
       eventId,

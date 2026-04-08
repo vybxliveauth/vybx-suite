@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useCartStore } from "@/store/useCartStore";
 import { formatPrice } from "@/lib/utils";
 import { Event, TicketTier } from "@/types";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import {
   AlertCircle,
   Check,
@@ -260,6 +261,14 @@ export function TicketSidebar({ event }: { event: Event }) {
       return;
     }
     setCartWarning(null);
+    tracker.track(AnalyticsEvents.TICKET_SELECTED, {
+      eventId: event.id,
+      tierId: selectedTier.id,
+      tierName: selectedTier.name,
+      quantity,
+      unitPrice: selectedTier.price,
+      currency: selectedTier.currency,
+    });
     toast.success(
       alreadyInCart ? "Reserva actualizada" : "Añadido al carrito",
       { description: `${quantity}× ${selectedTier.name}` },
@@ -276,6 +285,14 @@ export function TicketSidebar({ event }: { event: Event }) {
       return;
     }
     setCartWarning(null);
+    tracker.track(AnalyticsEvents.TICKET_SELECTED, {
+      eventId: event.id,
+      tierId: selectedTier.id,
+      tierName: selectedTier.name,
+      quantity,
+      unitPrice: selectedTier.price,
+      currency: selectedTier.currency,
+    });
   }
 
   return (

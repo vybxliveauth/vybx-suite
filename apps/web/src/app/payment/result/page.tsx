@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Confetti from "react-confetti";
 import { useCartStore } from "@/store/useCartStore";
 import { CheckCircle2, XCircle, Loader2, Ticket } from "lucide-react";
 import { resolveApiBaseUrl } from "@vybx/api-client";
+import { tracker, AnalyticsEvents } from "@/lib/analytics";
 
 const API = resolveApiBaseUrl(
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
@@ -28,6 +29,7 @@ function PaymentResultInner() {
   const [queue, setQueue] = useState<QueueState | null>(null);
   const [confettiActive, setConfettiActive] = useState(false);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const trackedEventsRef = useRef<Set<string>>(new Set());
 
   const reference = params.get("reference") ?? "";
   const rawStatus = params.get("status") ?? "";
@@ -91,6 +93,35 @@ function PaymentResultInner() {
     }
     setConfettiActive(false);
   }, [status, queue]);
+
+  useEffect(() => {
+    if (!reference) return;
+
+    if (status === "success" && !queue) {
+      const key = `${reference}:checkout_completed`;
+      if (trackedEventsRef.current.has(key)) return;
+      trackedEventsRef.current.add(key);
+      tracker.track(AnalyticsEvents.CHECKOUT_COMPLETED, {
+        reference,
+        status: "success",
+      });
+      return;
+    }
+
+    if (status === "failed" || status === "cancelled") {
+      const key = `${reference}:payment_failed:${status}`;
+      if (trackedEventsRef.current.has(key)) return;
+      trackedEventsRef.current.add(key);
+      tracker.track(AnalyticsEvents.PAYMENT_FAILED, {
+        reference,
+        status,
+        errorMessage:
+          status === "cancelled"
+            ? "cancelled_by_user"
+            : (errorMsg || "payment_verification_failed"),
+      });
+    }
+  }, [status, queue, reference, errorMsg]);
 
   const showFinalConfetti = status === "success" && !queue;
 
