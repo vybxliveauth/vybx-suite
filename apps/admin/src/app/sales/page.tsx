@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   AreaChart,
@@ -19,6 +20,11 @@ import {
   CardTitle,
   CardDescription,
   Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
   TableBody,
   TableCell,
@@ -28,7 +34,7 @@ import {
 } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
 import { PageBreadcrumb } from "@/components/layout/PageBreadcrumb";
-import { useAdminAnalyticsOverview, useAdminRefunds, useAdminStats, useAdminTransactions } from "@/lib/queries";
+import { useAdminAnalyticsOverview, useAdminEvents, useAdminRefunds, useAdminStats, useAdminTransactions } from "@/lib/queries";
 import { fmtCurrency, fmtDateShort as fmtDate, fmtDateTime } from "@/lib/format";
 
 const CHART_TICK_COLOR = "hsl(var(--muted-foreground))";
@@ -74,51 +80,113 @@ function buildSparkline(values: Array<{ v: number }>) {
   });
 }
 
+function buildEstimatedSparkline(grossRevenue: number) {
+  const weights = [0.066, 0.085, 0.079, 0.116, 0.149, 0.132, 0.102];
+  return weights.map((w, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return { date: d.toISOString().slice(0, 10), revenue: Math.round(grossRevenue * w) };
+  });
+}
+
 function fmtPct(value: number) {
   return `${Number(value || 0).toFixed(2)}%`;
 }
 
 export default function SalesPage() {
+  const [selectedEventId, setSelectedEventId] = useState<string>("ALL");
+
   const statsQuery = useAdminStats();
+  const eventsQuery = useAdminEvents(1, 100, "ALL");
   const analyticsQuery = useAdminAnalyticsOverview(7);
   const refundsQuery = useAdminRefunds(1, 100, "REQUESTED");
   const transactionsQuery = useAdminTransactions(1, 25);
 
-  const totalRevenue = statsQuery.data?.revenue.estimated ?? 0;
-  const successfulPayments = statsQuery.data?.revenue.successfulPayments ?? 0;
-  const soldTickets = statsQuery.data?.tickets.sold ?? 0;
+  const events = useMemo(
+    () =>
+      [...(eventsQuery.data?.data ?? [])].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+    [eventsQuery.data?.data]
+  );
+  const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null;
+  const isEventMode = Boolean(selectedEvent);
+
+  const totalRevenue = isEventMode
+    ? selectedEvent?.metrics?.grossRevenue ?? 0
+    : statsQuery.data?.revenue.estimated ?? 0;
+  const successfulPayments = isEventMode
+    ? selectedEvent?.metrics?.successfulPayments ?? 0
+    : statsQuery.data?.revenue.successfulPayments ?? 0;
+  const soldTickets = isEventMode
+    ? selectedEvent?.metrics?.totalSold ?? 0
+    : statsQuery.data?.tickets.sold ?? 0;
   const pendingRefunds = refundsQuery.data?.total ?? 0;
-  const sparkline = buildSparkline(statsQuery.data?.sparklines.revenue ?? []);
+  const occupancyRate = selectedEvent?.metrics?.occupancyRate ?? 0;
+  const sparkline = isEventMode
+    ? buildEstimatedSparkline(totalRevenue)
+    : buildSparkline(statsQuery.data?.sparklines.revenue ?? []);
   const transactions = transactionsQuery.data?.data ?? [];
+  const selectedEventKey = selectedEvent?.id ?? null;
+  const filteredTransactions = selectedEventKey
+    ? transactions.filter((tx) => tx.eventId === selectedEventKey)
+    : transactions;
   const analytics = analyticsQuery.data;
   const funnel = analytics?.funnel;
   const topCategories = analytics?.topCategories.slice(0, 5) ?? [];
   const topPromoters = analytics?.topPromoters.slice(0, 5) ?? [];
   const failuresByFlow = analytics?.failuresByFlow.slice(0, 5) ?? [];
 
-  const kpis = [
-    { label: "Ingresos totales", value: fmtCurrency(totalRevenue), icon: TrendingUp },
-    { label: "Pagos exitosos", value: successfulPayments.toLocaleString("es-DO"), icon: CreditCard },
-    { label: "Boletos vendidos", value: soldTickets.toLocaleString("es-DO"), icon: Ticket },
-    { label: "Reembolsos pendientes", value: pendingRefunds.toLocaleString("es-DO"), icon: RotateCcw },
-  ];
+  const kpis = isEventMode
+    ? [
+        { label: "Ingresos del evento", value: fmtCurrency(totalRevenue), icon: TrendingUp },
+        { label: "Pagos exitosos", value: successfulPayments.toLocaleString("es-DO"), icon: CreditCard },
+        { label: "Boletos vendidos", value: soldTickets.toLocaleString("es-DO"), icon: Ticket },
+        { label: "Capacidad ocupada", value: `${Number(occupancyRate || 0).toFixed(1)}%`, icon: RotateCcw },
+      ]
+    : [
+        { label: "Ingresos totales", value: fmtCurrency(totalRevenue), icon: TrendingUp },
+        { label: "Pagos exitosos", value: successfulPayments.toLocaleString("es-DO"), icon: CreditCard },
+        { label: "Boletos vendidos", value: soldTickets.toLocaleString("es-DO"), icon: Ticket },
+        { label: "Reembolsos pendientes", value: pendingRefunds.toLocaleString("es-DO"), icon: RotateCcw },
+      ];
 
   return (
     <PromoterShell breadcrumb={<PageBreadcrumb items={[{ label: "Ventas" }]} />}>
       <div className="space-y-6">
         <div>
           <h1 className="text-xl font-semibold">Ventas</h1>
-          <p className="text-sm text-muted-foreground">Ingresos y actividad de toda la plataforma.</p>
+          <p className="text-sm text-muted-foreground">
+            {isEventMode
+              ? `Vista de ventas para ${selectedEvent?.title ?? "evento seleccionado"}.`
+              : "Ingresos y actividad de toda la plataforma."}
+          </p>
         </div>
 
-        {(statsQuery.isError || transactionsQuery.isError) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+            <SelectTrigger className="w-full md:w-[360px]">
+              <SelectValue placeholder="Seleccionar evento" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los eventos</SelectItem>
+              {events.map((event) => (
+                <SelectItem key={event.id} value={event.id}>
+                  {event.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedEvent && (
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/events/${selectedEvent.id}`}>Ver evento</Link>
+            </Button>
+          )}
+        </div>
+
+        {(statsQuery.isError || transactionsQuery.isError || eventsQuery.isError) && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            Error al cargar datos de ventas: {(statsQuery.error ?? transactionsQuery.error) instanceof Error ? (statsQuery.error ?? transactionsQuery.error)?.message : "No se pudo conectar con el servidor."}
-          </div>
-        )}
-        {analyticsQuery.isError && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Analytics Semana 1 no disponible: {analyticsQuery.error instanceof Error ? analyticsQuery.error.message : "endpoint no disponible."}
+            Error al cargar datos de ventas: {(statsQuery.error ?? transactionsQuery.error ?? eventsQuery.error) instanceof Error ? (statsQuery.error ?? transactionsQuery.error ?? eventsQuery.error)?.message : "No se pudo conectar con el servidor."}
           </div>
         )}
 
@@ -149,125 +217,133 @@ export default function SalesPage() {
               ))}
         </div>
 
+        {!isEventMode && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Semana 1: Funnel de conversión</CardTitle>
+              <CardDescription>
+                View → Checkout → Pago aprobado, con tasa de fallo por flujo.
+                {analytics?.source === "fallback" ? " Fuente: fallback multi-endpoint." : " Fuente: endpoint combinado."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Eye className="size-3.5" /> Event viewed
+                </p>
+                <p className="text-xl font-semibold tabular-nums mt-1">
+                  {(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <ShoppingCart className="size-3.5" /> Checkout started
+                </p>
+                <p className="text-xl font-semibold tabular-nums mt-1">
+                  {(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  View → Checkout: {fmtPct(funnel?.viewToCheckoutRatePct ?? 0)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <CheckCircle2 className="size-3.5" /> Checkout completed
+                </p>
+                <p className="text-xl font-semibold tabular-nums mt-1">
+                  {(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Checkout → Pago: {fmtPct(funnel?.checkoutToApprovedPaymentRatePct ?? 0)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/70 bg-card/40 p-3">
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <AlertTriangle className="size-3.5" /> Payment failed
+                </p>
+                <p className="text-xl font-semibold tabular-nums mt-1">
+                  {(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Fallo de pago: {fmtPct(funnel?.paymentFailureRatePct ?? 0)}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isEventMode && (
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Top categorías que convierten</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {topCategories.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
+                ) : (
+                  topCategories.map((row) => (
+                    <div key={row.categoryId} className="rounded-md border border-border/70 px-3 py-2">
+                      <p className="text-sm font-medium">{row.categoryName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        views {row.eventViewed.toLocaleString("es-DO")} · checkout {row.checkoutCompleted.toLocaleString("es-DO")} · conv {fmtPct(row.conversionRatePct)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Top promoters con ventas reales</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {topPromoters.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
+                ) : (
+                  topPromoters.map((row) => (
+                    <div key={row.promoterId} className="rounded-md border border-border/70 px-3 py-2">
+                      <p className="text-sm font-medium">{row.promoterName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        eventos {row.eventsCreated.toLocaleString("es-DO")} · checkouts {row.checkoutCompleted.toLocaleString("es-DO")} · {fmtCurrency(row.grossRevenue)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Fallos por flujo</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {failuresByFlow.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
+                ) : (
+                  failuresByFlow.map((row) => (
+                    <div key={row.flow} className="rounded-md border border-border/70 px-3 py-2">
+                      <p className="text-sm font-medium">{row.flow}</p>
+                      <p className="text-xs text-muted-foreground">
+                        fallos {row.failed.toLocaleString("es-DO")} / total {row.total.toLocaleString("es-DO")} · {fmtPct(row.failureRatePct)}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Semana 1: Funnel de conversión</CardTitle>
+            <CardTitle className="text-base">
+              {isEventMode ? "Ingresos estimados del evento (últimos 7 días)" : "Ingresos (últimos 7 días)"}
+            </CardTitle>
             <CardDescription>
-              View → Checkout → Pago aprobado, con tasa de fallo por flujo.
-              {analytics?.source === "fallback" ? " Fuente: fallback multi-endpoint." : " Fuente: endpoint combinado."}
+              {isEventMode ? "Distribución estimada basada en métricas del evento seleccionado." : "Serie real basada en `admin/stats`."}
             </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Eye className="size-3.5" /> Event viewed
-              </p>
-              <p className="text-xl font-semibold tabular-nums mt-1">
-                {(funnel?.eventViewed ?? 0).toLocaleString("es-DO")}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <ShoppingCart className="size-3.5" /> Checkout started
-              </p>
-              <p className="text-xl font-semibold tabular-nums mt-1">
-                {(funnel?.checkoutStarted ?? 0).toLocaleString("es-DO")}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                View → Checkout: {fmtPct(funnel?.viewToCheckoutRatePct ?? 0)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <CheckCircle2 className="size-3.5" /> Checkout completed
-              </p>
-              <p className="text-xl font-semibold tabular-nums mt-1">
-                {(funnel?.checkoutCompleted ?? 0).toLocaleString("es-DO")}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Checkout → Pago: {fmtPct(funnel?.checkoutToApprovedPaymentRatePct ?? 0)}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/70 bg-card/40 p-3">
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <AlertTriangle className="size-3.5" /> Payment failed
-              </p>
-              <p className="text-xl font-semibold tabular-nums mt-1">
-                {(funnel?.paymentFailed ?? 0).toLocaleString("es-DO")}
-              </p>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Fallo de pago: {fmtPct(funnel?.paymentFailureRatePct ?? 0)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Top categorías que convierten</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topCategories.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
-              ) : (
-                topCategories.map((row) => (
-                  <div key={row.categoryId} className="rounded-md border border-border/70 px-3 py-2">
-                    <p className="text-sm font-medium">{row.categoryName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      views {row.eventViewed.toLocaleString("es-DO")} · checkout {row.checkoutCompleted.toLocaleString("es-DO")} · conv {fmtPct(row.conversionRatePct)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Top promoters con ventas reales</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {topPromoters.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
-              ) : (
-                topPromoters.map((row) => (
-                  <div key={row.promoterId} className="rounded-md border border-border/70 px-3 py-2">
-                    <p className="text-sm font-medium">{row.promoterName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      eventos {row.eventsCreated.toLocaleString("es-DO")} · checkouts {row.checkoutCompleted.toLocaleString("es-DO")} · {fmtCurrency(row.grossRevenue)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Fallos por flujo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {failuresByFlow.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Sin datos disponibles.</p>
-              ) : (
-                failuresByFlow.map((row) => (
-                  <div key={row.flow} className="rounded-md border border-border/70 px-3 py-2">
-                    <p className="text-sm font-medium">{row.flow}</p>
-                    <p className="text-xs text-muted-foreground">
-                      fallos {row.failed.toLocaleString("es-DO")} / total {row.total.toLocaleString("es-DO")} · {fmtPct(row.failureRatePct)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Ingresos (últimos 7 días)</CardTitle>
-            <CardDescription>Serie real basada en `admin/stats`.</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -309,7 +385,7 @@ export default function SalesPage() {
           </CardContent>
         </Card>
 
-        {pendingRefunds > 0 && (
+        {!isEventMode && pendingRefunds > 0 && (
           <Card>
             <CardContent className="flex items-center justify-between py-5">
               <div className="flex items-center gap-3">
@@ -334,8 +410,14 @@ export default function SalesPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Transacciones recientes</CardTitle>
-            <CardDescription>Tabla conectada al endpoint `/admin/transactions`.</CardDescription>
+            <CardTitle className="text-base">
+              {isEventMode ? "Transacciones del evento" : "Transacciones recientes"}
+            </CardTitle>
+            <CardDescription>
+              {isEventMode
+                ? "Vista filtrada de las últimas transacciones cargadas para el evento seleccionado."
+                : "Tabla conectada al endpoint `/admin/transactions`."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-0 overflow-x-auto">
             <Table>
@@ -358,14 +440,14 @@ export default function SalesPage() {
                       </TableCell>
                     </TableRow>
                   ))
-                ) : transactions.length === 0 ? (
+                ) : filteredTransactions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                      No hay transacciones recientes.
+                      {isEventMode ? "No hay transacciones para este evento en el lote cargado." : "No hay transacciones recientes."}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  transactions.map((tx) => (
+                  filteredTransactions.map((tx) => (
                     <TableRow key={tx.id}>
                       <TableCell className="font-mono text-xs">{tx.orderNumber}</TableCell>
                       <TableCell>

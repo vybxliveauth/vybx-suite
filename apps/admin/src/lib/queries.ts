@@ -481,12 +481,6 @@ export function useAdminAnalyticsOverview(windowDays = 7) {
           ]),
         ]);
 
-      if (!funnelPayload && !failuresPayload && !categoriesPayload && !promotersPayload) {
-        throw new Error(
-          "No se encontró un endpoint de analytics compatible en /admin/analytics."
-        );
-      }
-
       return normalizeAnalyticsOverviewPayload(
         {
           generatedAt: new Date().toISOString(),

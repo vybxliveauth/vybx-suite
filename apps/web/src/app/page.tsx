@@ -232,7 +232,7 @@ function HeroSection({ onSearch }: { onSearch: (q: string) => void }) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(search);
-    tracker.track(AnalyticsEvents.SEARCH_PERFORMED, { query: search });
+    if (search.trim()) tracker.track(AnalyticsEvents.SEARCH_PERFORMED, { query: search.trim() });
     scrollToEvents();
   };
 
@@ -693,7 +693,7 @@ function EventsSection({ allEvents, isLoading, isError, search, onSearch }: {
             key={key}
             type="button"
             className={`chip chip-segment ${activeCategory === key ? "active" : ""}`}
-            onClick={() => { setActiveCategory(key); tracker.track(AnalyticsEvents.CATEGORY_FILTERED, { category: key }); }}
+            onClick={() => { if (activeCategory !== key) { setActiveCategory(key); tracker.track(AnalyticsEvents.CATEGORY_FILTERED, { category: key }); } }}
             aria-pressed={activeCategory === key}
           >
             <Icon size={14} /> {label}

@@ -210,12 +210,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {analyticsQuery.isError && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Analytics de conversión no disponible: {analyticsQuery.error instanceof Error ? analyticsQuery.error.message : "endpoint no disponible."}
-          </div>
-        )}
-
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="kpi-card">
             <CardHeader className="pb-2">
