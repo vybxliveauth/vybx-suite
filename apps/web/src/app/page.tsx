@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Drawer } from "vaul";
 import { MapPin, Zap, Flame, Music, Star, Ticket, Search, ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X, Menu } from "lucide-react";
 import { VybxLogo } from "@/components/ui/VybxLogo";
@@ -13,7 +14,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EventHighlightsCarousel } from "@/components/features/EventHighlightsCarousel";
 import { EventCommandPalette } from "@/components/features/EventCommandPalette";
 import { CartButton, CartDrawer } from "@/components/features/CartDrawer";
-import { AuthModal } from "@/components/features/AuthModal";
 import { FeaturedEventBentoCard } from "@/components/features/FeaturedEventBentoCard";
 import { SafeEventImage } from "@/components/features/SafeEventImage";
 import { ThemeToggle } from "@/components/features/ThemeToggle";
@@ -23,6 +23,7 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useAuthStore } from "@/store/useAuthStore";
 import { tracker, AnalyticsEvents } from "@/lib/analytics";
 import { fetchCategories, type Category as CatalogCategory } from "@/lib/api";
+import { buildAuthUrl } from "@/lib/auth-routing";
 
 function normalizeCategory(value: string): string {
   return value.trim().toLowerCase();
@@ -906,10 +907,12 @@ function EventsSection({ allEvents, categoryCatalog, isLoading, isError, search,
 
 export default function HomePage() {
   const [cartOpen, setCartOpen] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { rehydrate } = useAuthStore();
 
   useEffect(() => { rehydrate(); }, [rehydrate]);
@@ -927,12 +930,27 @@ export default function HomePage() {
   });
   const events = data?.data ?? [];
   const categories = categoriesQuery.data ?? [];
+  const returnPath = useMemo(() => {
+    const query = searchParams.toString();
+    return `${pathname}${query ? `?${query}` : ""}`;
+  }, [pathname, searchParams]);
+  const authHref = useMemo(
+    () => buildAuthUrl({ mode: "login", nextPath: returnPath }),
+    [returnPath],
+  );
+  const openAuth = useCallback(() => {
+    if (authHref.startsWith("http://") || authHref.startsWith("https://")) {
+      window.location.assign(authHref);
+      return;
+    }
+    router.push(authHref);
+  }, [authHref, router]);
 
   return (
     <>
       <Navbar
         onCartOpen={() => setCartOpen(true)}
-        onAuthOpen={() => setAuthOpen(true)}
+        onAuthOpen={openAuth}
         onCommandOpen={() => setCommandOpen(true)}
       />
       <main id="main-content" style={{ paddingTop: 0, overflowX: "clip" }}>
@@ -957,7 +975,6 @@ export default function HomePage() {
         onOpenChange={setCommandOpen}
       />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </>
   );
 }

@@ -60,9 +60,13 @@ export function AuthModal({
   useEffect(() => {
     if (open) {
       tracker.track(AnalyticsEvents.AUTH_MODAL_OPENED);
-      setStep(defaultTab === "register" ? "email" : "email");
+      setStep("email");
       setEmail("");
-      setEmailNotice(null);
+      setEmailNotice(
+        defaultTab === "register"
+          ? "Primero confirma tu correo para crear tu cuenta."
+          : null,
+      );
       setEmailError(null);
       setResolvingEmail(false);
       setPasskeyPending(false);

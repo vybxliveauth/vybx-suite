@@ -20,6 +20,24 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Auth Route (Dedicated Page)
+
+The web app now uses a dedicated auth route at `/auth` (instead of only modal-triggered auth).
+
+- Login button flow: `/?...` -> `/auth?next=<current-path>`
+- Legacy aliases:
+  - `/login` -> `/auth?mode=login`
+  - `/register` -> `/auth?mode=register`
+  - `/registro` -> `/auth?mode=register`
+
+To move auth UX to a separate domain in Vercel (for example `account.vybxlive.com`), set:
+
+```bash
+NEXT_PUBLIC_ACCOUNT_APP_URL=https://account.vybxlive.com
+```
+
+When set, login navigation uses that URL (`/auth` path on that domain). If empty, auth stays inside this app (`/auth` local route).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
