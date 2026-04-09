@@ -83,10 +83,10 @@ npx ts-node --project tsconfig.json scripts/seed-promoter.ts
 
 Credenciales creadas:
 
-| Rol | Email | Password |
-|-----|-------|----------|
-| `SUPER_ADMIN` | `admin@vybx.dev` | `Admin1234!@#` |
-| `PROMOTER` | `promotor@vybx.dev` | `Promotor1234!` |
+| Rol           | Email               | Password        |
+| ------------- | ------------------- | --------------- |
+| `SUPER_ADMIN` | `admin@vybx.dev`    | `Admin1234!@#`  |
+| `PROMOTER`    | `promotor@vybx.dev` | `Promotor1234!` |
 
 ---
 
@@ -109,17 +109,53 @@ npx prisma studio
 
 ---
 
+## 5 — App Móvil (Expo)
+
+```bash
+cd ~/Desktop/vybx-suite
+pnpm --filter "@vybx/mobile" start   # Metro bundler → escanea QR con Expo Go
+pnpm --filter "@vybx/mobile" android # emulador Android
+pnpm --filter "@vybx/mobile" ios     # simulador iOS (macOS solamente)
+```
+
+### Variables de entorno mobile
+
+`apps/mobile/.env.local`:
+
+```env
+EXPO_PUBLIC_API_URL=http://localhost:3004/api/v1
+```
+
+En producción usa la URL real del backend. Las variables `EXPO_PUBLIC_*` se
+inyectan en tiempo de compilación por Metro (no son secretas).
+
+### Requisito backend para mobile auth
+
+El backend detecta la cabecera `X-Client: mobile` y devuelve los tokens en
+el cuerpo de la respuesta (además de las cookies habituales):
+
+```
+POST /auth/login   → { access_token, refresh_token, user }
+POST /auth/refresh → { access_token, refresh_token }  (con refresh_token en body)
+```
+
+Sin este cambio en `auth.controller.ts`, el flujo Bearer de la app no
+funciona. El cambio ya está aplicado al controlador del backend.
+
+---
+
 ## Puertos en uso
 
-| Puerto | Servicio |
-|--------|----------|
-| 3000   | apps/web (sitio público) |
+| Puerto | Servicio                       |
+| ------ | ------------------------------ |
+| 3000   | apps/web (sitio público)       |
 | 3001   | apps/promoter (panel promotor) |
-| 3002   | apps/admin (panel admin) |
-| 3004   | vybxlive-backend (API) |
-| 5555   | Prisma Studio |
-| 5432   | PostgreSQL |
-| 6379   | Redis |
+| 3002   | apps/admin (panel admin)       |
+| 8081   | apps/mobile (Metro bundler)    |
+| 3004   | vybxlive-backend (API)         |
+| 5555   | Prisma Studio                  |
+| 5432   | PostgreSQL                     |
+| 6379   | Redis                          |
 
 ---
 
@@ -127,42 +163,43 @@ npx prisma studio
 
 ### PostgreSQL
 
-| Campo    | Valor |
-|----------|-------|
-| Host     | `127.0.0.1` |
-| Puerto   | `5432` |
-| Base de datos | `vybx` |
-| Usuario  | `vybxlive` |
-| Password | `change_me_in_env` |
-| URL completa | `postgresql://vybxlive:change_me_in_env@127.0.0.1:5432/vybx?schema=public` |
+| Campo         | Valor                                                                      |
+| ------------- | -------------------------------------------------------------------------- |
+| Host          | `127.0.0.1`                                                                |
+| Puerto        | `5432`                                                                     |
+| Base de datos | `vybx`                                                                     |
+| Usuario       | `vybxlive`                                                                 |
+| Password      | `change_me_in_env`                                                         |
+| URL completa  | `postgresql://vybxlive:change_me_in_env@127.0.0.1:5432/vybx?schema=public` |
 
 ### Redis
 
-| Campo    | Valor |
-|----------|-------|
+| Campo    | Valor       |
+| -------- | ----------- |
 | Host     | `127.0.0.1` |
-| Puerto   | `6379` |
-| Password | `vybxlive` |
+| Puerto   | `6379`      |
+| Password | `vybxlive`  |
 
 ### Usuario admin (seed)
 
-| Campo    | Valor |
-|----------|-------|
+| Campo    | Valor            |
+| -------- | ---------------- |
 | Email    | `admin@vybx.dev` |
-| Password | `Admin1234!@#` |
-| Rol      | `SUPER_ADMIN` |
+| Password | `Admin1234!@#`   |
+| Rol      | `SUPER_ADMIN`    |
 
 ### Emails con acceso al panel admin
 
 Definidos en `ADMIN_ACCESS_ALLOWED_EMAILS`:
+
 - `vybxlive.auth@gmail.com`
 - `backoffice@vybxlive.com`
 
 ### API del backend
 
-| Campo          | Valor |
-|----------------|-------|
-| URL local      | `http://localhost:3004` |
+| Campo                                  | Valor                   |
+| -------------------------------------- | ----------------------- |
+| URL local                              | `http://localhost:3004` |
 | `NEXT_PUBLIC_API_URL` (promoter / web) | `http://localhost:3004` |
 
 ---

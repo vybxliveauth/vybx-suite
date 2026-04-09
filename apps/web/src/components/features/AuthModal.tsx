@@ -152,13 +152,23 @@ export function AuthModal({
         setStep("login");
         return;
       }
-
-      if (result.status === "unavailable") {
-        setEmailNotice("Validación automática no disponible ahora. Elige cómo deseas continuar.");
-      } else {
-        setEmailNotice("No pudimos interpretar la respuesta del correo. Elige cómo deseas continuar.");
+      if (result.intent === "continue") {
+        setEmailNotice(
+          "Por seguridad no confirmamos si un correo existe antes de iniciar sesión.",
+        );
+        setStep("login");
+        return;
       }
-      setStep("intent");
+      if (result.status === "unavailable") {
+        setEmailNotice(
+          "Validación automática no disponible ahora. Continúa con contraseña o crea tu cuenta.",
+        );
+      } else {
+        setEmailNotice(
+          "Por seguridad no confirmamos si un correo existe antes de iniciar sesión.",
+        );
+      }
+      setStep("login");
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : "No pudimos validar el correo.");
     } finally {

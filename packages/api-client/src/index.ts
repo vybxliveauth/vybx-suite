@@ -244,7 +244,7 @@ export function createApiClient(options: ApiClientOptions) {
   };
 
   const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
-    const res = await fetchWithRefresh(path, init, "always");
+    const res = await fetchWithRefresh(path, init, "mutating");
     if (!res.ok) throw new Error(await parseError(res));
     return parseJsonResponse<T>(res);
   };

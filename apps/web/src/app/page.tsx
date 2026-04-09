@@ -47,6 +47,13 @@ function categoryIconFor(value: string, iconHint?: string | null) {
   return Star;
 }
 
+function eventPrimaryCategory(event: Event): string | null {
+  const fromCategory = event.category?.trim();
+  if (fromCategory && fromCategory.length > 0) return fromCategory;
+  const firstTag = event.tags[0]?.trim();
+  return firstTag && firstTag.length > 0 ? firstTag : null;
+}
+
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 
 function Navbar({
@@ -473,7 +480,7 @@ function EventCard({ event, index = 0 }: { event: Event; index?: number }) {
         <div className="card-body">
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.65rem" }}>
             <span className="badge-tag">
-              {event.tags[0] ?? "Evento"}
+              {eventPrimaryCategory(event) ?? "Evento"}
             </span>
             {relDate && (
               <span
@@ -597,21 +604,18 @@ function EventsSection({ allEvents, categoryCatalog, isLoading, isError, search,
     const map = new Map<string, { label: string; count: number }>();
 
     allEvents.forEach((event) => {
-      const seen = new Set<string>();
-      event.tags.forEach((tag) => {
-        const key = normalizeCategory(tag);
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        const existing = map.get(key);
-        if (existing) {
-          existing.count += 1;
-          map.set(key, existing);
-          return;
-        }
-        map.set(key, {
-          label: formatCategoryLabel(tag),
-          count: 1,
-        });
+      const categoryValue = eventPrimaryCategory(event);
+      const key = normalizeCategory(categoryValue ?? "");
+      if (!key) return;
+      const existing = map.get(key);
+      if (existing) {
+        existing.count += 1;
+        map.set(key, existing);
+        return;
+      }
+      map.set(key, {
+        label: formatCategoryLabel(categoryValue ?? key),
+        count: 1,
       });
     });
 
@@ -637,12 +641,13 @@ function EventsSection({ allEvents, categoryCatalog, isLoading, isError, search,
   const filtered = allEvents
     .filter((event) => {
       if (activeCategory === "all") return true;
-      return event.tags.some((tag) => normalizeCategory(tag) === activeCategory);
+      return normalizeCategory(eventPrimaryCategory(event) ?? "") === activeCategory;
     })
     .filter((e) =>
       !q ||
       e.title.toLowerCase().includes(q) ||
       e.venue.name.toLowerCase().includes(q) ||
+      (e.category ?? "").toLowerCase().includes(q) ||
       e.tags.some((t) => t.toLowerCase().includes(q))
     );
 

@@ -16,6 +16,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : 2,
   reporter: "html",
   timeout: 45_000,
+  globalTimeout: 15 * 60_000,
 
   use: {
     baseURL: WEB_URL,

@@ -4,7 +4,7 @@ export const API_BASE_URL = resolveApiBaseUrl(
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
 );
 
-export type EmailIntent = "login" | "register";
+export type EmailIntent = "login" | "register" | "continue";
 export type EmailIntentLookupStatus = "resolved" | "unavailable" | "unknown";
 export type EmailIntentLookupResult = {
   status: EmailIntentLookupStatus;
@@ -85,6 +85,9 @@ function parseEmailIntentFromPayload(payload: unknown): EmailIntent | null {
     normalized.includes("password")
   ) {
     return "login";
+  }
+  if (normalized.includes("continue")) {
+    return "continue";
   }
 
   return null;

@@ -57,6 +57,7 @@ export interface Event {
   status: EventStatus;
   tiers: TicketTier[];
   tags: string[];
+  category?: string | null;
   isFeatured?: boolean;
   isTrending?: boolean;
   trendingScore?: number;

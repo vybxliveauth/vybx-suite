@@ -2,13 +2,14 @@
 
 ## Overview
 
-Turborepo monorepo with 3 Next.js apps and a NestJS backend (separate repo).
+Turborepo monorepo with 3 Next.js apps, 1 Expo mobile app, and a NestJS backend (separate repo).
 
 ```
 apps/
   web/        → Public storefront (port 3000)
   admin/      → Back-office panel (port 3002)
   promoter/   → Promoter dashboard (port 3003)
+  mobile/     → React Native / Expo app (Metro port 8081)
 
 packages/
   api-client/    → HTTP client with auth refresh, CSRF, timeouts
@@ -137,10 +138,34 @@ Backend endpoints scaffold ready in `vybxlive-backoffice`:
 
 **Pending**: Full server-side attestation/assertion verification with `@simplewebauthn/server`.
 
+## Mobile Auth Flow
+
+```
+App boot → getAccessToken() from SecureStore
+  ├─ No token → redirect /(auth)/login
+  └─ Token exists → GET /auth/profile (Bearer)
+       ├─ 200 → AuthContext.user populated → /(tabs)
+       └─ Error → clearTokens() → /(auth)/login
+
+Login/Register → mobileLogin() → POST /auth/login (X-Client: mobile)
+  └─ Backend returns { access_token, refresh_token, user } in body
+       └─ saveTokens() to SecureStore → AuthContext.user set
+
+401 on any request → refreshAccessToken()
+  └─ POST /auth/refresh (X-Client: mobile, refresh_token in body)
+       ├─ 200 → saveTokens() → retry original request
+       └─ Fail → clearTokens() → redirect to login
+```
+
+**Key difference from web**: Tokens stored in `expo-secure-store`, not cookies.
+No CSRF header needed. `X-Client: mobile` header on all requests triggers
+body-token response from the backend.
+
 ## Key Conventions
 
-- **Port mapping**: web=3000, admin=3002, promoter=3003, backend=3004
+- **Port mapping**: web=3000, admin=3002, promoter=3003, mobile=8081(Metro), backend=3004
 - **CSS**: Web app uses CSS custom properties + globals.css. Admin/promoter use Tailwind + shadcn/ui.
-- **State**: Web uses Zustand (cart). Admin/promoter use TanStack Query for server state.
-- **Env var**: `NEXT_PUBLIC_API_URL` points to backend in each app's `.env.local`
+- **Mobile styling**: `StyleSheet.create` only — no Tailwind, no NativeWind (keep bundle lean).
+- **State**: Web uses Zustand (cart). Admin/promoter/mobile use TanStack Query for server state.
+- **Env var**: `NEXT_PUBLIC_API_URL` for Next.js apps, `EXPO_PUBLIC_API_URL` for mobile.
 - **Tests**: `pnpm test` runs vitest on shared packages (permissions, auth-client, api-client). `pnpm test:e2e` runs Playwright against the web app.

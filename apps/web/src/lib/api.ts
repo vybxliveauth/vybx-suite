@@ -131,6 +131,13 @@ function calculateTrendingMetrics(raw: BackendEvent) {
 export function adaptEvent(raw: BackendEvent): Event {
   const trending = calculateTrendingMetrics(raw);
   const imageUrl = normalizeEventImageUrl(raw.image);
+  const categoryName =
+    typeof raw.category?.name === "string" && raw.category.name.trim().length > 0
+      ? raw.category.name.trim()
+      : null;
+  const normalizedTags = raw.tags
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0);
   const tiers: TicketTier[] = raw.ticketTypes.map((tt) => ({
     id: tt.id,
     name: normalizeTierName(tt.name),
@@ -168,7 +175,13 @@ export function adaptEvent(raw: BackendEvent): Event {
     },
     status: raw.isActive ? "live" : "upcoming",
     tiers,
-    tags: raw.tags.length > 0 ? raw.tags : [raw.category?.name ?? "Evento"],
+    tags:
+      normalizedTags.length > 0
+        ? normalizedTags
+        : categoryName
+          ? [categoryName]
+          : ["Evento"],
+    category: categoryName,
     isFeatured: Boolean(raw.isFeatured),
     isTrending: trending.trendingScore > 0,
     trendingScore: trending.trendingScore,
@@ -469,7 +482,7 @@ export interface MyTicket {
 }
 
 export async function apiMyTickets() {
-  return request<MyTicket[]>("/tickets/my");
+  return request<MyTicket[]>("/tickets/my-tickets");
 }
 
 export interface JoinQueuePayload {
