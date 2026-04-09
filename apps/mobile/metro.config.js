@@ -8,7 +8,7 @@ const workspaceRoot = path.resolve(projectRoot, "../..");
 const config = getDefaultConfig(projectRoot);
 
 // Let Metro resolve packages from the workspace root as well
-config.watchFolders = [workspaceRoot];
+config.watchFolders = Array.from(new Set([...(config.watchFolders || []), workspaceRoot]));
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),

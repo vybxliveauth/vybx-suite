@@ -32,7 +32,7 @@ export function useEvents(page = 1, pageSize = 20) {
     queryKey: ["events", page, pageSize],
     queryFn: () =>
       api.get<EventsResponse>(
-        `/events?page=${page}&pageSize=${pageSize}&status=APPROVED`,
+        `/events?page=${page}&limit=${pageSize}&status=APPROVED`,
       ),
     staleTime: 1000 * 60 * 2, // 2 min
   });

@@ -8,7 +8,7 @@
  *  - No CSRF header (mobile clients don't need double-submit cookies)
  */
 
-import { createApiClient } from "@vybx/api-client";
+import { createApiClient, normalizePaginatedPayload } from "@vybx/api-client";
 import {
   clearTokens,
   getAccessToken,
@@ -113,6 +113,7 @@ export const apiClient = createApiClient({
   credentials: "omit", // No cookies — mobile uses Bearer
   getCsrfToken: () => "", // No CSRF on mobile
   retryOnUnauthorized: false, // Retry handled in mobileFetch above
+  normalizeResponse: normalizePaginatedPayload,
   fetchFn: mobileFetch,
   onSessionExpired: () => {
     void clearTokens();
