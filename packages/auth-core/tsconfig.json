@@ -1,0 +1,11 @@
+{
+  "extends": "@vybx/tsconfig/base.json",
+  "compilerOptions": {
+    "paths": {
+      "@vybx/auth-core": ["./src/index.ts"],
+      "@vybx/auth-core/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

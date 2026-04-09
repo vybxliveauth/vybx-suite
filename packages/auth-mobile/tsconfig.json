@@ -2,8 +2,8 @@
   "extends": "@vybx/tsconfig/base.json",
   "compilerOptions": {
     "paths": {
-      "@vybx/auth-client": ["./src/index.ts"],
-      "@vybx/auth-client/*": ["./src/*"],
+      "@vybx/auth-mobile": ["./src/index.ts"],
+      "@vybx/auth-mobile/*": ["./src/*"],
       "@vybx/auth-core": ["../auth-core/src/index.ts"],
       "@vybx/auth-core/*": ["../auth-core/src/*"]
     }

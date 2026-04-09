@@ -5,7 +5,11 @@
     "skipLibCheck": true,
     "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@vybx/auth-core": ["../../packages/auth-core/src/index.ts"],
+      "@vybx/auth-core/*": ["../../packages/auth-core/src/*"],
+      "@vybx/auth-mobile": ["../../packages/auth-mobile/src/index.ts"],
+      "@vybx/auth-mobile/*": ["../../packages/auth-mobile/src/*"]
     }
   },
   "include": [

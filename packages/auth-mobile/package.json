@@ -1,5 +1,5 @@
 {
-  "name": "@vybx/auth-client",
+  "name": "@vybx/auth-mobile",
   "version": "0.0.0",
   "private": true,
   "exports": {
@@ -12,10 +12,9 @@
     "@vybx/auth-core": "workspace:*"
   },
   "peerDependencies": {
-    "react": "^19"
+    "expo-secure-store": ">=13"
   },
   "devDependencies": {
-    "@types/react": "^19",
     "@vybx/tsconfig": "workspace:*",
     "typescript": "^5"
   }

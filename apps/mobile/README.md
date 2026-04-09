@@ -18,6 +18,7 @@
   - `EXPO_PUBLIC_API_URL=https://api.vybxlive.com/api/v1`
 - En produccion, el registro puede requerir verificacion anti-bot (Turnstile).
   Si falla desde la app, crea la cuenta en `https://vybxlive.com` y luego inicia sesion en mobile.
+- Esta app mobile es solo para cuentas `USER` (usuario final).
 
 ## Cambiar a backend local (misma red Wi-Fi)
 

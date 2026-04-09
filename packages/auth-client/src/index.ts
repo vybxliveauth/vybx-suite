@@ -1,13 +1,20 @@
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+// Re-export cross-platform primitives from auth-core so consumers that only
+// install auth-client don't need a separate auth-core import.
+export type { SessionUserBase, AuthStatus } from "@vybx/auth-core";
+export {
+  createSessionUserNormalizer,
+  formatDisplayName,
+  resolveApiBaseUrl,
+} from "@vybx/auth-core";
 
-type SessionUserBase<TRole extends string> = {
-  userId: string;
-  email: string;
-  role: TRole;
-  firstName?: string;
-  lastName?: string;
-  profileImageUrl?: string;
-};
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import {
+  createSessionUserNormalizer,
+  resolveApiBaseUrl,
+} from "@vybx/auth-core";
+import type { SessionUserBase } from "@vybx/auth-core";
+
+// ─── Auth session store (web / cookie-based) ──────────────────────────────────
 
 type AuthSessionStoreOptions<TUser, TRole extends string> = {
   baseUrl: string;
@@ -19,67 +26,6 @@ type AuthSessionStoreOptions<TUser, TRole extends string> = {
   fetchFn?: typeof fetch;
   normalizeUser?: (input: unknown) => TUser | null;
 };
-
-function normalizePathname(pathname: string) {
-  const trimmed = pathname.replace(/\/+$/, "");
-  return trimmed.length > 0 ? trimmed : "/";
-}
-
-function withApiVersionPath(pathname: string) {
-  const normalized = normalizePathname(pathname);
-  if (/^\/api(?:\/|$)/i.test(normalized)) return normalized;
-  const prefix = normalized === "/" ? "" : normalized;
-  return `${prefix}/api/v1`;
-}
-
-function resolveApiBaseUrl(baseUrl: string) {
-  const raw = baseUrl.trim();
-  try {
-    const parsed = new URL(raw);
-    parsed.pathname = withApiVersionPath(parsed.pathname);
-    return parsed.toString().replace(/\/$/, "");
-  } catch {
-    const normalized = raw.endsWith("/") ? raw.slice(0, -1) : raw;
-    if (/\/api(?:\/|$)/i.test(normalized)) return normalized;
-    return `${normalized}/api/v1`;
-  }
-}
-
-export function createSessionUserNormalizer<TRole extends string>(
-  validRoles: readonly TRole[],
-) {
-  const roleSet = new Set<TRole>(validRoles);
-
-  return (input: unknown): SessionUserBase<TRole> | null => {
-    if (!input || typeof input !== "object" || Array.isArray(input)) {
-      return null;
-    }
-
-    const raw = input as Partial<SessionUserBase<TRole>> & { id?: unknown };
-    const userId =
-      typeof raw.userId === "string"
-        ? raw.userId
-        : typeof raw.id === "string"
-          ? raw.id
-          : null;
-    const email = typeof raw.email === "string" ? raw.email : null;
-    const role = typeof raw.role === "string" ? raw.role : null;
-
-    if (!userId || !email || !role || !roleSet.has(role as TRole)) {
-      return null;
-    }
-
-    return {
-      userId,
-      email,
-      role: role as TRole,
-      firstName: typeof raw.firstName === "string" ? raw.firstName : undefined,
-      lastName: typeof raw.lastName === "string" ? raw.lastName : undefined,
-      profileImageUrl:
-        typeof raw.profileImageUrl === "string" ? raw.profileImageUrl : undefined,
-    };
-  };
-}
 
 export function createAuthSessionStore<
   TRole extends string,
@@ -100,9 +46,7 @@ export function createAuthSessionStore<
   const listeners = new Set<() => void>();
 
   const notifyAuthChange = () => {
-    for (const listener of listeners) {
-      listener();
-    }
+    for (const listener of listeners) listener();
   };
 
   const cleanupLegacyStorage = () => {
@@ -137,7 +81,6 @@ export function createAuthSessionStore<
         if (!retry.ok) return null;
         return normalizeUser(await retry.json());
       }
-
       if (!response.ok) return null;
       return normalizeUser(await response.json());
     } catch {
@@ -196,21 +139,7 @@ export function createAuthSessionStore<
   };
 }
 
-export function formatDisplayName(
-  user:
-    | {
-        firstName?: string;
-        lastName?: string;
-        email: string;
-      }
-    | null
-    | undefined,
-  fallback: string,
-) {
-  if (!user) return fallback;
-  const full = [user.firstName, user.lastName].filter(Boolean).join(" ");
-  return full || (user.email.split("@")[0] ?? fallback);
-}
+// ─── Auth guard hook (framework-agnostic core) ────────────────────────────────
 
 type UseAuthGuardOptions<TUser, TRole extends string, TPermission> = {
   permission?: TPermission;
@@ -256,11 +185,9 @@ export function useAuthGuardCore<TUser, TRole extends string, TPermission>(
       if (!user) {
         user = await hydrateUserFromSession();
         if (!user) {
-          // Avoid false logouts during short-lived refresh/network races on hard reload.
+          // Guard against false logouts during short-lived refresh/network races.
           await new Promise((resolve) => setTimeout(resolve, 150));
-          if (!cancelled) {
-            user = await hydrateUserFromSession();
-          }
+          if (!cancelled) user = await hydrateUserFromSession();
         }
       }
 
@@ -281,7 +208,10 @@ export function useAuthGuardCore<TUser, TRole extends string, TPermission>(
       const requiredPermission =
         permission ?? resolveRequiredPermissionForPath?.(pathname) ?? null;
 
-      if (requiredPermission && !resolvePermissions(user).has(requiredPermission)) {
+      if (
+        requiredPermission &&
+        !resolvePermissions(user).has(requiredPermission)
+      ) {
         replace(fallbackPath);
       }
     };
@@ -307,12 +237,17 @@ export function useAuthGuardCore<TUser, TRole extends string, TPermission>(
   ]);
 }
 
+// ─── Permissions hook ─────────────────────────────────────────────────────────
+
 export function usePermissionsCore<TUser, TPermission>(
   useAuthUser: () => TUser | null,
   resolvePermissions: (user: TUser | null) => Set<TPermission>,
 ) {
   const user = useAuthUser();
-  const permissions = useMemo(() => resolvePermissions(user), [user, resolvePermissions]);
+  const permissions = useMemo(
+    () => resolvePermissions(user),
+    [user, resolvePermissions],
+  );
   const can = useCallback(
     (permission: TPermission): boolean => permissions.has(permission),
     [permissions],
@@ -321,13 +256,14 @@ export function usePermissionsCore<TUser, TPermission>(
   return { user, permissions, can };
 }
 
-// ─── Passkeys / WebAuthn ────────────────────────────────────────────────────
+// ─── Passkeys / WebAuthn (browser-only) ──────────────────────────────────────
 
 export function isPasskeySupported(): boolean {
   return (
     typeof window !== "undefined" &&
     typeof window.PublicKeyCredential !== "undefined" &&
-    typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === "function"
+    typeof window.PublicKeyCredential
+      .isUserVerifyingPlatformAuthenticatorAvailable === "function"
   );
 }
 
@@ -344,12 +280,18 @@ function bufferToBase64Url(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 function base64UrlToBuffer(base64url: string): ArrayBuffer {
   const base64 = base64url.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+  const padded = base64.padEnd(
+    base64.length + ((4 - (base64.length % 4)) % 4),
+    "=",
+  );
   const binary = atob(padded);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);

@@ -19,6 +19,8 @@
     "@tanstack/react-query": "^5.74.4",
     "@vybx/analytics": "workspace:*",
     "@vybx/api-client": "workspace:*",
+    "@vybx/auth-core": "workspace:*",
+    "@vybx/auth-mobile": "workspace:*",
     "@vybx/permissions": "workspace:*",
     "@vybx/schemas": "workspace:*",
     "@vybx/types": "workspace:*",
