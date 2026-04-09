@@ -25,8 +25,10 @@ import {
 import {
   fetchMobileProfile,
   mobileLogin,
+  mobileVerifyLoginTwoFactor,
   mobileRegister,
   type AuthUser,
+  type MobileLoginResult,
 } from "../lib/auth-api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,7 +38,8 @@ type AuthStatus = "idle" | "loading" | "authenticated" | "unauthenticated";
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<MobileLoginResult>;
+  verifyTwoFactor: (challengeId: string, code: string) => Promise<void>;
   register: (payload: {
     email: string;
     password: string;
@@ -89,7 +92,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setStatus("loading");
     try {
-      const authUser = await mobileLogin(email, password);
+      const result = await mobileLogin(email, password);
+      if (result.requiresTwoFactor) {
+        setUser(null);
+        setStatus("unauthenticated");
+        return result;
+      }
+      setUser(result.user);
+      setStatus("authenticated");
+      return result;
+    } catch (err) {
+      setStatus("unauthenticated");
+      throw err;
+    }
+  }, []);
+
+  const verifyTwoFactor = useCallback(async (challengeId: string, code: string) => {
+    setStatus("loading");
+    try {
+      const authUser = await mobileVerifyLoginTwoFactor(challengeId, code);
       setUser(authUser);
       setStatus("authenticated");
     } catch (err) {
@@ -119,7 +140,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, status, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, status, login, verifyTwoFactor, register, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

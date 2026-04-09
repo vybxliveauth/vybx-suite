@@ -45,6 +45,17 @@ export interface MobileAuthResponse {
 }
 
 export type AuthUser = PublicAuthUser;
+export type MobileLoginResult =
+  | {
+      requiresTwoFactor: true;
+      challengeId: string;
+      expiresInSeconds: number;
+      message?: string;
+    }
+  | {
+      requiresTwoFactor: false;
+      user: AuthUser;
+    };
 
 type MobileLoginTwoFactorChallenge = {
   success: false;
@@ -89,6 +100,29 @@ function isBackendAuthUser(value: unknown): value is BackendAuthUser {
   );
 }
 
+function isBackofficeRole(role: unknown): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN" || role === "PROMOTER";
+}
+
+function parseMobileAuthResponse(data: unknown): MobileAuthResponse | null {
+  if (!isRecord(data)) return null;
+  const accessToken = data.access_token;
+  const refreshToken = data.refresh_token;
+  const rawUser = data.user;
+  if (
+    typeof accessToken !== "string" ||
+    typeof refreshToken !== "string" ||
+    !isBackendAuthUser(rawUser)
+  ) {
+    return null;
+  }
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    user: rawUser,
+  };
+}
+
 function resolveEmailVerified(raw: BackendAuthUser): boolean {
   if (typeof raw.emailVerified === "boolean") return raw.emailVerified;
   if (typeof raw.isEmailVerified === "boolean") return raw.isEmailVerified;
@@ -128,7 +162,7 @@ async function parseError(res: Response): Promise<string> {
 export async function mobileLogin(
   email: string,
   password: string,
-): Promise<AuthUser> {
+): Promise<MobileLoginResult> {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
     headers: MOBILE_HEADERS,
@@ -139,27 +173,61 @@ export async function mobileLogin(
 
   const data = (await res.json()) as unknown;
   if (isTwoFactorChallenge(data)) {
-    throw new Error(
-      "Tu cuenta tiene verificacion en dos pasos. Inicia sesion primero en la web para completar 2FA.",
-    );
+    return {
+      requiresTwoFactor: true,
+      challengeId: data.challengeId,
+      expiresInSeconds: data.expiresInSeconds,
+      message: data.message,
+    };
   }
-  if (!isRecord(data)) {
-    throw new Error("Respuesta de autenticacion invalida.");
-  }
-  const accessToken = data.access_token;
-  const refreshToken = data.refresh_token;
-  const rawUser = data.user;
-  if (
-    typeof accessToken !== "string" ||
-    typeof refreshToken !== "string" ||
-    !isBackendAuthUser(rawUser)
-  ) {
+  const authResponse = parseMobileAuthResponse(data);
+  if (!authResponse) {
+    if (
+      isRecord(data) &&
+      isRecord(data.user) &&
+      isBackofficeRole(data.user.role)
+    ) {
+      throw new Error(
+        "Tu cuenta es de panel (admin/promotor) y requiere inicio en la web con su flujo de seguridad.",
+      );
+    }
     throw new Error(
       "No se pudo iniciar sesion desde movil con esta cuenta. Intenta de nuevo o usa la web.",
     );
   }
-  await saveTokens(accessToken, refreshToken);
-  return adaptUser(rawUser);
+  await saveTokens(authResponse.access_token, authResponse.refresh_token);
+  return { requiresTwoFactor: false, user: adaptUser(authResponse.user) };
+}
+
+export async function mobileVerifyLoginTwoFactor(
+  challengeId: string,
+  code: string,
+): Promise<AuthUser> {
+  const res = await fetch(`${BASE_URL}/auth/login/2fa`, {
+    method: "POST",
+    headers: MOBILE_HEADERS,
+    body: JSON.stringify({ challengeId, code }),
+  });
+
+  if (!res.ok) throw new Error(await parseError(res));
+
+  const data = (await res.json()) as unknown;
+  const authResponse = parseMobileAuthResponse(data);
+  if (!authResponse) {
+    if (
+      isRecord(data) &&
+      isRecord(data.user) &&
+      isBackofficeRole(data.user.role)
+    ) {
+      throw new Error(
+        "El backend no devolvio tokens moviles despues del 2FA. Inicia sesion en web por ahora.",
+      );
+    }
+    throw new Error("Respuesta invalida al verificar 2FA.");
+  }
+
+  await saveTokens(authResponse.access_token, authResponse.refresh_token);
+  return adaptUser(authResponse.user);
 }
 
 export async function mobileRegister(payload: {

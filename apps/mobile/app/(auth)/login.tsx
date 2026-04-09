@@ -14,10 +14,15 @@ import {
 import { useAuth } from "../../src/context/auth-context";
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, verifyTwoFactor } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<
+    string | null
+  >(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorNotice, setTwoFactorNotice] = useState<string | null>(null);
 
   async function handleLogin() {
     if (!email.trim() || !password) {
@@ -26,7 +31,19 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
+      const result = await login(email.trim().toLowerCase(), password);
+      if (result.requiresTwoFactor) {
+        setTwoFactorChallengeId(result.challengeId);
+        setTwoFactorCode("");
+        setTwoFactorNotice(
+          result.message ||
+            `Codigo 2FA enviado. Expira en ${Math.max(
+              1,
+              Math.ceil(result.expiresInSeconds / 60),
+            )} min.`,
+        );
+        return;
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al iniciar sesión";
@@ -34,6 +51,30 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleVerifyTwoFactor() {
+    if (!twoFactorChallengeId) return;
+    if (twoFactorCode.trim().length < 4) {
+      Alert.alert("Codigo requerido", "Ingresa el codigo 2FA.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await verifyTwoFactor(twoFactorChallengeId, twoFactorCode.trim());
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Codigo 2FA invalido";
+      Alert.alert("Error", message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function resetTwoFactorFlow() {
+    setTwoFactorChallengeId(null);
+    setTwoFactorCode("");
+    setTwoFactorNotice(null);
   }
 
   return (
@@ -79,17 +120,54 @@ export default function LoginScreen() {
               secureTextEntry
               autoComplete="password"
               returnKeyType="done"
-              onSubmitEditing={handleLogin}
+              onSubmitEditing={
+                twoFactorChallengeId ? handleVerifyTwoFactor : handleLogin
+              }
             />
           </View>
 
+          {twoFactorChallengeId && (
+            <View style={styles.twoFactorBox}>
+              <Text style={styles.twoFactorTitle}>Verificacion en dos pasos</Text>
+              <Text style={styles.twoFactorText}>
+                {twoFactorNotice || "Ingresa el codigo enviado a tu email."}
+              </Text>
+              <TextInput
+                style={styles.input}
+                value={twoFactorCode}
+                onChangeText={(value) =>
+                  setTwoFactorCode(value.replace(/\D/g, ""))
+                }
+                placeholder="123456"
+                placeholderTextColor="#555"
+                keyboardType="number-pad"
+                returnKeyType="done"
+                onSubmitEditing={handleVerifyTwoFactor}
+                maxLength={8}
+              />
+              <Pressable
+                style={styles.ghostButton}
+                onPress={resetTwoFactorFlow}
+                disabled={loading}
+              >
+                <Text style={styles.ghostButtonText}>Usar otra cuenta</Text>
+              </Pressable>
+            </View>
+          )}
+
           <Pressable
             style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
+            onPress={twoFactorChallengeId ? handleVerifyTwoFactor : handleLogin}
             disabled={loading}
           >
             <Text style={styles.buttonText}>
-              {loading ? "Entrando..." : "Entrar"}
+              {loading
+                ? twoFactorChallengeId
+                  ? "Verificando..."
+                  : "Entrando..."
+                : twoFactorChallengeId
+                  ? "Verificar codigo"
+                  : "Entrar"}
             </Text>
           </Pressable>
         </View>
@@ -149,6 +227,24 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  twoFactorBox: {
+    backgroundColor: "#151a2a",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 12,
+    gap: 10,
+  },
+  twoFactorTitle: { color: "#bfdbfe", fontSize: 13, fontWeight: "700" },
+  twoFactorText: { color: "#93c5fd", fontSize: 12, lineHeight: 18 },
+  ghostButton: {
+    alignItems: "center",
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#3b3b3b",
+  },
+  ghostButtonText: { color: "#cbd5e1", fontSize: 12, fontWeight: "600" },
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
   footerText: { color: "#888", fontSize: 14 },
   link: { color: "#6366f1", fontSize: 14, fontWeight: "600" },
