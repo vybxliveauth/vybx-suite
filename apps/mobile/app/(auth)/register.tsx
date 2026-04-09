@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -28,13 +29,25 @@ export default function RegisterScreen() {
     return (value: string) => setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  function passwordError(password: string): string | null {
+    if (password.length < 12) return "Minimo 12 caracteres.";
+    if (!/[A-Z]/.test(password))
+      return "Debe incluir al menos una letra mayuscula.";
+    if (!/[0-9]/.test(password)) return "Debe incluir al menos un numero.";
+    if (!/[!@#$%^&*(),.?\":{}|<>_\-+=/\\[\];'`~]/.test(password)) {
+      return "Debe incluir al menos un caracter especial.";
+    }
+    return null;
+  }
+
   async function handleRegister() {
     if (!form.firstName || !form.lastName || !form.email || !form.password) {
       Alert.alert("Campos requeridos", "Completa todos los campos.");
       return;
     }
-    if (form.password.length < 8) {
-      Alert.alert("Contraseña muy corta", "Mínimo 8 caracteres.");
+    const passError = passwordError(form.password);
+    if (passError) {
+      Alert.alert("Contrasena invalida", passError);
       return;
     }
     setLoading(true);
@@ -53,7 +66,31 @@ export default function RegisterScreen() {
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al registrarse";
-      Alert.alert("Error", message);
+      const normalized = message
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      const requiresWebSignup =
+        normalized.includes("turnstile") ||
+        normalized.includes("verificacion de seguridad") ||
+        normalized.includes("trafico sospechoso");
+      if (requiresWebSignup) {
+        Alert.alert(
+          "Registro en web requerido",
+          "Por seguridad, el registro se completa en la web. Luego puedes iniciar sesion aqui.",
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Abrir vybxlive.com",
+              onPress: () => {
+                void Linking.openURL("https://vybxlive.com");
+              },
+            },
+          ],
+        );
+      } else {
+        Alert.alert("Error", message);
+      }
     } finally {
       setLoading(false);
     }
@@ -124,7 +161,7 @@ export default function RegisterScreen() {
               style={styles.input}
               value={form.password}
               onChangeText={set("password")}
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Min. 12, 1 mayuscula, 1 numero, 1 simbolo"
               placeholderTextColor="#555"
               secureTextEntry
               returnKeyType="done"
