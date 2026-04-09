@@ -1,0 +1,38 @@
+@import 'tailwindcss';
+@import '@vybx/ui/styles';
+
+:root {
+  color-scheme: dark;
+  --font-heading: 'Avenir Next', 'Montserrat', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --background: 240 10% 3.9%;
+  --foreground: 210 20% 98%;
+  --card: 240 10% 5%;
+  --card-foreground: 210 20% 98%;
+  --popover: 240 10% 5%;
+  --popover-foreground: 210 20% 98%;
+  --primary: 262.1 83.3% 57.8%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 210 20% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 210 20% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --ring: 262.1 83.3% 57.8%;
+  --radius: 0.75rem;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+}

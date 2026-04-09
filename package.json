@@ -6,6 +6,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
+    "dev:account": "turbo dev --filter=@vybx/account",
     "dev:promoter": "turbo dev --filter=@vybx/promoter",
     "test": "vitest run",
     "test:watch": "vitest",
