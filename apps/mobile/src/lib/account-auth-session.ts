@@ -53,14 +53,22 @@ function isSameCallbackTarget(url: string, callbackUrl: string): boolean {
     const expected = new URL(callbackUrl);
     const normalizePath = (value: string) =>
       value
-        .replace(/^\/--/, "")
+        .replace(/\/--\//g, "/")
+        .replace(/^\/--/, "/")
         .replace(/\/{2,}/g, "/")
         .replace(/\/+$/, "") || "/";
+    const incomingPath = normalizePath(incoming.pathname);
+    const expectedPath = normalizePath(expected.pathname);
+
+    const callbackSuffix = "/auth/callback";
+    const looksLikeAuthCallback =
+      incomingPath.endsWith(callbackSuffix) &&
+      expectedPath.endsWith(callbackSuffix);
 
     return (
       incoming.protocol === expected.protocol &&
       incoming.host === expected.host &&
-      normalizePath(incoming.pathname) === normalizePath(expected.pathname)
+      (incomingPath === expectedPath || looksLikeAuthCallback)
     );
   } catch {
     return false;
