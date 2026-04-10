@@ -253,17 +253,34 @@ export function createMobileAuthApi(options: MobileAuthApiOptions): MobileAuthAp
     },
 
     async fetchProfile(accessToken): Promise<MobileAuthUser> {
-      const res = await fetch(`${base}/auth/profile`, {
-        headers: { ...MOBILE_HEADERS, Authorization: `Bearer ${accessToken}` },
-      });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10_000);
+      let res: Response;
+      try {
+        res = await fetch(`${base}/auth/profile`, {
+          headers: { ...MOBILE_HEADERS, Authorization: `Bearer ${accessToken}` },
+          signal: controller.signal,
+        });
+      } catch (err) {
+        if (
+          err &&
+          typeof err === "object" &&
+          "name" in err &&
+          (err as { name?: string }).name === "AbortError"
+        ) {
+          throw new Error("No se pudo verificar tu sesión. Revisa tu conexión e intenta de nuevo.");
+        }
+        throw err;
+      } finally {
+        clearTimeout(timer);
+      }
       if (!res.ok) await throwHttpError(res);
       const data = (await res.json()) as unknown;
       if (!isBackendAuthUser(data)) {
         throw new Error("Respuesta inválida de perfil.");
       }
       assertEndUserRole(data);
-      const raw = data;
-      return adaptBackendUser(raw);
+      return adaptBackendUser(data);
     },
 
     async resendVerification(email): Promise<{ success?: boolean; message?: string }> {

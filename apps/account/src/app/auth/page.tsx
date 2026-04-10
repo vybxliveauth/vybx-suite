@@ -215,6 +215,8 @@ function AuthSurface() {
     setServerError(null);
     setServerNotice("Sesion web detectada. Conectando con la app...");
 
+    const userEmail = user.email ?? "";
+
     void (async () => {
       const tokens = await Promise.race([
         exchangeSessionForMobileAuth(),
@@ -224,8 +226,12 @@ function AuthSurface() {
       ]);
       if (!mounted) return;
       if (!tokens) {
+        // Pre-fill the email so the user only needs to enter their password.
+        if (userEmail) {
+          loginForm.setValue("email", userEmail);
+        }
         setServerNotice(
-          "No se pudo transferir la sesion automaticamente. Inicia sesion manualmente y te regresamos a la app.",
+          "Sesion detectada, pero no pudimos transferirla automaticamente. Ingresa tu contrasena para continuar en la app.",
         );
         return;
       }
@@ -233,8 +239,11 @@ function AuthSurface() {
     })()
       .catch(() => {
         if (!mounted) return;
+        if (userEmail) {
+          loginForm.setValue("email", userEmail);
+        }
         setServerNotice(
-          "No se pudo transferir la sesion automaticamente. Inicia sesion manualmente y te regresamos a la app.",
+          "Sesion detectada, pero no pudimos transferirla automaticamente. Ingresa tu contrasena para continuar en la app.",
         );
       })
       .finally(() => {
