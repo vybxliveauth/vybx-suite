@@ -258,8 +258,10 @@ export async function exchangeSessionForMobileAuth(): Promise<MobileAuthTokens |
     });
 
     const accessToken = readOptionalToken(response.access_token);
-    const refreshToken = readOptionalToken(response.refresh_token);
-    if (!accessToken || !refreshToken) {
+    // Some backends return only access_token on cookie-based refresh.
+    // Use access token as temporary refresh fallback to unblock mobile handoff.
+    const refreshToken = readOptionalToken(response.refresh_token) ?? accessToken;
+    if (!accessToken) {
       return null;
     }
 
