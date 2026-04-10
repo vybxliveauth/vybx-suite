@@ -1,0 +1,55 @@
+name: Expo Mobile Update
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/mobile/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/expo-mobile-update.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: expo-mobile-update-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish_update:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          expo-version: latest
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Publish OTA update (production)
+        env:
+          CI: "1"
+        run: eas update --branch production --message "CI update ${GITHUB_SHA}" --non-interactive

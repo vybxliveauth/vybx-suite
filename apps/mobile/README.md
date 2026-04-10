@@ -34,3 +34,18 @@
 
 - La app abre `account` en una sesión segura del sistema (tipo Ticketmaster).
 - Tras iniciar sesión o registrarte, vuelve a la app automáticamente con tokens mobile.
+
+## Expo + GitHub (automatizado)
+
+- Proyecto EAS enlazado: `@vybx/vybx-mobile`
+- `apps/mobile/eas.json` define perfiles `development`, `preview`, `production`.
+- Workflows GitHub:
+  - `.github/workflows/expo-mobile-update.yml`
+  - `.github/workflows/expo-mobile-build.yml`
+
+### Secret requerido en GitHub
+
+- `EXPO_TOKEN` en: `Settings > Secrets and variables > Actions`
+- Con ese secret:
+  - Cada push a `main` que toque `apps/mobile` publica OTA update en rama `production`.
+  - Puedes lanzar builds iOS/Android manuales desde `Actions > Expo Mobile Build`.

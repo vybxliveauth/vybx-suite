@@ -45,6 +45,19 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "32e2b4b5-fa8f-402a-a1d1-6553d8ef6f1b"
+      }
+    },
+    "owner": "vybx",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/32e2b4b5-fa8f-402a-a1d1-6553d8ef6f1b"
     }
   }
 }
