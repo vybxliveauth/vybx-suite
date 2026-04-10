@@ -52,6 +52,8 @@ export function createMobileFetch(options: MobileFetchOptions): typeof fetch {
   };
 
   return async (input, init) => {
+    const method = (init?.method ?? "GET").toUpperCase();
+    const canRetryWithoutToken = method === "GET" || method === "HEAD";
     const token = await storage.getAccessToken();
 
     const first = await fetch(input, {
@@ -62,11 +64,22 @@ export function createMobileFetch(options: MobileFetchOptions): typeof fetch {
     if (first.status !== 401) return first;
 
     const newToken = await refresh();
-    if (!newToken) return first; // let the caller handle the 401
+    if (newToken) {
+      return fetch(input, {
+        ...init,
+        headers: buildHeaders(newToken, init),
+      });
+    }
 
-    return fetch(input, {
-      ...init,
-      headers: buildHeaders(newToken, init),
-    });
+    // If auth refresh failed but this is a public read endpoint, retry once
+    // without Authorization so stale tokens don't hide public data.
+    if (token && canRetryWithoutToken) {
+      return fetch(input, {
+        ...init,
+        headers: buildHeaders(null, init),
+      });
+    }
+
+    return first; // let the caller handle the 401
   };
 }

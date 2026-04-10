@@ -12,6 +12,8 @@ export type AccountAuthSessionResult =
   | { type: "cancel" }
   | { type: "error"; message: string };
 
+const AUTH_SESSION_TIMEOUT_MS = 45_000;
+
 function resolveAccountAppBaseUrl(): string {
   const configured = process.env.EXPO_PUBLIC_ACCOUNT_APP_URL?.trim();
   if (!configured) return DEFAULT_ACCOUNT_APP_URL;
@@ -52,7 +54,27 @@ export async function startAccountAuthSession(
   const state = createState();
   const authUrl = buildAuthUrl(mode, callbackUrl, state);
 
-  const result = await WebBrowser.openAuthSessionAsync(authUrl, callbackUrl);
+  const result = await Promise.race<
+    WebBrowser.WebBrowserAuthSessionResult | { type: "timeout" }
+  >([
+    WebBrowser.openAuthSessionAsync(authUrl, callbackUrl),
+    new Promise((resolve) => {
+      setTimeout(() => resolve({ type: "timeout" as const }), AUTH_SESSION_TIMEOUT_MS);
+    }),
+  ]);
+
+  if (result.type === "timeout") {
+    try {
+      await WebBrowser.dismissBrowser();
+    } catch {
+      // no-op
+    }
+    return {
+      type: "error",
+      message: "La autenticación tardó demasiado. Intenta de nuevo.",
+    };
+  }
+
   if (result.type !== "success") {
     if (result.type === "cancel" || result.type === "dismiss") {
       return { type: "cancel" };
@@ -94,4 +116,3 @@ export async function startAccountAuthSession(
     refreshToken,
   };
 }
-

@@ -27,6 +27,14 @@ interface EventsResponse {
   pageSize: number;
 }
 
+type BackendPagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  nextCursor?: string | null;
+};
+
 type BackendTicketType = {
   id: string;
   name: string;
@@ -83,15 +91,24 @@ export function useEvents(page = 1, pageSize = 20) {
     queryKey: ["events", page, pageSize],
     queryFn: async () => {
       const response = await api.get<{
-        data: BackendEvent[];
-        total: number;
-        page: number;
-        pageSize: number;
-      }>(`/events?page=${page}&limit=${pageSize}&status=APPROVED`);
+        data?: BackendEvent[];
+        items?: BackendEvent[];
+        total?: number;
+        page?: number;
+        pageSize?: number;
+        pagination?: BackendPagination;
+      }>(`/events?page=${page}&limit=${pageSize}`);
+
+      const rawEvents = response.data ?? response.items ?? [];
+      const resolvedPage = response.page ?? response.pagination?.page ?? page;
+      const resolvedPageSize = response.pageSize ?? response.pagination?.limit ?? pageSize;
+      const resolvedTotal = response.total ?? response.pagination?.total ?? rawEvents.length;
 
       return {
-        ...response,
-        data: (response.data ?? []).map(normalizePublicEvent),
+        data: rawEvents.map(normalizePublicEvent),
+        total: resolvedTotal,
+        page: resolvedPage,
+        pageSize: resolvedPageSize,
       } satisfies EventsResponse;
     },
     staleTime: 1000 * 60 * 2, // 2 min

@@ -103,16 +103,17 @@ function buildMobileCallbackUrl(
     | { status: "error"; message: string; state?: string },
 ): string {
   const redirect = new URL(callbackUrl);
-  const hash = new URLSearchParams();
-  hash.set("status", payload.status);
-  if (payload.state) hash.set("state", payload.state);
+  const params = new URLSearchParams(redirect.search);
+  params.set("status", payload.status);
+  if (payload.state) params.set("state", payload.state);
   if (payload.status === "success") {
-    hash.set("access_token", payload.accessToken);
-    hash.set("refresh_token", payload.refreshToken);
+    params.set("access_token", payload.accessToken);
+    params.set("refresh_token", payload.refreshToken);
   } else {
-    hash.set("message", payload.message);
+    params.set("message", payload.message);
   }
-  redirect.hash = hash.toString();
+  redirect.search = params.toString();
+  redirect.hash = "";
   return redirect.toString();
 }
 
