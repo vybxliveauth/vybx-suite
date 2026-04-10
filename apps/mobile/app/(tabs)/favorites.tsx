@@ -14,7 +14,7 @@ import { EventCard } from "../../src/components/EventCard";
 import { EventCardSkeleton } from "../../src/components/EventCardSkeleton";
 import { useFavorites } from "../../src/context/favorites-context";
 import { api } from "../../src/lib/api";
-import type { PublicEvent } from "../../src/hooks/useEvents";
+import { normalizePublicEvent, type PublicEvent } from "../../src/hooks/useEvents";
 import { colors } from "../../src/theme/tokens";
 
 export default function FavoritesScreen() {
@@ -25,7 +25,10 @@ export default function FavoritesScreen() {
   const favoriteEventQueries = useQueries({
     queries: favoriteIdList.map((eventId) => ({
       queryKey: ["event", eventId],
-      queryFn: () => api.get<PublicEvent>(`/events/${eventId}`),
+      queryFn: async () => {
+        const response = await api.get<PublicEvent>(`/events/${eventId}`);
+        return normalizePublicEvent(response);
+      },
       enabled: hydrated,
       staleTime: 1000 * 60 * 2,
     })),
