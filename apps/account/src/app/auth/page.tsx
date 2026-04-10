@@ -137,6 +137,7 @@ function AuthSurface() {
   const [serverNotice, setServerNotice] = useState<string | null>(null);
   const [exchangingMobileSession, setExchangingMobileSession] = useState(false);
   const [mobileSessionExchangeTried, setMobileSessionExchangeTried] = useState(false);
+  const [mobileReturnUrl, setMobileReturnUrl] = useState<string | null>(null);
 
   const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState("");
@@ -163,19 +164,26 @@ function AuthSurface() {
     },
   });
 
+  const redirectToMobileApp = useCallback((url: string) => {
+    setMobileReturnUrl(url);
+    window.location.assign(url);
+    window.setTimeout(() => {
+      window.location.assign(url);
+    }, 450);
+  }, []);
+
   const completeMobileAuth = useCallback(
     (tokens: MobileAuthTokens) => {
       if (!mobileMode || !mobileCallback) return;
-      window.location.assign(
-        buildMobileCallbackUrl(mobileCallback, {
-          status: "success",
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          state: mobileState,
-        }),
-      );
+      const callbackUrl = buildMobileCallbackUrl(mobileCallback, {
+        status: "success",
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        state: mobileState,
+      });
+      redirectToMobileApp(callbackUrl);
     },
-    [mobileCallback, mobileMode, mobileState],
+    [mobileCallback, mobileMode, mobileState, redirectToMobileApp],
   );
 
   useEffect(() => {
@@ -202,17 +210,31 @@ function AuthSurface() {
     let mounted = true;
     setMobileSessionExchangeTried(true);
     setExchangingMobileSession(true);
+    setMobileReturnUrl(null);
     setServerError(null);
     setServerNotice("Sesion web detectada. Conectando con la app...");
 
-    void exchangeSessionForMobileAuth()
-      .then((tokens) => {
+    void (async () => {
+      const tokens = await Promise.race([
+        exchangeSessionForMobileAuth(),
+        new Promise<null>((resolve) => {
+          window.setTimeout(() => resolve(null), 7000);
+        }),
+      ]);
+      if (!mounted) return;
+      if (!tokens) {
+        setServerNotice(
+          "No se pudo transferir la sesion automaticamente. Inicia sesion manualmente y te regresamos a la app.",
+        );
+        return;
+      }
+      completeMobileAuth(tokens);
+    })()
+      .catch(() => {
         if (!mounted) return;
-        if (!tokens) {
-          setServerNotice(null);
-          return;
-        }
-        completeMobileAuth(tokens);
+        setServerNotice(
+          "No se pudo transferir la sesion automaticamente. Inicia sesion manualmente y te regresamos a la app.",
+        );
       })
       .finally(() => {
         if (mounted) setExchangingMobileSession(false);
@@ -509,12 +531,22 @@ function AuthSurface() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={loginForm.formState.isSubmitting || exchangingMobileSession}
+                    disabled={loginForm.formState.isSubmitting}
                   >
                     {loginForm.formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
                     {exchangingMobileSession && <Loader2 className="size-4 animate-spin" />}
                     {twoFactorChallengeId ? "Reintentar" : "Entrar"}
                   </Button>
+                  {mobileReturnUrl && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => window.location.assign(mobileReturnUrl)}
+                    >
+                      Volver a la app
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     variant="ghost"
