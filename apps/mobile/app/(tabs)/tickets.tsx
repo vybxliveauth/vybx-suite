@@ -1,13 +1,21 @@
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Image,
+  Pressable,
   RefreshControl,
+  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { colors } from "../../src/theme/tokens";
 import { useMyTickets, type MyTicket } from "../../src/hooks/useMyTickets";
+import { useAuth } from "../../src/context/auth-context";
+import { Link } from "expo-router";
+import { AppScreenHeader } from "../../src/components/AppScreenHeader";
+import { useEffect, useRef } from "react";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("es-ES", {
@@ -62,74 +70,182 @@ function TicketCard({ ticket }: { ticket: MyTicket }) {
   );
 }
 
+function TicketCardSkeleton() {
+  const pulse = useRef(new Animated.Value(0.45)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 0.85,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0.45,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  return (
+    <Animated.View style={[styles.ticketSkeletonCard, { opacity: pulse }]}>
+      <View style={styles.ticketSkeletonImage} />
+      <View style={styles.ticketSkeletonBody}>
+        <View style={styles.ticketSkeletonTitle} />
+        <View style={styles.ticketSkeletonSubtitle} />
+        <View style={styles.ticketSkeletonSubtitleShort} />
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function TicketsScreen() {
-  const { data, isLoading, isError, refetch, isFetching } = useMyTickets();
+  const { user } = useAuth();
+  const isAuthenticated = Boolean(user);
+  const { data, isLoading, isError, refetch, isFetching } =
+    useMyTickets(isAuthenticated);
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <AppScreenHeader
+            title="Mis Boletos"
+            subtitle="Tus entradas en un solo lugar"
+          />
+        </View>
+        <View style={styles.center}>
+          <Text style={styles.emptyEmoji}>🔒</Text>
+          <Text style={styles.emptyTitle}>Inicia sesión para ver tus boletos</Text>
+          <Text style={styles.emptySubtitle}>
+            Ve a Mi Cuenta para entrar o crear tu cuenta.
+          </Text>
+          <Link href="/(tabs)/profile" asChild>
+            <Pressable style={styles.ctaButton}>
+              <Text style={styles.ctaButtonText}>Ir a Mi Cuenta</Text>
+            </Pressable>
+          </Link>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (isLoading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6366f1" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          data={[0, 1, 2]}
+          keyExtractor={(item) => `ticket-skeleton-${item}`}
+          renderItem={() => <TicketCardSkeleton />}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListHeaderComponent={
+            <View style={styles.header}>
+              <AppScreenHeader
+                title="Mis Boletos"
+                subtitle="Tus entradas en un solo lugar"
+              />
+              <View style={styles.loaderRow}>
+                <ActivityIndicator size="small" color={colors.brand} />
+                <Text style={styles.loaderText}>Cargando boletos...</Text>
+              </View>
+            </View>
+          }
+        />
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.errorText}>No se pudieron cargar tus tickets.</Text>
-        <Text style={styles.retryText} onPress={() => void refetch()}>
-          Reintentar
-        </Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <AppScreenHeader
+            title="Mis Boletos"
+            subtitle="Tus entradas en un solo lugar"
+          />
+        </View>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>No se pudieron cargar tus boletos.</Text>
+          <Text style={styles.retryText} onPress={() => void refetch()}>
+            Reintentar
+          </Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   const tickets = data?.data ?? [];
 
   return (
-    <FlatList
-      data={tickets}
-      keyExtractor={(item) => item.id}
-      renderItem={({ item }) => <TicketCard ticket={item} />}
-      contentContainerStyle={styles.list}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      refreshControl={
-        <RefreshControl
-          refreshing={isFetching && !isLoading}
-          onRefresh={() => void refetch()}
-          tintColor="#6366f1"
-        />
-      }
-      ListEmptyComponent={
-        <View style={styles.center}>
-          <Text style={styles.emptyEmoji}>🎟️</Text>
-          <Text style={styles.emptyTitle}>Sin tickets aún</Text>
-          <Text style={styles.emptySubtitle}>
-            Tus entradas compradas aparecerán aquí.
-          </Text>
-        </View>
-      }
-      style={styles.container}
-    />
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={tickets}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => <TicketCard ticket={item} />}
+        contentContainerStyle={styles.list}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching && !isLoading}
+            onRefresh={() => void refetch()}
+            tintColor={colors.brand}
+          />
+        }
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <AppScreenHeader
+              title="Mis Boletos"
+              subtitle="Tus entradas en un solo lugar"
+            />
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.center}>
+            <Text style={styles.emptyEmoji}>🎟️</Text>
+            <Text style={styles.emptyTitle}>Sin boletos aún</Text>
+            <Text style={styles.emptySubtitle}>
+              Tus entradas compradas aparecerán aquí.
+            </Text>
+          </View>
+        }
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f0f0f" },
+  container: { flex: 1, backgroundColor: colors.bg },
   list: { padding: 16, paddingBottom: 32 },
+  header: { paddingBottom: 16 },
   separator: { height: 12 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
+  loaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  loaderText: { color: "#94a3b8", fontSize: 13 },
   errorText: { color: "#f87171", fontSize: 15, textAlign: "center", marginBottom: 12 },
-  retryText: { color: "#6366f1", fontSize: 14, fontWeight: "600" },
+  retryText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 8 },
   emptySubtitle: { color: "#666", fontSize: 14, textAlign: "center" },
+  ctaButton: {
+    marginTop: 14,
+    backgroundColor: colors.brand,
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+  },
+  ctaButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#11161d",
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: "#1f2937",
   },
   cardUsed: { opacity: 0.55 },
   eventImage: { width: "100%", height: 120 },
@@ -140,7 +256,7 @@ const styles = StyleSheet.create({
   badgeActive: { backgroundColor: "#16a34a" },
   badgeUsed: { backgroundColor: "#374151" },
   badgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  ticketType: { fontSize: 13, color: "#6366f1", fontWeight: "600" },
+  ticketType: { fontSize: 13, color: "#60a5fa", fontWeight: "600" },
   date: { fontSize: 13, color: "#aaa" },
   location: { fontSize: 13, color: "#888" },
   qrSection: {
@@ -153,5 +269,32 @@ const styles = StyleSheet.create({
     borderColor: "#333",
   },
   qrLabel: { fontSize: 11, color: "#888", fontWeight: "600", textTransform: "uppercase" },
-  qrCode: { fontSize: 12, color: "#6366f1", fontFamily: "monospace" },
+  qrCode: { fontSize: 12, color: "#60a5fa", fontFamily: "monospace" },
+  ticketSkeletonCard: {
+    backgroundColor: "#11161d",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#1f2937",
+    overflow: "hidden",
+  },
+  ticketSkeletonImage: { height: 120, backgroundColor: "#1b2330" },
+  ticketSkeletonBody: { padding: 14, gap: 10 },
+  ticketSkeletonTitle: {
+    height: 18,
+    borderRadius: 8,
+    backgroundColor: "#2a3443",
+    width: "80%",
+  },
+  ticketSkeletonSubtitle: {
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: "#2a3443",
+    width: "58%",
+  },
+  ticketSkeletonSubtitleShort: {
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: "#2a3443",
+    width: "42%",
+  },
 });

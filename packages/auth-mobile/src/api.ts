@@ -65,6 +65,14 @@ function parseMobileAuthResponse(data: unknown): MobileAuthResponse | null {
   return { access_token, refresh_token, user };
 }
 
+function isWebAuthSuccessResponse(value: unknown): value is {
+  success?: boolean;
+  user: BackendAuthUser;
+} {
+  if (!isRecord(value)) return false;
+  return isBackendAuthUser(value.user);
+}
+
 function resolveEmailVerified(raw: BackendAuthUser): boolean {
   if (typeof raw.emailVerified === "boolean") return raw.emailVerified;
   if (typeof raw.isEmailVerified === "boolean") return raw.isEmailVerified;
@@ -180,6 +188,12 @@ export function createMobileAuthApi(options: MobileAuthApiOptions): MobileAuthAp
 
       const auth = parseMobileAuthResponse(data);
       if (!auth) {
+        if (isWebAuthSuccessResponse(data) && isEndUserRole(data.user.role)) {
+          throw makeHttpError(
+            "El backend respondio en modo web (sin tokens para mobile). Reintenta en unos segundos; si persiste, hay que revisar la deteccion de X-Client en el backend.",
+            502,
+          );
+        }
         if (
           isRecord(data) &&
           isRecord(data.user) &&
@@ -208,6 +222,12 @@ export function createMobileAuthApi(options: MobileAuthApiOptions): MobileAuthAp
       const data = (await res.json()) as unknown;
       const auth = parseMobileAuthResponse(data);
       if (!auth) {
+        if (isWebAuthSuccessResponse(data) && isEndUserRole(data.user.role)) {
+          throw makeHttpError(
+            "El backend respondio en modo web (sin tokens para mobile). Reintenta en unos segundos; si persiste, hay que revisar la deteccion de X-Client en el backend.",
+            502,
+          );
+        }
         if (
           isRecord(data) &&
           isRecord(data.user) &&

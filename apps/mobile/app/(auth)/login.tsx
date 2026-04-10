@@ -1,4 +1,4 @@
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -14,6 +14,7 @@ import {
 import { useAuth } from "../../src/context/auth-context";
 
 export default function LoginScreen() {
+  const router = useRouter();
   const { login, verifyTwoFactor } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -44,6 +45,7 @@ export default function LoginScreen() {
         );
         return;
       }
+      router.replace("/(tabs)/profile");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Error al iniciar sesión";
@@ -62,6 +64,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await verifyTwoFactor(twoFactorChallengeId, twoFactorCode.trim());
+      router.replace("/(tabs)/profile");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Codigo 2FA invalido";

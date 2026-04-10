@@ -2,18 +2,20 @@ import * as WebBrowser from "expo-web-browser";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { CART_MAX_QUANTITY_PER_TIER } from "@vybx/schemas";
+import { useAuth } from "../../src/context/auth-context";
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 import { api } from "../../src/lib/api";
 import { useEvent } from "../../src/hooks/useEvents";
+import { colors } from "../../src/theme/tokens";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("es-ES", {
@@ -29,6 +31,7 @@ function formatDate(dateStr: string) {
 export default function EventDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { user } = useAuth();
   const { data: event, isLoading, isError } = useEvent(id ?? "");
   const [selectedTicketTypeId, setSelectedTicketTypeId] = useState<string | null>(
     null,
@@ -75,6 +78,17 @@ export default function EventDetailScreen() {
 
   async function handleCheckout() {
     if (!event || !selectedTier) return;
+    if (!user) {
+      Alert.alert(
+        "Inicia sesión",
+        "Necesitas una cuenta para comprar boletos.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Ir a Mi Cuenta", onPress: () => router.push("/(tabs)/profile") },
+        ],
+      );
+      return;
+    }
     try {
       const res = await api.post<{ checkoutUrl: string }>(
         "/payments/create-intent",
@@ -91,7 +105,7 @@ export default function EventDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#6366f1" />
+        <ActivityIndicator size="large" color={colors.brand} />
       </View>
     );
   }
@@ -112,7 +126,7 @@ export default function EventDetailScreen() {
       <Stack.Screen options={{ title: event.title }} />
       {/* Hero image */}
       {event.image ? (
-        <Image
+        <Animated.Image
           source={{ uri: event.image }}
           style={styles.hero}
           resizeMode="cover"
@@ -123,7 +137,7 @@ export default function EventDetailScreen() {
         </View>
       )}
 
-      <View style={styles.body}>
+      <Animated.View entering={FadeInDown.duration(220)} style={styles.body}>
         {/* Header */}
         <View style={styles.header}>
           {event.isFeatured && (
@@ -140,15 +154,15 @@ export default function EventDetailScreen() {
 
         {/* Description */}
         {event.description && (
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(40).duration(220)} style={styles.section}>
             <Text style={styles.sectionTitle}>Sobre el evento</Text>
             <Text style={styles.description}>{event.description}</Text>
-          </View>
+          </Animated.View>
         )}
 
         {/* Ticket types */}
         {event.ticketTypes && event.ticketTypes.length > 0 && (
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(80).duration(220)} style={styles.section}>
             <Text style={styles.sectionTitle}>Entradas disponibles</Text>
             {event.ticketTypes.map((tier) => {
               const available = tier.quantity - tier.sold;
@@ -177,11 +191,11 @@ export default function EventDetailScreen() {
                 </Pressable>
               );
             })}
-          </View>
+          </Animated.View>
         )}
 
         {selectedTier && (
-          <View style={styles.section}>
+          <Animated.View entering={FadeInDown.delay(120).duration(220)} style={styles.section}>
             <Text style={styles.sectionTitle}>Cantidad</Text>
             <View style={styles.quantityCard}>
               <Pressable
@@ -219,7 +233,7 @@ export default function EventDetailScreen() {
                 ? "Gratis"
                 : `$${(selectedTier.price * quantity).toFixed(2)}`}
             </Text>
-          </View>
+          </Animated.View>
         )}
 
         {/* CTA */}
@@ -235,21 +249,21 @@ export default function EventDetailScreen() {
             {!selectedTier ? "Agotado" : `Comprar ${quantity} × ${selectedTier.name}`}
           </Text>
         </Pressable>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f0f0f" },
+  container: { flex: 1, backgroundColor: colors.bg },
   content: { paddingBottom: 48 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
   errorText: { color: "#f87171", fontSize: 15, marginBottom: 12 },
-  backLink: { color: "#6366f1", fontSize: 14, fontWeight: "600" },
+  backLink: { color: colors.brand, fontSize: 14, fontWeight: "600" },
 
   hero: { width: "100%", height: 260 },
   heroPlaceholder: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -260,14 +274,14 @@ const styles = StyleSheet.create({
   header: { gap: 8 },
   featuredBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#6366f1",
+    backgroundColor: colors.brand,
     borderRadius: 6,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  featuredText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  title: { fontSize: 26, fontWeight: "800", color: "#fff", lineHeight: 32 },
-  date: { fontSize: 14, color: "#6366f1", fontWeight: "600" },
+  featuredText: { color: colors.white, fontSize: 11, fontWeight: "700" },
+  title: { fontSize: 26, fontWeight: "800", color: colors.white, lineHeight: 32 },
+  date: { fontSize: 14, color: colors.brand, fontWeight: "600" },
   location: { fontSize: 14, color: "#aaa" },
 
   section: { gap: 12 },
@@ -284,7 +298,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
     borderWidth: 1,
@@ -292,19 +306,19 @@ const styles = StyleSheet.create({
   },
   tierCardSoldOut: { opacity: 0.45 },
   tierCardSelected: {
-    borderColor: "#6366f1",
+    borderColor: colors.brand,
     backgroundColor: "#1e1e3f",
   },
   tierInfo: { gap: 2 },
-  tierName: { fontSize: 15, fontWeight: "600", color: "#fff" },
+  tierName: { fontSize: 15, fontWeight: "600", color: colors.white },
   tierAvail: { fontSize: 12, color: "#888" },
-  tierPrice: { fontSize: 16, fontWeight: "700", color: "#6366f1" },
+  tierPrice: { fontSize: 16, fontWeight: "700", color: colors.brand },
   quantityCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingVertical: 12,
     borderWidth: 1,
@@ -321,17 +335,17 @@ const styles = StyleSheet.create({
   quantityBtnDisabled: {
     opacity: 0.45,
   },
-  quantityBtnText: { color: "#fff", fontSize: 22, fontWeight: "700", lineHeight: 24 },
-  quantityValue: { color: "#fff", fontSize: 20, fontWeight: "800", minWidth: 28, textAlign: "center" },
+  quantityBtnText: { color: colors.white, fontSize: 22, fontWeight: "700", lineHeight: 24 },
+  quantityValue: { color: colors.white, fontSize: 20, fontWeight: "800", minWidth: 28, textAlign: "center" },
   quantityHint: { color: "#888", fontSize: 12 },
   totalPrice: { color: "#ddd", fontSize: 14, fontWeight: "600" },
 
   ctaBtn: {
-    backgroundColor: "#6366f1",
+    backgroundColor: colors.brand,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
   },
   ctaBtnDisabled: { backgroundColor: "#2a2a2a" },
-  ctaText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  ctaText: { color: colors.white, fontWeight: "700", fontSize: 16 },
 });

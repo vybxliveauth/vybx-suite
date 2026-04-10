@@ -1,60 +1,72 @@
 import { Tabs } from "expo-router";
-import { Text } from "react-native";
-
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{label}</Text>
-  );
-}
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../../src/theme/tokens";
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: "#0f0f0f" },
-        headerTitleStyle: { color: "#fff", fontWeight: "700" },
-        headerShadowVisible: false,
+        headerShown: false,
         tabBarStyle: {
-          backgroundColor: "#0f0f0f",
-          borderTopColor: "#222",
+          backgroundColor: colors.bgElevated,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 66,
+          paddingBottom: 10,
+          paddingTop: 8,
         },
-        tabBarActiveTintColor: "#6366f1",
-        tabBarInactiveTintColor: "#555",
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: "#7b8794",
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Eventos",
-          tabBarLabel: "Eventos",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="🎟️" focused={focused} />
+          title: "Inicio",
+          tabBarLabel: "Inicio",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" color={color} size={size} />
           ),
-          headerTitle: "VybeTickets",
+        }}
+      />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: "Favoritos",
+          tabBarLabel: "Favoritos",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="heart-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: "Buscar",
+          tabBarLabel: "Buscar",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="search-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="tickets"
         options={{
-          title: "Mis Tickets",
-          tabBarLabel: "Mis Tickets",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="🎫" focused={focused} />
+          title: "Mis Boletos",
+          tabBarLabel: "Boletos",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="ticket-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: "Perfil",
-          tabBarLabel: "Perfil",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon label="👤" focused={focused} />
+          title: "Mi Cuenta",
+          tabBarLabel: "Mi Cuenta",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person-outline" color={color} size={size} />
           ),
         }}
       />

@@ -1,52 +1,26 @@
 /**
- * Root layout — wraps the entire app with QueryClient and Auth providers.
- * Handles the idle→loading→authenticated/unauthenticated boot sequence.
+ * Root layout — wraps the app with QueryClient and Auth providers.
  *
- * Navigation:
- *   Authenticated   →  (tabs)  (home, my tickets, profile)
- *   Unauthenticated →  (auth)  (login, register)
+ * Navigation starts in tabs for everyone; auth is accessed from "Mi cuenta".
  */
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
-import { AuthProvider, useAuth } from "../src/context/auth-context";
+import { Stack } from "expo-router";
+import { AuthProvider } from "../src/context/auth-context";
+import { FavoritesProvider } from "../src/context/favorites-context";
 import { queryClient } from "../src/lib/query-client";
+import { colors } from "../src/theme/tokens";
 
-function AuthGate() {
-  const { status } = useAuth();
-  const router = useRouter();
-  const segments = useSegments();
-
-  useEffect(() => {
-    if (status === "idle" || status === "loading") return;
-
-    const inAuthGroup = segments[0] === "(auth)";
-
-    if (status === "authenticated" && inAuthGroup) {
-      router.replace("/(tabs)");
-    } else if (status === "unauthenticated" && !inAuthGroup) {
-      router.replace("/(auth)/login");
-    }
-  }, [status, segments, router]);
-
-  if (status === "idle" || status === "loading") {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#6366f1" />
-      </View>
-    );
-  }
-
+function RootNavigator() {
   return (
     <Stack
+      initialRouteName="(tabs)"
       screenOptions={{
-        headerStyle: { backgroundColor: "#0f0f0f" },
-        headerTintColor: "#fff",
+        headerStyle: { backgroundColor: colors.bg },
+        headerTintColor: colors.white,
         headerTitleStyle: { fontWeight: "700" },
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: "#0f0f0f" },
+        contentStyle: { backgroundColor: colors.bg },
       }}
     >
       {/* Auth group — no header (handled by auth layout) */}
@@ -58,7 +32,11 @@ function AuthGate() {
       {/* Event detail — back arrow + event title */}
       <Stack.Screen
         name="event/[id]"
-        options={{ title: "Evento", headerBackTitle: "Atrás" }}
+        options={{
+          title: "Evento",
+          headerBackTitle: "Atrás",
+          animation: "slide_from_right",
+        }}
       />
 
       {/* 404 */}
@@ -67,20 +45,13 @@ function AuthGate() {
   );
 }
 
-const styles = StyleSheet.create({
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0f0f0f",
-  },
-});
-
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AuthGate />
+        <FavoritesProvider>
+          <RootNavigator />
+        </FavoritesProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

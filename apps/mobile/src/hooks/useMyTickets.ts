@@ -29,10 +29,11 @@ interface MyTicketsResponse {
   pageSize: number;
 }
 
-export function useMyTickets() {
+export function useMyTickets(enabled = true) {
   return useQuery({
     queryKey: ["my-tickets"],
     queryFn: () => api.get<MyTicketsResponse>("/tickets/my-tickets"),
     staleTime: 1000 * 30, // 30s — tickets state changes often
+    enabled,
   });
 }

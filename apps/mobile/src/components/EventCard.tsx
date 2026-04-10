@@ -1,9 +1,22 @@
+import { useEffect } from "react";
 import { useRouter } from "expo-router";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  Easing,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import type { PublicEvent } from "../hooks/useEvents";
+import { colors, radius, spacing } from "../theme/tokens";
 
 interface Props {
   event: PublicEvent;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+  animationDelay?: number;
 }
 
 function formatDate(dateStr: string) {
@@ -24,79 +37,164 @@ function minPrice(event: PublicEvent): string {
   return min === 0 ? "Gratis" : `Desde $${min.toFixed(2)}`;
 }
 
-export function EventCard({ event }: Props) {
+export function EventCard({
+  event,
+  isFavorite = false,
+  onToggleFavorite,
+  animationDelay = 0,
+}: Props) {
   const router = useRouter();
+  const scale = useSharedValue(1);
+  const favoriteScale = useSharedValue(1);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const favoriteAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: favoriteScale.value }],
+  }));
+
+  useEffect(() => {
+    favoriteScale.value = withTiming(isFavorite ? 1.1 : 1, {
+      duration: 170,
+      easing: Easing.out(Easing.quad),
+    });
+  }, [isFavorite, favoriteScale]);
 
   return (
-    <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-      onPress={() => router.push(`/event/${event.id}`)}
-      accessibilityRole="button"
-      accessibilityLabel={`Ver evento ${event.title}`}
+    <Animated.View
+      entering={FadeInDown.delay(animationDelay).duration(300)}
+      style={cardAnimatedStyle}
     >
-      {event.image ? (
-        <Image
-          source={{ uri: event.image }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={[styles.image, styles.imagePlaceholder]}>
-          <Text style={styles.imagePlaceholderText}>🎵</Text>
-        </View>
-      )}
-
-      {event.isFeatured && (
-        <View style={styles.featuredBadge}>
-          <Text style={styles.featuredText}>Destacado</Text>
-        </View>
-      )}
-
-      <View style={styles.body}>
-        <Text style={styles.date}>{formatDate(event.date)}</Text>
-        <Text style={styles.title} numberOfLines={2}>
-          {event.title}
-        </Text>
-        {event.location && (
-          <Text style={styles.location} numberOfLines={1}>
-            📍 {event.location}
-          </Text>
+      <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        onPress={() => router.push(`/event/${event.id}`)}
+        onPressIn={() => {
+          scale.value = withTiming(0.985, { duration: 120 });
+        }}
+        onPressOut={() => {
+          scale.value = withTiming(1, { duration: 160 });
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={`Ver evento ${event.title}`}
+      >
+        {event.image ? (
+          <Animated.Image
+            source={{ uri: event.image }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.image, styles.imagePlaceholder]}>
+            <Text style={styles.imagePlaceholderText}>🎵</Text>
+          </View>
         )}
-        <Text style={styles.price}>{minPrice(event)}</Text>
-      </View>
-    </Pressable>
+
+        <View style={styles.overlay} />
+
+        <Pressable
+          style={styles.favoriteBtn}
+          onPress={(eventPress) => {
+            eventPress.stopPropagation();
+            onToggleFavorite?.();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={
+            isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"
+          }
+        >
+          <Animated.View style={favoriteAnimatedStyle}>
+            <Ionicons
+              name={isFavorite ? "heart" : "heart-outline"}
+              size={18}
+              color={isFavorite ? colors.heart : colors.white}
+            />
+          </Animated.View>
+        </Pressable>
+
+        <View style={styles.body}>
+          <View style={styles.metaRow}>
+            {event.isFeatured && (
+              <View style={styles.featuredBadge}>
+                <Text style={styles.featuredText}>TOP</Text>
+              </View>
+            )}
+            <Text style={styles.date}>{formatDate(event.date)}</Text>
+          </View>
+          <Text style={styles.title} numberOfLines={2}>
+            {event.title}
+          </Text>
+          {event.location && (
+            <Text style={styles.location} numberOfLines={1}>
+              📍 {event.location}
+            </Text>
+          )}
+          <Text style={styles.price}>{minPrice(event)}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#1a1a1a",
-    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xxl,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.border,
   },
-  pressed: { opacity: 0.85 },
-  image: { width: "100%", height: 180 },
+  pressed: { opacity: 0.92 },
+  image: { width: "100%", height: 220 },
   imagePlaceholder: {
-    backgroundColor: "#222",
+    backgroundColor: colors.surfaceStrong,
     justifyContent: "center",
     alignItems: "center",
   },
   imagePlaceholderText: { fontSize: 48 },
-  featuredBadge: {
+  overlay: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "#6366f1",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(0,0,0,0.18)",
+  },
+  favoriteBtn: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(14,18,23,0.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  body: { padding: spacing.md + 2, gap: spacing.sm - 1 },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  featuredBadge: {
+    backgroundColor: colors.brand,
     borderRadius: 6,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 2,
   },
-  featuredText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  body: { padding: 14, gap: 4 },
-  date: { fontSize: 12, color: "#6366f1", fontWeight: "600", textTransform: "uppercase" },
-  title: { fontSize: 16, fontWeight: "700", color: "#fff", lineHeight: 22 },
-  location: { fontSize: 13, color: "#888" },
-  price: { fontSize: 14, color: "#aaa", fontWeight: "600", marginTop: 4 },
+  featuredText: { color: colors.white, fontSize: 11, fontWeight: "700" },
+  date: {
+    fontSize: 11,
+    color: "#b6c2cf",
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.2,
+  },
+  title: { fontSize: 18, fontWeight: "700", color: colors.textPrimary, lineHeight: 24 },
+  location: { fontSize: 13, color: "#a2adb9" },
+  price: { fontSize: 14, color: "#e2e8f0", fontWeight: "700", marginTop: 2 },
 });
