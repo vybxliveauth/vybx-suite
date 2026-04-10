@@ -4,6 +4,10 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import * as Linking from "expo-linking";
 import { colors } from "../../src/theme/tokens";
 import { useAuth } from "../../src/context/auth-context";
+import {
+  consumePendingPkceVerifier,
+  exchangeMobileAuthCode,
+} from "../../src/lib/account-auth-session";
 
 /**
  * Handles the deep-link callback from the browser auth session.
@@ -19,7 +23,9 @@ export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{
     access_token?: string;
     refresh_token?: string;
+    auth_code?: string;
     status?: string;
+    state?: string;
   }>();
   const handled = useRef(false);
 
@@ -29,7 +35,7 @@ export default function AuthCallbackScreen() {
     let isMounted = true;
     let fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const extractTokensFromUrl = (rawUrl: string | null) => {
+    const extractCallbackParams = (rawUrl: string | null) => {
       if (!rawUrl) return null;
       try {
         const url = new URL(rawUrl);
@@ -40,9 +46,11 @@ export default function AuthCallbackScreen() {
         const accessToken = fromSearch.get("access_token") ?? fromHash.get("access_token");
         const refreshToken =
           fromSearch.get("refresh_token") ?? fromHash.get("refresh_token");
+        const authCode = fromSearch.get("auth_code") ?? fromHash.get("auth_code");
+        const state = fromSearch.get("state") ?? fromHash.get("state");
         const statusFromUrl = fromSearch.get("status") ?? fromHash.get("status");
-        if (statusFromUrl === "success" && accessToken && refreshToken) {
-          return { accessToken, refreshToken };
+        if (statusFromUrl === "success") {
+          return { accessToken, refreshToken, authCode, state };
         }
       } catch {
         // ignore malformed deep links
@@ -50,7 +58,7 @@ export default function AuthCallbackScreen() {
       return null;
     };
 
-    const fromParams =
+    const fromParamsSuccess =
       params.status === "success" &&
       typeof params.access_token === "string" &&
       typeof params.refresh_token === "string"
@@ -62,12 +70,68 @@ export default function AuthCallbackScreen() {
 
     void (async () => {
       const initialUrl = await Linking.getInitialURL();
-      const resolved = fromParams ?? extractTokensFromUrl(initialUrl);
+      const parsed = extractCallbackParams(initialUrl);
+      const fromParamsCode =
+        params.status === "success" &&
+        typeof params.auth_code === "string" &&
+        params.auth_code.trim().length > 0 &&
+        typeof params.state === "string" &&
+        params.state.trim().length > 0
+          ? {
+              authCode: params.auth_code,
+              state: params.state,
+            }
+          : null;
 
-      if (resolved) {
+      const resolvedTokens =
+        fromParamsSuccess ??
+        (parsed?.accessToken && parsed?.refreshToken
+          ? {
+              accessToken: parsed.accessToken,
+              refreshToken: parsed.refreshToken,
+            }
+          : null);
+
+      if (resolvedTokens) {
         void completeBrowserAuth({
-          accessToken: resolved.accessToken,
-          refreshToken: resolved.refreshToken,
+          accessToken: resolvedTokens.accessToken,
+          refreshToken: resolvedTokens.refreshToken,
+        })
+          .then(() => {
+            if (!isMounted) return;
+            router.replace("/(tabs)/profile");
+          })
+          .catch(() => {
+            if (!isMounted) return;
+            router.replace("/(auth)/login");
+          });
+        return;
+      }
+
+      const resolvedCode =
+        fromParamsCode ??
+        (parsed?.authCode && parsed?.state
+          ? { authCode: parsed.authCode, state: parsed.state }
+          : null);
+
+      if (resolvedCode) {
+        const verifier = consumePendingPkceVerifier(resolvedCode.state);
+        if (!verifier) {
+          router.replace("/(auth)/login");
+          return;
+        }
+        const exchanged = await exchangeMobileAuthCode({
+          authCode: resolvedCode.authCode,
+          state: resolvedCode.state,
+          codeVerifier: verifier,
+        });
+        if (!exchanged) {
+          router.replace("/(auth)/login");
+          return;
+        }
+        void completeBrowserAuth({
+          accessToken: exchanged.accessToken,
+          refreshToken: exchanged.refreshToken,
         })
           .then(() => {
             if (!isMounted) return;

@@ -65,6 +65,7 @@ const registerSchema = z
 type LoginValues = z.infer<typeof loginSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
 type Mode = "login" | "register";
+type PkceMethod = "S256";
 
 function parseError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -105,13 +106,26 @@ function normalizeMobileCallback(raw: string | null): string | null {
   }
 }
 
+function normalizePkceCodeChallenge(raw: string | null): string | null {
+  const value = raw?.trim();
+  if (!value) return null;
+  if (!/^[A-Za-z0-9._~-]{43,128}$/.test(value)) return null;
+  return value;
+}
+
+function normalizePkceMethod(raw: string | null): PkceMethod | null {
+  if (raw === "S256") return "S256";
+  return null;
+}
+
 function buildMobileCallbackUrl(
   callbackUrl: string,
   payload:
     | {
         status: "success";
-        accessToken: string;
-        refreshToken: string;
+        accessToken?: string;
+        refreshToken?: string;
+        authCode?: string;
         state?: string;
       }
     | { status: "error"; message: string; state?: string },
@@ -121,8 +135,14 @@ function buildMobileCallbackUrl(
   params.set("status", payload.status);
   if (payload.state) params.set("state", payload.state);
   if (payload.status === "success") {
-    params.set("access_token", payload.accessToken);
-    params.set("refresh_token", payload.refreshToken);
+    if (payload.authCode) {
+      params.set("auth_code", payload.authCode);
+      params.delete("access_token");
+      params.delete("refresh_token");
+    } else {
+      if (payload.accessToken) params.set("access_token", payload.accessToken);
+      if (payload.refreshToken) params.set("refresh_token", payload.refreshToken);
+    }
   } else {
     params.set("message", payload.message);
   }
@@ -145,9 +165,21 @@ function AuthSurface() {
     () => normalizeMobileCallback(rawMobileCallback),
     [rawMobileCallback],
   );
+  const mobileCodeChallenge = useMemo(
+    () => normalizePkceCodeChallenge(searchParams.get("code_challenge")),
+    [searchParams],
+  );
+  const mobileCodeChallengeMethod = useMemo(
+    () => normalizePkceMethod(searchParams.get("code_challenge_method")),
+    [searchParams],
+  );
   const mobileState = searchParams.get("state")?.trim() ?? "";
   const mobileRequested = searchParams.get("mobile") === "1";
   const mobileMode = mobileRequested && !!mobileCallback;
+  const mobilePkceMode =
+    mobileMode &&
+    !!mobileCodeChallenge &&
+    mobileCodeChallengeMethod === "S256";
 
   const [authChecked, setAuthChecked] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -189,18 +221,54 @@ function AuthSurface() {
     }, 450);
   }, []);
 
+  const createMobileAuthCode = useCallback(
+    async (tokens: MobileAuthTokens): Promise<string | null> => {
+      if (!mobilePkceMode || !mobileCodeChallenge || !mobileCodeChallengeMethod) {
+        return null;
+      }
+
+      const response = await fetch("/api/mobile-auth/create-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          access_token: tokens.accessToken,
+          refresh_token: tokens.refreshToken,
+          state: mobileState,
+          code_challenge: mobileCodeChallenge,
+          code_challenge_method: mobileCodeChallengeMethod,
+        }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const payload = (await response.json()) as { auth_code?: string };
+      return typeof payload.auth_code === "string" && payload.auth_code.trim().length > 0
+        ? payload.auth_code
+        : null;
+    },
+    [mobileCodeChallenge, mobileCodeChallengeMethod, mobilePkceMode, mobileState],
+  );
+
   const completeMobileAuth = useCallback(
-    (tokens: MobileAuthTokens) => {
+    async (tokens: MobileAuthTokens) => {
       if (!mobileMode || !mobileCallback) return;
+      const authCode = await createMobileAuthCode(tokens);
       const callbackUrl = buildMobileCallbackUrl(mobileCallback, {
         status: "success",
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        ...(authCode
+          ? { authCode }
+          : {
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
+            }),
         state: mobileState,
       });
       redirectToMobileApp(callbackUrl);
     },
-    [mobileCallback, mobileMode, mobileState, redirectToMobileApp],
+    [createMobileAuthCode, mobileCallback, mobileMode, mobileState, redirectToMobileApp],
   );
 
   useEffect(() => {
@@ -270,7 +338,7 @@ function AuthSurface() {
         );
         return;
       }
-      completeMobileAuth(tokens);
+      await completeMobileAuth(tokens);
     })()
       .catch(() => {
         if (!mounted) return;
@@ -331,10 +399,22 @@ function AuthSurface() {
       } else {
         params.delete("state");
       }
+      if (mobileCodeChallenge) {
+        params.set("code_challenge", mobileCodeChallenge);
+      } else {
+        params.delete("code_challenge");
+      }
+      if (mobileCodeChallengeMethod) {
+        params.set("code_challenge_method", mobileCodeChallengeMethod);
+      } else {
+        params.delete("code_challenge_method");
+      }
     } else {
       params.delete("mobile");
       params.delete("callback");
       params.delete("state");
+      params.delete("code_challenge");
+      params.delete("code_challenge_method");
     }
 
     router.replace(`/auth?${params.toString()}`);
@@ -366,7 +446,7 @@ function AuthSurface() {
         }
 
         if (mobileResponse.success) {
-          completeMobileAuth(mobileResponse.auth);
+          await completeMobileAuth(mobileResponse.auth);
           return;
         }
       }
@@ -406,7 +486,7 @@ function AuthSurface() {
           challengeId: twoFactorChallengeId,
           code: twoFactorCode.trim(),
         });
-        completeMobileAuth(tokens);
+        await completeMobileAuth(tokens);
         return;
       }
 

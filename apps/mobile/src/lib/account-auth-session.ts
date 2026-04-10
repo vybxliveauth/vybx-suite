@@ -1,4 +1,5 @@
 import * as Linking from "expo-linking";
+import * as Crypto from "expo-crypto";
 import * as WebBrowser from "expo-web-browser";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -6,6 +7,17 @@ WebBrowser.maybeCompleteAuthSession();
 const DEFAULT_ACCOUNT_APP_URL = "https://account.vybxlive.com";
 
 type AuthMode = "login" | "register";
+type PkceMethod = "S256";
+type PkcePair = {
+  verifier: string;
+  challenge: string;
+  method: PkceMethod;
+};
+type MobileExchangeResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  message?: string;
+};
 
 export type AccountAuthSessionResult =
   | { type: "success"; accessToken: string; refreshToken: string }
@@ -13,6 +25,8 @@ export type AccountAuthSessionResult =
   | { type: "error"; message: string };
 
 const AUTH_SESSION_TIMEOUT_MS = 5 * 60_000;
+const PKCE_STATE_TTL_MS = 10 * 60_000;
+const pendingPkceStates = new Map<string, { verifier: string; createdAt: number }>();
 
 function resolveAccountAppBaseUrl(): string {
   const configured = process.env.EXPO_PUBLIC_ACCOUNT_APP_URL?.trim();
@@ -24,13 +38,71 @@ function createState(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 }
 
-function buildAuthUrl(mode: AuthMode, callbackUrl: string, state: string): string {
+function cleanupPendingPkceStates(): void {
+  const now = Date.now();
+  for (const [key, value] of pendingPkceStates.entries()) {
+    if (now - value.createdAt > PKCE_STATE_TTL_MS) {
+      pendingPkceStates.delete(key);
+    }
+  }
+}
+
+function rememberPendingPkce(state: string, verifier: string): void {
+  cleanupPendingPkceStates();
+  pendingPkceStates.set(state, { verifier, createdAt: Date.now() });
+}
+
+export function consumePendingPkceVerifier(state: string): string | null {
+  cleanupPendingPkceStates();
+  const stored = pendingPkceStates.get(state);
+  if (!stored) return null;
+  pendingPkceStates.delete(state);
+  return stored.verifier;
+}
+
+function normalizeBase64ToBase64Url(value: string): string {
+  return value.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function toHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function createPkcePair(): Promise<PkcePair | null> {
+  try {
+    const randomBytes = await Crypto.getRandomBytesAsync(32);
+    const verifier = toHex(randomBytes);
+    const digestBase64 = await Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      verifier,
+      { encoding: Crypto.CryptoEncoding.BASE64 },
+    );
+    const challenge = normalizeBase64ToBase64Url(digestBase64);
+    if (!verifier || !challenge) return null;
+    return { verifier, challenge, method: "S256" };
+  } catch {
+    return null;
+  }
+}
+
+function buildAuthUrl(
+  mode: AuthMode,
+  callbackUrl: string,
+  state: string,
+  pkce: PkcePair | null,
+): string {
   const baseUrl = resolveAccountAppBaseUrl();
   const url = new URL("/auth", `${baseUrl}/`);
   url.searchParams.set("mode", mode);
   url.searchParams.set("mobile", "1");
   url.searchParams.set("callback", callbackUrl);
   url.searchParams.set("state", state);
+  if (pkce) {
+    url.searchParams.set("code_challenge", pkce.challenge);
+    url.searchParams.set("code_challenge_method", pkce.method);
+  }
   return url.toString();
 }
 
@@ -75,12 +147,58 @@ function isSameCallbackTarget(url: string, callbackUrl: string): boolean {
   }
 }
 
+export async function exchangeMobileAuthCode(options: {
+  authCode: string;
+  state: string;
+  codeVerifier: string;
+}): Promise<{ accessToken: string; refreshToken: string } | null> {
+  const accountBaseUrl = resolveAccountAppBaseUrl();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12_000);
+  try {
+    const response = await fetch(`${accountBaseUrl}/api/mobile-auth/exchange-code`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        auth_code: options.authCode,
+        code_verifier: options.codeVerifier,
+        state: options.state,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) return null;
+    const payload = (await response.json()) as MobileExchangeResponse;
+    if (
+      typeof payload.access_token !== "string" ||
+      typeof payload.refresh_token !== "string" ||
+      payload.access_token.trim().length === 0 ||
+      payload.refresh_token.trim().length === 0
+    ) {
+      return null;
+    }
+
+    return {
+      accessToken: payload.access_token,
+      refreshToken: payload.refresh_token,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function startAccountAuthSession(
   mode: AuthMode,
 ): Promise<AccountAuthSessionResult> {
   const callbackUrl = Linking.createURL("auth/callback");
   const state = createState();
-  const authUrl = buildAuthUrl(mode, callbackUrl, state);
+  const pkce = await createPkcePair();
+  const authUrl = buildAuthUrl(mode, callbackUrl, state, pkce);
+  if (pkce) {
+    rememberPendingPkce(state, pkce.verifier);
+  }
 
   let capturedCallbackUrl: string | null = null;
   let resolveDeepLink:
@@ -165,6 +283,35 @@ export async function startAccountAuthSession(
     };
   }
 
+  const authCode = params.get("auth_code");
+  if (authCode) {
+    const verifier = pkce?.verifier ?? consumePendingPkceVerifier(returnedState);
+    if (!verifier) {
+      return {
+        type: "error",
+        message: "No se pudo validar el acceso seguro móvil. Intenta de nuevo.",
+      };
+    }
+    const exchanged = await exchangeMobileAuthCode({
+      authCode,
+      state: returnedState,
+      codeVerifier: verifier,
+    });
+    if (!exchanged) {
+      return {
+        type: "error",
+        message: "No se pudo completar el intercambio seguro de sesión móvil.",
+      };
+    }
+    pendingPkceStates.delete(returnedState);
+
+    return {
+      type: "success",
+      accessToken: exchanged.accessToken,
+      refreshToken: exchanged.refreshToken,
+    };
+  }
+
   const accessToken = params.get("access_token");
   const refreshToken = params.get("refresh_token");
   if (!accessToken || !refreshToken) {
@@ -173,6 +320,7 @@ export async function startAccountAuthSession(
       message: "No se recibieron tokens de acceso desde la web.",
     };
   }
+  pendingPkceStates.delete(returnedState);
 
   return {
     type: "success",
