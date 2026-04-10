@@ -405,7 +405,7 @@ export default function EditEventPage() {
                         {sold} boletos vendidos — la cantidad no puede bajar de {sold}.
                       </div>
                     )}
-                    <div className="grid grid-cols-2 sm:grid-cols-[1fr_100px_120px_auto] gap-3 items-end">
+                    <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_120px_auto] gap-3 items-end">
                       <div className="space-y-1.5">
                         <Label>Nombre</Label>
                         <Input placeholder="General, VIP…" {...register(`tiers.${i}.name`)} />

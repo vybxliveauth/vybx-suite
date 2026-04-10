@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../src/context/auth-context";
+import { colors } from "../../src/theme/tokens";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -104,7 +105,7 @@ export default function LoginScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="tu@email.com"
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
               autoComplete="email"
@@ -119,7 +120,7 @@ export default function LoginScreen() {
               value={password}
               onChangeText={setPassword}
               placeholder="••••••••"
-              placeholderTextColor="#555"
+              placeholderTextColor={colors.textMuted}
               secureTextEntry
               autoComplete="password"
               returnKeyType="done"
@@ -142,7 +143,7 @@ export default function LoginScreen() {
                   setTwoFactorCode(value.replace(/\D/g, ""))
                 }
                 placeholder="123456"
-                placeholderTextColor="#555"
+                placeholderTextColor={colors.textMuted}
                 keyboardType="number-pad"
                 returnKeyType="done"
                 onSubmitEditing={handleVerifyTwoFactor}
@@ -189,7 +190,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#0f0f0f" },
+  flex: { flex: 1, backgroundColor: colors.bg },
   container: {
     flexGrow: 1,
     justifyContent: "center",
@@ -198,57 +199,57 @@ const styles = StyleSheet.create({
     gap: 32,
   },
   header: { alignItems: "center", gap: 8 },
-  logo: { fontSize: 32, fontWeight: "800", color: "#fff", letterSpacing: -0.5 },
-  tagline: { fontSize: 14, color: "#888" },
+  logo: { fontSize: 32, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5 },
+  tagline: { fontSize: 14, color: colors.textMuted },
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 24,
     gap: 20,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: colors.border,
   },
-  title: { fontSize: 22, fontWeight: "700", color: "#fff" },
+  title: { fontSize: 22, fontWeight: "700", color: colors.textPrimary },
   field: { gap: 6 },
-  label: { fontSize: 13, color: "#aaa", fontWeight: "500" },
+  label: { fontSize: 13, color: colors.textSecondary, fontWeight: "500" },
   input: {
-    backgroundColor: "#111",
+    backgroundColor: colors.bg,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: colors.border,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: "#fff",
+    color: colors.textPrimary,
   },
   button: {
-    backgroundColor: "#6366f1",
+    backgroundColor: colors.brand,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
     marginTop: 4,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  buttonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
   twoFactorBox: {
-    backgroundColor: "#151a2a",
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: colors.border,
     padding: 12,
     gap: 10,
   },
-  twoFactorTitle: { color: "#bfdbfe", fontSize: 13, fontWeight: "700" },
-  twoFactorText: { color: "#93c5fd", fontSize: 12, lineHeight: 18 },
+  twoFactorTitle: { color: colors.textPrimary, fontSize: 13, fontWeight: "700" },
+  twoFactorText: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
   ghostButton: {
     alignItems: "center",
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#3b3b3b",
+    borderColor: colors.border,
   },
-  ghostButtonText: { color: "#cbd5e1", fontSize: 12, fontWeight: "600" },
+  ghostButtonText: { color: colors.textSecondary, fontSize: 12, fontWeight: "600" },
   footer: { flexDirection: "row", justifyContent: "center", alignItems: "center" },
-  footerText: { color: "#888", fontSize: 14 },
-  link: { color: "#6366f1", fontSize: 14, fontWeight: "600" },
+  footerText: { color: colors.textMuted, fontSize: 14 },
+  link: { color: colors.brand, fontSize: 14, fontWeight: "600" },
 });

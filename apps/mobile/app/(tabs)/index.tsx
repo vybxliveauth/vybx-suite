@@ -173,8 +173,8 @@ const styles = StyleSheet.create({
   list: { padding: 16, paddingBottom: 36 },
   headerWrap: { paddingBottom: 14, gap: 14 },
   searchShortcut: {
-    width: 38,
-    height: 38,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",

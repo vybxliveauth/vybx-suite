@@ -370,7 +370,7 @@ export default function NewEventPage() {
             {fields.map((field, i) => (
               <div key={field.id}>
                 {i > 0 && <Separator className="mb-4" />}
-                <div className="grid grid-cols-2 sm:grid-cols-[1fr_100px_100px_auto] gap-3 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px_100px_auto] gap-3 items-end">
                   <div className="space-y-1.5">
                     <Label>Nombre</Label>
                     <Input placeholder="General, VIP..." {...register(`tiers.${i}.name`)} />

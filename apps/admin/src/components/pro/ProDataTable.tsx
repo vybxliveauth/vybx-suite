@@ -72,7 +72,7 @@ export function ProDataTable<TData>({
         value={globalFilter}
         onChange={(e) => setGlobalFilter(e.target.value)}
         placeholder={searchPlaceholder}
-        className="max-w-sm"
+        className="w-full sm:max-w-sm"
       />
 
       <div className="rounded-xl border border-border/60 overflow-x-auto">
