@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const exchanged = exchangeMobileAuthCode({
+  const exchanged = await exchangeMobileAuthCode({
     authCode,
     codeVerifier,
     state,

@@ -1,4 +1,5 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
+import { consumeMobileAuthCodeJti } from "@/lib/mobile-auth-replay-store";
 
 const MOBILE_AUTH_CODE_TTL_SECONDS = 120;
 const TOKEN_SEPARATOR = ".";
@@ -13,8 +14,6 @@ type MobileAuthCodePayload = {
   accessToken: string;
   refreshToken: string;
 };
-
-const consumedCodes = new Map<string, number>();
 
 function toBase64Url(value: string | Buffer): string {
   const buffer = typeof value === "string" ? Buffer.from(value, "utf8") : value;
@@ -41,12 +40,6 @@ function getMobileAuthCodeSecret(): string | null {
 
 function sign(encodedPayload: string, secret: string): string {
   return createHmac("sha256", secret).update(encodedPayload).digest("base64url");
-}
-
-function cleanupConsumedCodes(nowSeconds: number): void {
-  for (const [key, exp] of consumedCodes.entries()) {
-    if (exp <= nowSeconds) consumedCodes.delete(key);
-  }
 }
 
 export function isSupportedCodeChallengeMethod(method: string | null | undefined): boolean {
@@ -94,11 +87,11 @@ export function createMobileAuthCode(input: {
   };
 }
 
-export function exchangeMobileAuthCode(input: {
+export async function exchangeMobileAuthCode(input: {
   authCode: string;
   codeVerifier: string;
   state: string;
-}): { accessToken: string; refreshToken: string } | null {
+}): Promise<{ accessToken: string; refreshToken: string } | null> {
   const secret = getMobileAuthCodeSecret();
   if (!secret) return null;
 
@@ -129,15 +122,17 @@ export function exchangeMobileAuthCode(input: {
   if (typeof payload.refreshToken !== "string" || payload.refreshToken.length < 8) return null;
 
   const nowSeconds = Math.floor(Date.now() / 1000);
-  cleanupConsumedCodes(nowSeconds);
   if (payload.exp <= nowSeconds) return null;
   if (payload.state !== input.state) return null;
-  if (consumedCodes.has(payload.jti)) return null;
 
   const computedChallenge = buildCodeChallengeS256(input.codeVerifier);
   if (computedChallenge !== payload.codeChallenge) return null;
 
-  consumedCodes.set(payload.jti, payload.exp);
+  const wasConsumedNow = await consumeMobileAuthCodeJti({
+    jti: payload.jti,
+    exp: payload.exp,
+  });
+  if (!wasConsumedNow) return null;
 
   return {
     accessToken: payload.accessToken,

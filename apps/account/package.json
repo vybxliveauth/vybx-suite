@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@upstash/redis": "^1.37.0",
     "@vybx/api-client": "workspace:*",
     "@vybx/auth-client": "workspace:*",
     "@vybx/types": "workspace:*",
