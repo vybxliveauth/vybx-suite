@@ -1,8 +1,8 @@
-import { Link } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useAuth } from "../../src/context/auth-context";
 import { mobileResendVerification } from "../../src/lib/auth-api";
+import { startAccountAuthSession } from "../../src/lib/account-auth-session";
 import { AppScreenHeader } from "../../src/components/AppScreenHeader";
 import { colors } from "../../src/theme/tokens";
 
@@ -14,9 +14,10 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, completeBrowserAuth } = useAuth();
   const [resendingVerification, setResendingVerification] = useState(false);
   const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+  const [startingSession, setStartingSession] = useState(false);
 
   async function handleLogout() {
     Alert.alert("Cerrar sesión", "¿Seguro que quieres salir?", [
@@ -51,6 +52,30 @@ export default function ProfileScreen() {
     }
   }
 
+  async function handleGuestLogin() {
+    setStartingSession(true);
+    try {
+      const result = await startAccountAuthSession("login");
+      if (result.type === "cancel") return;
+      if (result.type === "error") {
+        Alert.alert("No se pudo iniciar sesión", result.message);
+        return;
+      }
+
+      await completeBrowserAuth({
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      });
+    } catch (err) {
+      Alert.alert(
+        "Error",
+        err instanceof Error ? err.message : "No se pudo iniciar sesión.",
+      );
+    } finally {
+      setStartingSession(false);
+    }
+  }
+
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
@@ -66,18 +91,17 @@ export default function ProfileScreen() {
             <Text style={styles.guestTitle}>Bienvenido a VybeTickets</Text>
             <Text style={styles.guestSubtitle}>
               Explora eventos libremente. Para ver tus boletos y gestionar tu cuenta,
-              inicia sesión aquí.
+              inicia sesión en la web.
             </Text>
-            <Link href="/(auth)/login" asChild>
-              <Pressable style={styles.primaryButton}>
-                <Text style={styles.primaryButtonText}>Iniciar sesión</Text>
-              </Pressable>
-            </Link>
-            <Link href="/(auth)/register" asChild>
-              <Pressable style={styles.secondaryButton}>
-                <Text style={styles.secondaryButtonText}>Crear cuenta</Text>
-              </Pressable>
-            </Link>
+            <Pressable
+              style={[styles.primaryButton, startingSession && styles.buttonDisabled]}
+              onPress={() => void handleGuestLogin()}
+              disabled={startingSession}
+            >
+              <Text style={styles.primaryButtonText}>
+                {startingSession ? "Abriendo navegador..." : "Iniciar sesión"}
+              </Text>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -211,16 +235,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   primaryButtonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
-  secondaryButton: {
-    borderRadius: 10,
-    paddingVertical: 12,
-    width: "100%",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-  },
-  secondaryButtonText: { color: colors.textSecondary, fontWeight: "700", fontSize: 15 },
 
   avatarSection: { alignItems: "center", gap: 10 },
   avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: "#2a2a2a" },

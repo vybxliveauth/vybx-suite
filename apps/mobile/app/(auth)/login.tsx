@@ -1,4 +1,4 @@
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -72,14 +72,9 @@ export default function LoginScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>¿No tienes cuenta? </Text>
-          <Link href="/(auth)/register" asChild>
-            <Pressable>
-              <Text style={styles.link}>Regístrate</Text>
-            </Pressable>
-          </Link>
-        </View>
+        <Text style={styles.footerText}>
+          Si no tienes cuenta, puedes crearla en la web desde esa misma pantalla.
+        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -121,12 +116,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
-  footer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  footerText: { color: colors.textMuted, fontSize: 14 },
-  link: { color: colors.brand, fontSize: 14, fontWeight: "600" },
+  footerText: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
 });
-
