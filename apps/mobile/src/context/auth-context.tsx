@@ -41,6 +41,10 @@ interface AuthContextValue {
     firstName: string;
     lastName: string;
   }): Promise<void>;
+  completeBrowserAuth(tokens: {
+    accessToken: string;
+    refreshToken: string;
+  }): Promise<void>;
   logout(): Promise<void>;
 }
 
@@ -139,6 +143,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const completeBrowserAuth = useCallback(
+    async (tokens: { accessToken: string; refreshToken: string }): Promise<void> => {
+      setStatus("loading");
+      try {
+        await defaultTokenStorage.saveTokens(
+          tokens.accessToken,
+          tokens.refreshToken,
+        );
+        const profile = await authApi.fetchProfile(tokens.accessToken);
+        setUser(profile);
+        setStatus("authenticated");
+      } catch (err) {
+        await defaultTokenStorage.clearTokens();
+        setUser(null);
+        setStatus("unauthenticated");
+        throw err;
+      }
+    },
+    [],
+  );
+
   const logout = useCallback(async (): Promise<void> => {
     await defaultTokenStorage.clearTokens();
     queryClient.clear();
@@ -148,7 +173,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, status, login, verifyTwoFactor, register, logout }}
+      value={{
+        user,
+        status,
+        login,
+        verifyTwoFactor,
+        register,
+        completeBrowserAuth,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -39,6 +39,9 @@ function RootNavigator() {
         }}
       />
 
+      {/* OAuth-style callback from browser auth session */}
+      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
+
       {/* 404 */}
       <Stack.Screen name="+not-found" />
     </Stack>

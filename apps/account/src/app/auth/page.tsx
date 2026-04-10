@@ -18,7 +18,14 @@ import {
   Input,
   Label,
 } from "@vybx/ui";
-import { login, register, verifyLoginTwoFactor } from "@/lib/api";
+import {
+  login,
+  loginForMobile,
+  register,
+  verifyLoginTwoFactor,
+  verifyLoginTwoFactorForMobile,
+  type MobileAuthTokens,
+} from "@/lib/api";
 import { hydrateUserFromSession, setUser, useAuthUser } from "@/lib/auth";
 import { buildWebAppUrl, normalizeNextPath } from "@/lib/routing";
 import { getClientTurnstileToken } from "@/lib/turnstile";
@@ -65,6 +72,49 @@ function parseError(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function normalizeMobileCallback(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    const allowedProtocols = new Set(["vybetickets:", "vybx:", "exp:", "exps:"]);
+    if (allowedProtocols.has(parsed.protocol)) return parsed.toString();
+    if (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")
+    ) {
+      return parsed.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function buildMobileCallbackUrl(
+  callbackUrl: string,
+  payload:
+    | {
+        status: "success";
+        accessToken: string;
+        refreshToken: string;
+        state?: string;
+      }
+    | { status: "error"; message: string; state?: string },
+): string {
+  const redirect = new URL(callbackUrl);
+  const hash = new URLSearchParams();
+  hash.set("status", payload.status);
+  if (payload.state) hash.set("state", payload.state);
+  if (payload.status === "success") {
+    hash.set("access_token", payload.accessToken);
+    hash.set("refresh_token", payload.refreshToken);
+  } else {
+    hash.set("message", payload.message);
+  }
+  redirect.hash = hash.toString();
+  return redirect.toString();
+}
+
 function AuthSurface() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,6 +124,12 @@ function AuthSurface() {
   const nextPath = useMemo(() => normalizeNextPath(searchParams.get("next")), [searchParams]);
   const returnToWeb = useMemo(() => buildWebAppUrl(nextPath), [nextPath]);
   const backToSiteUrl = useMemo(() => buildWebAppUrl("/"), []);
+  const mobileCallback = useMemo(
+    () => normalizeMobileCallback(searchParams.get("callback")),
+    [searchParams],
+  );
+  const mobileState = searchParams.get("state")?.trim() ?? "";
+  const mobileMode = searchParams.get("mobile") === "1" && !!mobileCallback;
 
   const [authChecked, setAuthChecked] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -115,9 +171,10 @@ function AuthSurface() {
   }, []);
 
   useEffect(() => {
+    if (mobileMode) return;
     if (!authChecked || user === null) return;
     window.location.assign(returnToWeb);
-  }, [authChecked, returnToWeb, user]);
+  }, [authChecked, mobileMode, returnToWeb, user]);
 
   useEffect(() => {
     const emailFromQuery = searchParams.get("email")?.trim() ?? "";
@@ -145,7 +202,33 @@ function AuthSurface() {
       params.delete("email");
     }
 
+    if (mobileMode && mobileCallback) {
+      params.set("mobile", "1");
+      params.set("callback", mobileCallback);
+      if (mobileState) {
+        params.set("state", mobileState);
+      } else {
+        params.delete("state");
+      }
+    } else {
+      params.delete("mobile");
+      params.delete("callback");
+      params.delete("state");
+    }
+
     router.replace(`/auth?${params.toString()}`);
+  }
+
+  function completeMobileAuth(tokens: MobileAuthTokens) {
+    if (!mobileMode || !mobileCallback) return;
+    window.location.assign(
+      buildMobileCallbackUrl(mobileCallback, {
+        status: "success",
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        state: mobileState,
+      }),
+    );
   }
 
   async function handleLogin(values: LoginValues) {
@@ -155,6 +238,30 @@ function AuthSurface() {
     setTwoFactorCode("");
 
     try {
+      if (mobileMode) {
+        const mobileResponse = await loginForMobile({
+          email: values.email.trim().toLowerCase(),
+          password: values.password,
+        });
+
+        if (!mobileResponse.success && mobileResponse.requiresTwoFactor) {
+          setTwoFactorChallengeId(mobileResponse.challengeId);
+          setServerNotice(
+            mobileResponse.message ??
+              `Codigo 2FA enviado. Expira en ${Math.max(
+                1,
+                Math.ceil(mobileResponse.expiresInSeconds / 60),
+              )} min.`,
+          );
+          return;
+        }
+
+        if (mobileResponse.success) {
+          completeMobileAuth(mobileResponse.auth);
+          return;
+        }
+      }
+
       const response = await login({
         email: values.email.trim().toLowerCase(),
         password: values.password,
@@ -185,6 +292,15 @@ function AuthSurface() {
     setVerifyingTwoFactor(true);
     setServerError(null);
     try {
+      if (mobileMode) {
+        const tokens = await verifyLoginTwoFactorForMobile({
+          challengeId: twoFactorChallengeId,
+          code: twoFactorCode.trim(),
+        });
+        completeMobileAuth(tokens);
+        return;
+      }
+
       const userFrom2fa = await verifyLoginTwoFactor({
         challengeId: twoFactorChallengeId,
         code: twoFactorCode.trim(),
@@ -246,8 +362,14 @@ function AuthSurface() {
       <div className="mx-auto flex w-full max-w-md flex-col gap-4">
         <div className="text-center">
           <p className="text-xs uppercase tracking-[0.2em] text-primary/80">Vybx Account</p>
-          <h1 className="mt-2 text-2xl font-bold">Acceso de usuarios</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Superficie dedicada para login y registro.</p>
+          <h1 className="mt-2 text-2xl font-bold">
+            {mobileMode ? "Acceso desde app" : "Acceso de usuarios"}
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {mobileMode
+              ? "Inicia sesion para volver a la app de forma segura."
+              : "Superficie dedicada para login y registro."}
+          </p>
         </div>
 
         <Card>

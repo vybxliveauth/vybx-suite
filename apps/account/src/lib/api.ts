@@ -66,6 +66,25 @@ export type LoginTwoFactorChallengeResponse = {
 };
 
 export type LoginResponse = LoginSuccessResponse | LoginTwoFactorChallengeResponse;
+export type MobileAuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUser;
+};
+export type MobileLoginSuccessResponse = {
+  success: true;
+  auth: MobileAuthTokens;
+};
+export type MobileLoginResponse =
+  | MobileLoginSuccessResponse
+  | LoginTwoFactorChallengeResponse;
+
+type BackendMobileAuthResponse = {
+  success?: boolean;
+  access_token: string;
+  refresh_token: string;
+  user: BackendAuthUser;
+};
 
 function isTwoFactorChallenge(
   value:
@@ -85,6 +104,37 @@ function isTwoFactorChallenge(
   message?: string;
 } {
   return "requiresTwoFactor" in value && value.requiresTwoFactor === true;
+}
+
+function isMobileAuthSuccess(value: unknown): value is BackendMobileAuthResponse {
+  if (!value || typeof value !== "object") return false;
+  const maybe = value as Partial<BackendMobileAuthResponse>;
+  return (
+    typeof maybe.access_token === "string" &&
+    typeof maybe.refresh_token === "string" &&
+    !!maybe.user &&
+    typeof maybe.user === "object"
+  );
+}
+
+function toMobileAuthTokens(raw: BackendMobileAuthResponse): MobileAuthTokens {
+  return {
+    accessToken: raw.access_token,
+    refreshToken: raw.refresh_token,
+    user: adaptAuthUser(raw.user),
+  };
+}
+
+function requestMobile<T>(path: string, init?: RequestInit) {
+  const headers = new Headers(init?.headers);
+  headers.set("X-Client", "mobile");
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  return request<T>(path, {
+    ...init,
+    headers,
+  });
 }
 
 export async function login(payload: { email: string; password: string }): Promise<LoginResponse> {
@@ -130,6 +180,63 @@ export async function verifyLoginTwoFactor(payload: {
     },
   );
   return adaptAuthUser(response.user);
+}
+
+export async function loginForMobile(payload: {
+  email: string;
+  password: string;
+}): Promise<MobileLoginResponse> {
+  const response = await requestMobile<
+    BackendMobileAuthResponse
+    | {
+        success: false;
+        requiresTwoFactor: true;
+        challengeId: string;
+        expiresInSeconds: number;
+        message?: string;
+      }
+  >("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  if (isTwoFactorChallenge(response)) {
+    return {
+      success: false,
+      requiresTwoFactor: true,
+      challengeId: response.challengeId,
+      expiresInSeconds: response.expiresInSeconds,
+      message: response.message,
+    };
+  }
+
+  if (!isMobileAuthSuccess(response)) {
+    throw new Error("No se recibieron tokens para login mobile.");
+  }
+
+  return {
+    success: true,
+    auth: toMobileAuthTokens(response),
+  };
+}
+
+export async function verifyLoginTwoFactorForMobile(payload: {
+  challengeId: string;
+  code: string;
+}): Promise<MobileAuthTokens> {
+  const response = await requestMobile<BackendMobileAuthResponse>(
+    "/auth/login/2fa",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!isMobileAuthSuccess(response)) {
+    throw new Error("No se recibieron tokens al verificar 2FA en mobile.");
+  }
+
+  return toMobileAuthTokens(response);
 }
 
 export async function register(payload: {
