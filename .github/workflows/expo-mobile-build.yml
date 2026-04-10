@@ -27,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      EXPO_PUBLIC_API_URL: "https://api.vybxlive.com/api/v1"
+      EXPO_PUBLIC_ACCOUNT_APP_URL: "https://account.vybxlive.com"
     defaults:
       run:
         working-directory: apps/mobile
