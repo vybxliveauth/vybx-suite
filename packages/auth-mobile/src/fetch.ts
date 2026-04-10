@@ -65,10 +65,23 @@ export function createMobileFetch(options: MobileFetchOptions): typeof fetch {
 
     const newToken = await refresh();
     if (newToken) {
-      return fetch(input, {
+      const second = await fetch(input, {
         ...init,
         headers: buildHeaders(newToken, init),
       });
+      if (second.status !== 401) {
+        return second;
+      }
+
+      // If refreshed auth still fails for a public endpoint, try anonymous.
+      if (canRetryWithoutToken) {
+        return fetch(input, {
+          ...init,
+          headers: buildHeaders(null, init),
+        });
+      }
+
+      return second;
     }
 
     // If auth refresh failed but this is a public read endpoint, retry once

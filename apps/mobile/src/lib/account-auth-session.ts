@@ -12,7 +12,7 @@ export type AccountAuthSessionResult =
   | { type: "cancel" }
   | { type: "error"; message: string };
 
-const AUTH_SESSION_TIMEOUT_MS = 45_000;
+const AUTH_SESSION_TIMEOUT_MS = 5 * 60_000;
 
 function resolveAccountAppBaseUrl(): string {
   const configured = process.env.EXPO_PUBLIC_ACCOUNT_APP_URL?.trim();
@@ -47,21 +47,59 @@ function readCallbackParams(rawUrl: string): URLSearchParams {
   return params;
 }
 
+function isSameCallbackTarget(url: string, callbackUrl: string): boolean {
+  try {
+    const incoming = new URL(url);
+    const expected = new URL(callbackUrl);
+    const normalizePath = (value: string) =>
+      value
+        .replace(/^\/--/, "")
+        .replace(/\/{2,}/g, "/")
+        .replace(/\/+$/, "") || "/";
+
+    return (
+      incoming.protocol === expected.protocol &&
+      incoming.host === expected.host &&
+      normalizePath(incoming.pathname) === normalizePath(expected.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function startAccountAuthSession(
   mode: AuthMode,
 ): Promise<AccountAuthSessionResult> {
-  const callbackUrl = Linking.createURL("/auth/callback");
+  const callbackUrl = Linking.createURL("auth/callback");
   const state = createState();
   const authUrl = buildAuthUrl(mode, callbackUrl, state);
 
+  let capturedCallbackUrl: string | null = null;
+  let resolveDeepLink:
+    | ((value: { type: "success"; url: string }) => void)
+    | null = null;
+
+  const deepLinkResult = new Promise<{ type: "success"; url: string }>((resolve) => {
+    resolveDeepLink = resolve;
+  });
+
+  const subscription = Linking.addEventListener("url", ({ url }) => {
+    if (!isSameCallbackTarget(url, callbackUrl)) return;
+    capturedCallbackUrl = url;
+    resolveDeepLink?.({ type: "success", url });
+    void WebBrowser.dismissBrowser();
+  });
+
   const result = await Promise.race<
-    WebBrowser.WebBrowserAuthSessionResult | { type: "timeout" }
+    WebBrowser.WebBrowserAuthSessionResult | { type: "timeout" } | { type: "success"; url: string }
   >([
     WebBrowser.openAuthSessionAsync(authUrl, callbackUrl),
+    deepLinkResult,
     new Promise((resolve) => {
       setTimeout(() => resolve({ type: "timeout" as const }), AUTH_SESSION_TIMEOUT_MS);
     }),
   ]);
+  subscription.remove();
 
   if (result.type === "timeout") {
     try {
@@ -75,7 +113,7 @@ export async function startAccountAuthSession(
     };
   }
 
-  if (result.type !== "success") {
+  if (result.type !== "success" && !capturedCallbackUrl) {
     if (result.type === "cancel" || result.type === "dismiss") {
       return { type: "cancel" };
     }
@@ -85,7 +123,16 @@ export async function startAccountAuthSession(
     };
   }
 
-  const params = readCallbackParams(result.url);
+  const callbackFromResult =
+    result.type === "success" ? result.url : capturedCallbackUrl;
+  if (!callbackFromResult) {
+    return {
+      type: "error",
+      message: "No se pudo completar la autenticación en navegador.",
+    };
+  }
+
+  const params = readCallbackParams(callbackFromResult);
   const returnedState = params.get("state");
   if (!returnedState || returnedState !== state) {
     return {

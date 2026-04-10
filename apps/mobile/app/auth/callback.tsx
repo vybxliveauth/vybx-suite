@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import * as Linking from "expo-linking";
 import { colors } from "../../src/theme/tokens";
 import { useAuth } from "../../src/context/auth-context";
 
@@ -25,27 +26,75 @@ export default function AuthCallbackScreen() {
   useEffect(() => {
     if (handled.current) return;
     handled.current = true;
+    let isMounted = true;
+    let fallbackTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const { access_token, refresh_token, status } = params;
+    const extractTokensFromUrl = (rawUrl: string | null) => {
+      if (!rawUrl) return null;
+      try {
+        const url = new URL(rawUrl);
+        const fromSearch = new URLSearchParams(url.search);
+        const fromHash = new URLSearchParams(
+          url.hash.startsWith("#") ? url.hash.slice(1) : url.hash,
+        );
+        const accessToken = fromSearch.get("access_token") ?? fromHash.get("access_token");
+        const refreshToken =
+          fromSearch.get("refresh_token") ?? fromHash.get("refresh_token");
+        const statusFromUrl = fromSearch.get("status") ?? fromHash.get("status");
+        if (statusFromUrl === "success" && accessToken && refreshToken) {
+          return { accessToken, refreshToken };
+        }
+      } catch {
+        // ignore malformed deep links
+      }
+      return null;
+    };
 
-    if (status === "success" && access_token && refresh_token) {
-      completeBrowserAuth({ accessToken: access_token, refreshToken: refresh_token })
-        .then(() => {
-          router.replace("/(tabs)/profile");
+    const fromParams =
+      params.status === "success" &&
+      typeof params.access_token === "string" &&
+      typeof params.refresh_token === "string"
+        ? {
+            accessToken: params.access_token,
+            refreshToken: params.refresh_token,
+          }
+        : null;
+
+    void (async () => {
+      const initialUrl = await Linking.getInitialURL();
+      const resolved = fromParams ?? extractTokensFromUrl(initialUrl);
+
+      if (resolved) {
+        void completeBrowserAuth({
+          accessToken: resolved.accessToken,
+          refreshToken: resolved.refreshToken,
         })
-        .catch(() => {
-          router.replace("/(auth)/login");
-        });
-      return;
-    }
+          .then(() => {
+            if (!isMounted) return;
+            router.replace("/(tabs)/profile");
+          })
+          .catch(() => {
+            if (!isMounted) return;
+            router.replace("/(auth)/login");
+          });
+        return;
+      }
 
-    // No tokens in URL — openAuthSessionAsync already handled them on iOS,
-    // or the user arrived here without a valid callback. Navigate to profile
-    // if already authenticated, otherwise to login.
-    const fallback = setTimeout(() => {
-      router.replace("/(tabs)/profile");
-    }, 300);
-    return () => clearTimeout(fallback);
+      // No tokens in URL — openAuthSessionAsync already handled them on iOS,
+      // or the user arrived here without a valid callback. Navigate to profile
+      // if already authenticated, otherwise to login.
+      fallbackTimeout = setTimeout(() => {
+        if (!isMounted) return;
+        router.replace("/(tabs)/profile");
+      }, 300);
+    })();
+
+    return () => {
+      isMounted = false;
+      if (fallbackTimeout) {
+        clearTimeout(fallbackTimeout);
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
