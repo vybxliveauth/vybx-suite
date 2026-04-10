@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -19,6 +19,7 @@ import {
   Label,
 } from "@vybx/ui";
 import {
+  exchangeSessionForMobileAuth,
   login,
   loginForMobile,
   register,
@@ -134,6 +135,8 @@ function AuthSurface() {
   const [authChecked, setAuthChecked] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverNotice, setServerNotice] = useState<string | null>(null);
+  const [exchangingMobileSession, setExchangingMobileSession] = useState(false);
+  const [mobileSessionExchangeTried, setMobileSessionExchangeTried] = useState(false);
 
   const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState("");
@@ -160,6 +163,21 @@ function AuthSurface() {
     },
   });
 
+  const completeMobileAuth = useCallback(
+    (tokens: MobileAuthTokens) => {
+      if (!mobileMode || !mobileCallback) return;
+      window.location.assign(
+        buildMobileCallbackUrl(mobileCallback, {
+          status: "success",
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          state: mobileState,
+        }),
+      );
+    },
+    [mobileCallback, mobileMode, mobileState],
+  );
+
   useEffect(() => {
     let mounted = true;
     void hydrateUserFromSession().finally(() => {
@@ -175,6 +193,42 @@ function AuthSurface() {
     if (!authChecked || user === null) return;
     window.location.assign(returnToWeb);
   }, [authChecked, mobileMode, returnToWeb, user]);
+
+  useEffect(() => {
+    if (!mobileMode || !mobileCallback) return;
+    if (!authChecked || user === null) return;
+    if (mobileSessionExchangeTried) return;
+
+    let mounted = true;
+    setMobileSessionExchangeTried(true);
+    setExchangingMobileSession(true);
+    setServerError(null);
+    setServerNotice("Sesion web detectada. Conectando con la app...");
+
+    void exchangeSessionForMobileAuth()
+      .then((tokens) => {
+        if (!mounted) return;
+        if (!tokens) {
+          setServerNotice(null);
+          return;
+        }
+        completeMobileAuth(tokens);
+      })
+      .finally(() => {
+        if (mounted) setExchangingMobileSession(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    authChecked,
+    mobileCallback,
+    completeMobileAuth,
+    mobileMode,
+    mobileSessionExchangeTried,
+    user,
+  ]);
 
   useEffect(() => {
     const emailFromQuery = searchParams.get("email")?.trim() ?? "";
@@ -217,18 +271,6 @@ function AuthSurface() {
     }
 
     router.replace(`/auth?${params.toString()}`);
-  }
-
-  function completeMobileAuth(tokens: MobileAuthTokens) {
-    if (!mobileMode || !mobileCallback) return;
-    window.location.assign(
-      buildMobileCallbackUrl(mobileCallback, {
-        status: "success",
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        state: mobileState,
-      }),
-    );
   }
 
   async function handleLogin(values: LoginValues) {
@@ -464,8 +506,13 @@ function AuthSurface() {
                 {serverError && <ActionFeedback status="error" message={serverError} />}
 
                 <div className="space-y-2">
-                  <Button type="submit" className="w-full" disabled={loginForm.formState.isSubmitting}>
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={loginForm.formState.isSubmitting || exchangingMobileSession}
+                  >
                     {loginForm.formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
+                    {exchangingMobileSession && <Loader2 className="size-4 animate-spin" />}
                     {twoFactorChallengeId ? "Reintentar" : "Entrar"}
                   </Button>
                   <Button

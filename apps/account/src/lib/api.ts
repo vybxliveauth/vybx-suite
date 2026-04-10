@@ -85,6 +85,12 @@ type BackendMobileAuthResponse = {
   refresh_token: string;
   user: BackendAuthUser;
 };
+type BackendMobileSessionExchangeResponse = {
+  success?: boolean;
+  access_token?: string;
+  refresh_token?: string;
+  user?: BackendAuthUser;
+};
 
 function isTwoFactorChallenge(
   value:
@@ -123,6 +129,12 @@ function toMobileAuthTokens(raw: BackendMobileAuthResponse): MobileAuthTokens {
     refreshToken: raw.refresh_token,
     user: adaptAuthUser(raw.user),
   };
+}
+
+function readOptionalToken(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const token = value.trim();
+  return token.length > 0 ? token : null;
 }
 
 function requestMobile<T>(path: string, init?: RequestInit) {
@@ -237,6 +249,33 @@ export async function verifyLoginTwoFactorForMobile(payload: {
   }
 
   return toMobileAuthTokens(response);
+}
+
+export async function exchangeSessionForMobileAuth(): Promise<MobileAuthTokens | null> {
+  try {
+    const response = await requestMobile<BackendMobileSessionExchangeResponse>("/auth/refresh", {
+      method: "POST",
+    });
+
+    const accessToken = readOptionalToken(response.access_token);
+    const refreshToken = readOptionalToken(response.refresh_token);
+    if (!accessToken || !refreshToken) {
+      return null;
+    }
+
+    const user =
+      response.user && typeof response.user === "object"
+        ? adaptAuthUser(response.user)
+        : await fetchProfile();
+
+    return {
+      accessToken,
+      refreshToken,
+      user,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function register(payload: {
