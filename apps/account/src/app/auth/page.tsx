@@ -77,11 +77,25 @@ function normalizeMobileCallback(raw: string | null): string | null {
   if (!raw) return null;
   try {
     const parsed = new URL(raw);
-    const allowedProtocols = new Set(["vybetickets:", "vybx:", "exp:", "exps:"]);
-    if (allowedProtocols.has(parsed.protocol)) return parsed.toString();
+    const protocol = parsed.protocol.toLowerCase();
+    const isExpoScheme =
+      protocol === "exp:" ||
+      protocol === "exps:" ||
+      protocol.startsWith("exp+") ||
+      protocol.startsWith("exps+");
+    const isAppScheme =
+      protocol === "vybetickets:" ||
+      protocol === "vybx:" ||
+      protocol === "com.vybxlive.tickets:";
+
+    if (isExpoScheme || isAppScheme) return parsed.toString();
     if (
       (parsed.protocol === "http:" || parsed.protocol === "https:") &&
-      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")
+      (
+        parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname === "auth.expo.io"
+      )
     ) {
       return parsed.toString();
     }
@@ -126,12 +140,14 @@ function AuthSurface() {
   const nextPath = useMemo(() => normalizeNextPath(searchParams.get("next")), [searchParams]);
   const returnToWeb = useMemo(() => buildWebAppUrl(nextPath), [nextPath]);
   const backToSiteUrl = useMemo(() => buildWebAppUrl("/"), []);
+  const rawMobileCallback = searchParams.get("callback");
   const mobileCallback = useMemo(
-    () => normalizeMobileCallback(searchParams.get("callback")),
-    [searchParams],
+    () => normalizeMobileCallback(rawMobileCallback),
+    [rawMobileCallback],
   );
   const mobileState = searchParams.get("state")?.trim() ?? "";
-  const mobileMode = searchParams.get("mobile") === "1" && !!mobileCallback;
+  const mobileRequested = searchParams.get("mobile") === "1";
+  const mobileMode = mobileRequested && !!mobileCallback;
 
   const [authChecked, setAuthChecked] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -196,6 +212,25 @@ function AuthSurface() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (mobileRequested && !mobileCallback) {
+      setServerError(
+        "No pudimos validar el callback de la app móvil. Abre de nuevo el flujo desde la app.",
+      );
+      return;
+    }
+    if (!mobileRequested) return;
+    setServerError((previous) => {
+      if (
+        previous ===
+        "No pudimos validar el callback de la app móvil. Abre de nuevo el flujo desde la app."
+      ) {
+        return null;
+      }
+      return previous;
+    });
+  }, [mobileCallback, mobileRequested]);
 
   useEffect(() => {
     if (mobileMode) return;
