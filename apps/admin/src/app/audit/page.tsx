@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactElement } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@vybx/ui";
 import { PromoterShell } from "@/components/layout/PromoterShell";
@@ -39,7 +39,7 @@ function severityBadge(value: "info" | "warning" | "success") {
   );
 }
 
-export default function AuditPage() {
+export default function AuditPage(): ReactElement {
   const auditQuery = useAdminAuditLogs(1, 100);
   const rows = auditQuery.data?.data ?? [];
 
