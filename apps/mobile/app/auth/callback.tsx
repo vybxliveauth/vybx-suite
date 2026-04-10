@@ -15,14 +15,12 @@ import {
  * On iOS, openAuthSessionAsync intercepts the redirect before the app
  * navigates here, so this screen rarely renders. On Android (Chrome Custom
  * Tabs), the deep link may open the app directly, landing on this screen
- * with the tokens in the URL query params.
+ * with the PKCE auth_code in the URL query params.
  */
 export default function AuthCallbackScreen() {
   const router = useRouter();
   const { completeBrowserAuth } = useAuth();
   const params = useLocalSearchParams<{
-    access_token?: string;
-    refresh_token?: string;
     auth_code?: string;
     status?: string;
     state?: string;
@@ -43,30 +41,17 @@ export default function AuthCallbackScreen() {
         const fromHash = new URLSearchParams(
           url.hash.startsWith("#") ? url.hash.slice(1) : url.hash,
         );
-        const accessToken = fromSearch.get("access_token") ?? fromHash.get("access_token");
-        const refreshToken =
-          fromSearch.get("refresh_token") ?? fromHash.get("refresh_token");
         const authCode = fromSearch.get("auth_code") ?? fromHash.get("auth_code");
         const state = fromSearch.get("state") ?? fromHash.get("state");
         const statusFromUrl = fromSearch.get("status") ?? fromHash.get("status");
         if (statusFromUrl === "success") {
-          return { accessToken, refreshToken, authCode, state };
+          return { authCode, state };
         }
       } catch {
         // ignore malformed deep links
       }
       return null;
     };
-
-    const fromParamsSuccess =
-      params.status === "success" &&
-      typeof params.access_token === "string" &&
-      typeof params.refresh_token === "string"
-        ? {
-            accessToken: params.access_token,
-            refreshToken: params.refresh_token,
-          }
-        : null;
 
     void (async () => {
       const initialUrl = await Linking.getInitialURL();
@@ -82,31 +67,6 @@ export default function AuthCallbackScreen() {
               state: params.state,
             }
           : null;
-
-      const resolvedTokens =
-        fromParamsSuccess ??
-        (parsed?.accessToken && parsed?.refreshToken
-          ? {
-              accessToken: parsed.accessToken,
-              refreshToken: parsed.refreshToken,
-            }
-          : null);
-
-      if (resolvedTokens) {
-        void completeBrowserAuth({
-          accessToken: resolvedTokens.accessToken,
-          refreshToken: resolvedTokens.refreshToken,
-        })
-          .then(() => {
-            if (!isMounted) return;
-            router.replace("/(tabs)/profile");
-          })
-          .catch(() => {
-            if (!isMounted) return;
-            router.replace("/(auth)/login");
-          });
-        return;
-      }
 
       const resolvedCode =
         fromParamsCode ??
@@ -144,9 +104,8 @@ export default function AuthCallbackScreen() {
         return;
       }
 
-      // No tokens in URL — openAuthSessionAsync already handled them on iOS,
-      // or the user arrived here without a valid callback. Navigate to profile
-      // if already authenticated, otherwise to login.
+      // No auth_code in URL — openAuthSessionAsync already handled the deep link
+      // on iOS, or the user arrived here without a valid callback.
       fallbackTimeout = setTimeout(() => {
         if (!isMounted) return;
         router.replace("/(tabs)/profile");

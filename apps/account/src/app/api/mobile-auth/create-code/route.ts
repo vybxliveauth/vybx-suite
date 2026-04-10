@@ -4,6 +4,7 @@ import {
   isSupportedCodeChallengeMethod,
   isValidCodeChallenge,
 } from "@/lib/mobile-auth-code";
+import { isMobileAuthCodeStoreReady } from "@/lib/mobile-auth-replay-store";
 
 export const runtime = "nodejs";
 
@@ -52,8 +53,16 @@ export async function POST(req: Request) {
     );
   }
 
+  const replayStoreReady = await isMobileAuthCodeStoreReady();
+  if (!replayStoreReady) {
+    return NextResponse.json(
+      { message: "El puente móvil seguro no está disponible temporalmente. Intenta nuevamente." },
+      { status: 503 },
+    );
+  }
+
   try {
-    const handoff = createMobileAuthCode({
+    const handoff = await createMobileAuthCode({
       state,
       codeChallenge,
       accessToken,

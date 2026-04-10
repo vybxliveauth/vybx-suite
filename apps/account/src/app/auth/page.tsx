@@ -66,6 +66,8 @@ type LoginValues = z.infer<typeof loginSchema>;
 type RegisterValues = z.infer<typeof registerSchema>;
 type Mode = "login" | "register";
 type PkceMethod = "S256";
+const IS_DEV = process.env.NODE_ENV !== "production";
+const IS_PROD = process.env.NODE_ENV === "production";
 
 function parseError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -79,6 +81,15 @@ function normalizeMobileCallback(raw: string | null): string | null {
   try {
     const parsed = new URL(raw);
     const protocol = parsed.protocol.toLowerCase();
+    const normalizedPath =
+      parsed.pathname
+        .replace(/\/--\//g, "/")
+        .replace(/^\/--/, "/")
+        .replace(/\/{2,}/g, "/")
+        .replace(/\/+$/, "") || "/";
+    const isAuthCallbackPath = normalizedPath.endsWith("/auth/callback");
+    if (!isAuthCallbackPath) return null;
+
     const isExpoScheme =
       protocol === "exp:" ||
       protocol === "exps:" ||
@@ -89,8 +100,13 @@ function normalizeMobileCallback(raw: string | null): string | null {
       protocol === "vybx:" ||
       protocol === "com.vybxlive.tickets:";
 
-    if (isExpoScheme || isAppScheme) return parsed.toString();
+    if (isAppScheme) return parsed.toString();
+    if (isExpoScheme) {
+      if (!IS_PROD) return parsed.toString();
+      return parsed.hostname.toLowerCase() === "u.expo.dev" ? parsed.toString() : null;
+    }
     if (
+      IS_DEV &&
       (parsed.protocol === "http:" || parsed.protocol === "https:") &&
       (
         parsed.hostname === "localhost" ||
@@ -123,9 +139,7 @@ function buildMobileCallbackUrl(
   payload:
     | {
         status: "success";
-        accessToken?: string;
-        refreshToken?: string;
-        authCode?: string;
+        authCode: string;
         state?: string;
       }
     | { status: "error"; message: string; state?: string },
@@ -135,14 +149,9 @@ function buildMobileCallbackUrl(
   params.set("status", payload.status);
   if (payload.state) params.set("state", payload.state);
   if (payload.status === "success") {
-    if (payload.authCode) {
-      params.set("auth_code", payload.authCode);
-      params.delete("access_token");
-      params.delete("refresh_token");
-    } else {
-      if (payload.accessToken) params.set("access_token", payload.accessToken);
-      if (payload.refreshToken) params.set("refresh_token", payload.refreshToken);
-    }
+    params.set("auth_code", payload.authCode);
+    params.delete("access_token");
+    params.delete("refresh_token");
   } else {
     params.set("message", payload.message);
   }
@@ -178,6 +187,7 @@ function AuthSurface() {
   const mobileMode = mobileRequested && !!mobileCallback;
   const mobilePkceMode =
     mobileMode &&
+    mobileState.length >= 8 &&
     !!mobileCodeChallenge &&
     mobileCodeChallengeMethod === "S256";
 
@@ -222,9 +232,9 @@ function AuthSurface() {
   }, []);
 
   const createMobileAuthCode = useCallback(
-    async (tokens: MobileAuthTokens): Promise<string | null> => {
+    async (tokens: MobileAuthTokens): Promise<string> => {
       if (!mobilePkceMode || !mobileCodeChallenge || !mobileCodeChallengeMethod) {
-        return null;
+        throw new Error("No pudimos validar PKCE para continuar con la app.");
       }
 
       const response = await fetch("/api/mobile-auth/create-code", {
@@ -241,13 +251,23 @@ function AuthSurface() {
       });
 
       if (!response.ok) {
-        return null;
+        let message = "No pudimos preparar el acceso seguro móvil.";
+        try {
+          const payload = (await response.json()) as { message?: unknown };
+          if (typeof payload.message === "string" && payload.message.trim().length > 0) {
+            message = payload.message;
+          }
+        } catch {
+          // ignore parse failures
+        }
+        throw new Error(message);
       }
 
       const payload = (await response.json()) as { auth_code?: string };
-      return typeof payload.auth_code === "string" && payload.auth_code.trim().length > 0
-        ? payload.auth_code
-        : null;
+      if (typeof payload.auth_code !== "string" || payload.auth_code.trim().length === 0) {
+        throw new Error("No recibimos un código de acceso seguro para la app.");
+      }
+      return payload.auth_code;
     },
     [mobileCodeChallenge, mobileCodeChallengeMethod, mobilePkceMode, mobileState],
   );
@@ -258,12 +278,7 @@ function AuthSurface() {
       const authCode = await createMobileAuthCode(tokens);
       const callbackUrl = buildMobileCallbackUrl(mobileCallback, {
         status: "success",
-        ...(authCode
-          ? { authCode }
-          : {
-              accessToken: tokens.accessToken,
-              refreshToken: tokens.refreshToken,
-            }),
+        authCode,
         state: mobileState,
       });
       redirectToMobileApp(callbackUrl);
@@ -288,17 +303,25 @@ function AuthSurface() {
       );
       return;
     }
+    if (mobileRequested && mobileCallback && !mobilePkceMode) {
+      setServerError(
+        "No pudimos validar el inicio seguro móvil (PKCE). Abre de nuevo el flujo desde la app.",
+      );
+      return;
+    }
     if (!mobileRequested) return;
     setServerError((previous) => {
       if (
         previous ===
-        "No pudimos validar el callback de la app móvil. Abre de nuevo el flujo desde la app."
+          "No pudimos validar el callback de la app móvil. Abre de nuevo el flujo desde la app." ||
+        previous ===
+          "No pudimos validar el inicio seguro móvil (PKCE). Abre de nuevo el flujo desde la app."
       ) {
         return null;
       }
       return previous;
     });
-  }, [mobileCallback, mobileRequested]);
+  }, [mobileCallback, mobilePkceMode, mobileRequested]);
 
   useEffect(() => {
     if (mobileMode) return;
@@ -307,7 +330,7 @@ function AuthSurface() {
   }, [authChecked, mobileMode, returnToWeb, user]);
 
   useEffect(() => {
-    if (!mobileMode || !mobileCallback) return;
+    if (!mobileMode || !mobileCallback || !mobilePkceMode) return;
     if (!authChecked || user === null) return;
     if (mobileSessionExchangeTried) return;
 
@@ -360,7 +383,9 @@ function AuthSurface() {
     authChecked,
     mobileCallback,
     completeMobileAuth,
+    loginForm,
     mobileMode,
+    mobilePkceMode,
     mobileSessionExchangeTried,
     user,
   ]);
@@ -428,6 +453,11 @@ function AuthSurface() {
 
     try {
       if (mobileMode) {
+        if (!mobilePkceMode) {
+          throw new Error(
+            "No pudimos validar el inicio seguro móvil (PKCE). Abre de nuevo el flujo desde la app.",
+          );
+        }
         const mobileResponse = await loginForMobile({
           email: values.email.trim().toLowerCase(),
           password: values.password,
@@ -482,6 +512,11 @@ function AuthSurface() {
     setServerError(null);
     try {
       if (mobileMode) {
+        if (!mobilePkceMode) {
+          throw new Error(
+            "No pudimos validar el inicio seguro móvil (PKCE). Abre de nuevo el flujo desde la app.",
+          );
+        }
         const tokens = await verifyLoginTwoFactorForMobile({
           challengeId: twoFactorChallengeId,
           code: twoFactorCode.trim(),
@@ -656,10 +691,11 @@ function AuthSurface() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={loginForm.formState.isSubmitting}
+                    disabled={loginForm.formState.isSubmitting || exchangingMobileSession}
                   >
-                    {loginForm.formState.isSubmitting && <Loader2 className="size-4 animate-spin" />}
-                    {exchangingMobileSession && <Loader2 className="size-4 animate-spin" />}
+                    {(loginForm.formState.isSubmitting || exchangingMobileSession) && (
+                      <Loader2 className="size-4 animate-spin" />
+                    )}
                     {twoFactorChallengeId ? "Reintentar" : "Entrar"}
                   </Button>
                   {mobileReturnUrl && (
@@ -684,7 +720,7 @@ function AuthSurface() {
               </form>
             ) : (
               <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="firstName">Nombre</Label>
                     <Input id="firstName" autoComplete="given-name" {...registerForm.register("firstName")} />
@@ -743,7 +779,7 @@ function AuthSurface() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="country">Pais (opcional)</Label>
                     <Input id="country" autoComplete="country-name" {...registerForm.register("country")} />

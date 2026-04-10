@@ -34,8 +34,13 @@ function resolveAccountAppBaseUrl(): string {
   return configured.replace(/\/+$/, "");
 }
 
-function createState(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+async function createState(): Promise<string | null> {
+  try {
+    const randomBytes = await Crypto.getRandomBytesAsync(16);
+    return `${Date.now().toString(36)}-${toHex(randomBytes)}`;
+  } catch {
+    return null;
+  }
 }
 
 function cleanupPendingPkceStates(): void {
@@ -91,7 +96,7 @@ function buildAuthUrl(
   mode: AuthMode,
   callbackUrl: string,
   state: string,
-  pkce: PkcePair | null,
+  pkce: PkcePair,
 ): string {
   const baseUrl = resolveAccountAppBaseUrl();
   const url = new URL("/auth", `${baseUrl}/`);
@@ -99,10 +104,8 @@ function buildAuthUrl(
   url.searchParams.set("mobile", "1");
   url.searchParams.set("callback", callbackUrl);
   url.searchParams.set("state", state);
-  if (pkce) {
-    url.searchParams.set("code_challenge", pkce.challenge);
-    url.searchParams.set("code_challenge_method", pkce.method);
-  }
+  url.searchParams.set("code_challenge", pkce.challenge);
+  url.searchParams.set("code_challenge_method", pkce.method);
   return url.toString();
 }
 
@@ -193,12 +196,22 @@ export async function startAccountAuthSession(
   mode: AuthMode,
 ): Promise<AccountAuthSessionResult> {
   const callbackUrl = Linking.createURL("auth/callback");
-  const state = createState();
-  const pkce = await createPkcePair();
-  const authUrl = buildAuthUrl(mode, callbackUrl, state, pkce);
-  if (pkce) {
-    rememberPendingPkce(state, pkce.verifier);
+  const state = await createState();
+  if (!state) {
+    return {
+      type: "error",
+      message: "No se pudo preparar el estado seguro de autenticación. Intenta de nuevo.",
+    };
   }
+  const pkce = await createPkcePair();
+  if (!pkce) {
+    return {
+      type: "error",
+      message: "No se pudo preparar el inicio seguro (PKCE). Intenta de nuevo.",
+    };
+  }
+  const authUrl = buildAuthUrl(mode, callbackUrl, state, pkce);
+  rememberPendingPkce(state, pkce.verifier);
 
   let capturedCallbackUrl: string | null = null;
   let resolveDeepLink:
@@ -285,7 +298,7 @@ export async function startAccountAuthSession(
 
   const authCode = params.get("auth_code");
   if (authCode) {
-    const verifier = pkce?.verifier ?? consumePendingPkceVerifier(returnedState);
+    const verifier = pkce.verifier;
     if (!verifier) {
       return {
         type: "error",
@@ -311,20 +324,8 @@ export async function startAccountAuthSession(
       refreshToken: exchanged.refreshToken,
     };
   }
-
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
-  if (!accessToken || !refreshToken) {
-    return {
-      type: "error",
-      message: "No se recibieron tokens de acceso desde la web.",
-    };
-  }
-  pendingPkceStates.delete(returnedState);
-
   return {
-    type: "success",
-    accessToken,
-    refreshToken,
+    type: "error",
+    message: "No se recibió un código seguro de autenticación móvil.",
   };
 }
