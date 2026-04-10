@@ -122,13 +122,22 @@ export async function startAccountAuthSession(
   }
 
   if (result.type !== "success" && !capturedCallbackUrl) {
-    if (result.type === "cancel" || result.type === "dismiss") {
-      return { type: "cancel" };
+    const latestKnownUrl =
+      Linking.getLinkingURL?.() ?? (await Linking.getInitialURL().catch(() => null));
+    if (latestKnownUrl && isSameCallbackTarget(latestKnownUrl, callbackUrl)) {
+      capturedCallbackUrl = latestKnownUrl;
     }
-    return {
-      type: "error",
-      message: "No se pudo completar la autenticación en navegador.",
-    };
+
+    if (capturedCallbackUrl) {
+      // continue parsing below
+    } else if (result.type === "cancel" || result.type === "dismiss") {
+      return { type: "cancel" };
+    } else {
+      return {
+        type: "error",
+        message: "No se pudo completar la autenticación en navegador.",
+      };
+    }
   }
 
   const callbackFromResult =
