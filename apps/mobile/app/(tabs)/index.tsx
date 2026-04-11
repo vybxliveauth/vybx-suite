@@ -8,17 +8,16 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { AppScreenHeader } from "../../src/components/AppScreenHeader";
-import { ConversionBanner } from "../../src/components/ConversionBanner";
 import { DiscoveryHero } from "../../src/components/DiscoveryHero";
 import { EventCard } from "../../src/components/EventCard";
 import { EventCardSkeleton } from "../../src/components/EventCardSkeleton";
 import { PersonalizationSheet } from "../../src/components/PersonalizationSheet";
 import { useAudiencePreferences } from "../../src/context/audience-preferences-context";
-import { useAuth } from "../../src/context/auth-context";
 import { useFavorites } from "../../src/context/favorites-context";
 import { useCategories } from "../../src/hooks/useCategories";
 import { useEvents } from "../../src/hooks/useEvents";
@@ -38,7 +37,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  const { user } = useAuth();
   const { data, isLoading, isError, error, refetch, isFetching } = useEvents();
   const { data: categories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -49,10 +47,12 @@ export default function HomeScreen() {
   } = useAudiencePreferences();
 
   const [activeFilter, setActiveFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const [showPreferencesSheet, setShowPreferencesSheet] = useState(false);
   const [didAutoloadPreferences, setDidAutoloadPreferences] = useState(false);
 
   const events = data?.data ?? [];
+  const normalizedQuery = query.trim().toLowerCase();
   const categoryLabelById = useMemo(
     () => new Map((categories ?? []).map((category) => [category.id, category.name])),
     [categories],
@@ -111,8 +111,16 @@ export default function HomeScreen() {
       result = result.filter((event) => event.categoryId === activeFilter);
     }
 
+    if (normalizedQuery) {
+      result = result.filter((event) => {
+        const categoryName = categoryLabelById.get(event.categoryId ?? "") ?? "";
+        const source = `${event.title} ${event.location ?? ""} ${event.description ?? ""} ${categoryName}`;
+        return source.toLowerCase().includes(normalizedQuery);
+      });
+    }
+
     return result.filter((event) => event.id !== heroEvent?.id);
-  }, [activeFilter, heroEvent?.id, preferences.city, scoredEvents]);
+  }, [activeFilter, categoryLabelById, heroEvent?.id, normalizedQuery, preferences.city, scoredEvents]);
 
   const favoriteSuggestions = useMemo(
     () =>
@@ -141,12 +149,11 @@ export default function HomeScreen() {
               <AppScreenHeader
                 title="VybeTickets"
                 subtitle="Tu cartelera premium, adaptada a tu estilo"
-                rightSlot={
-                  <View style={styles.searchShortcut}>
-                    <Ionicons name="search-outline" size={18} color={colors.textSoft} />
-                  </View>
-                }
               />
+              <View style={styles.searchBar}>
+                <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
+                <Text style={styles.searchPlaceholder}>Buscar eventos, artistas o ciudad</Text>
+              </View>
               <View style={styles.loaderRow}>
                 <ActivityIndicator size="small" color={colors.brand} />
                 <Text style={styles.loaderText}>Preparando recomendaciones...</Text>
@@ -200,55 +207,30 @@ export default function HomeScreen() {
             <AppScreenHeader
               title="VybeTickets"
               subtitle="Tu cartelera premium, adaptada a tu estilo"
-              rightSlot={
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.searchShortcut,
-                    pressed && styles.searchShortcutPressed,
-                  ]}
-                  onPress={() => router.push("/(tabs)/search")}
-                >
-                  <Ionicons name="search-outline" size={18} color={colors.textSoft} />
+            />
+
+            <View style={styles.searchBar}>
+              <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Buscar eventos, artistas o ciudad"
+                placeholderTextColor={colors.textMuted}
+                style={styles.searchInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {query.length > 0 ? (
+                <Pressable onPress={() => setQuery("")}>
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
                 </Pressable>
-              }
-            />
-
-            <DiscoveryHero
-              event={heroEvent}
-              city={preferences.city}
-              onPressPrimary={() => {
-                if (!heroEvent) return;
-                router.push(`/event/${heroEvent.id}` as Href);
-              }}
-              onPressSecondary={() => setShowPreferencesSheet(true)}
-            />
-
-            <ConversionBanner
-              isLoggedIn={Boolean(user)}
-              onPrimaryPress={() => {
-                if (user) {
-                  setShowPreferencesSheet(true);
-                  return;
-                }
-                router.push("/(tabs)/profile");
-              }}
-              onSecondaryPress={() => router.push("/(tabs)/search")}
-            />
-
-            {favoriteSuggestions.length > 0 ? (
-              <View style={styles.recoBox}>
-                <Text style={styles.recoTitle}>Sugerencias para guardar</Text>
-                {favoriteSuggestions.map((suggestion) => (
-                  <View key={suggestion.id} style={styles.recoRow}>
-                    <View style={styles.recoDot} />
-                    <Text style={styles.recoText} numberOfLines={1}>
-                      {suggestion.title}
-                    </Text>
-                    <Text style={styles.recoTag}>{suggestion.category}</Text>
-                  </View>
-                ))}
-              </View>
-            ) : null}
+              ) : (
+                <Pressable onPress={() => router.push("/(tabs)/search")}>
+                  <Ionicons name="options-outline" size={18} color={colors.textSoft} />
+                </Pressable>
+              )}
+            </View>
 
             <FlatList
               data={filters}
@@ -276,6 +258,35 @@ export default function HomeScreen() {
                   </Text>
                 </Pressable>
               )}
+            />
+
+            {favoriteSuggestions.length > 0 ? (
+              <View style={styles.recoBox}>
+                <Text style={styles.recoTitle}>Sugerencias para ti</Text>
+                {favoriteSuggestions.map((suggestion) => (
+                  <Pressable
+                    key={suggestion.id}
+                    style={({ pressed }) => [styles.recoRow, pressed && styles.recoRowPressed]}
+                    onPress={() => router.push(`/event/${suggestion.id}` as Href)}
+                  >
+                    <View style={styles.recoDot} />
+                    <Text style={styles.recoText} numberOfLines={1}>
+                      {suggestion.title}
+                    </Text>
+                    <Text style={styles.recoTag}>{suggestion.category}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+
+            <DiscoveryHero
+              event={heroEvent}
+              city={preferences.city}
+              onPressPrimary={() => {
+                if (!heroEvent) return;
+                router.push(`/event/${heroEvent.id}` as Href);
+              }}
+              onPressSecondary={() => setShowPreferencesSheet(true)}
             />
           </View>
         }
@@ -307,17 +318,19 @@ function createStyles(colors: AppColors) {
     container: { flex: 1, backgroundColor: colors.bg },
     list: { padding: 16, paddingBottom: 36 },
     headerWrap: { paddingBottom: 14, gap: 14 },
-    searchShortcut: {
-      width: 44,
-      height: 44,
-      borderRadius: 12,
+    searchBar: {
+      flexDirection: "row",
       alignItems: "center",
-      justifyContent: "center",
-      backgroundColor: colors.surface,
+      gap: 8,
+      borderRadius: 14,
       borderWidth: 1,
       borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
     },
-    searchShortcutPressed: { opacity: 0.85 },
+    searchInput: { flex: 1, color: colors.textPrimary, fontSize: 15 },
+    searchPlaceholder: { flex: 1, color: colors.textMuted, fontSize: 15 },
     loaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
     loaderText: { color: colors.textSecondary, fontSize: 13 },
 
@@ -339,6 +352,7 @@ function createStyles(colors: AppColors) {
       alignItems: "center",
       gap: 8,
     },
+    recoRowPressed: { opacity: 0.82 },
     recoDot: {
       width: 6,
       height: 6,

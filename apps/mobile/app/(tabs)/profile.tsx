@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, type Href } from "expo-router";
 import { Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ConversionBanner } from "../../src/components/ConversionBanner";
 import { PersonalizationSheet } from "../../src/components/PersonalizationSheet";
 import { useAudiencePreferences } from "../../src/context/audience-preferences-context";
 import { useAuth } from "../../src/context/auth-context";
@@ -221,6 +222,20 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notificaciones</Text>
+          <ConversionBanner
+            isLoggedIn
+            onPrimaryPress={() =>
+              Alert.alert(
+                "Alertas inteligentes",
+                "Próximamente podrás activar alertas por artista, ciudad y categoría.",
+              )
+            }
+            onSecondaryPress={() => setShowPreferencesSheet(true)}
+          />
         </View>
 
         <View style={styles.section}>
