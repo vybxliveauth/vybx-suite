@@ -35,7 +35,7 @@ import { TurnstileWidget } from "@/components/features/TurnstileWidget";
 
 const loginSchema = z.object({
   email: z.string().email("Email invalido"),
-  password: z.string().min(1, "Ingresa tu contrasena"),
+  password: z.string().min(8, "La contrasena debe tener al menos 8 caracteres"),
 });
 
 const registerSchema = z
@@ -69,6 +69,7 @@ type Mode = "login" | "register";
 type PkceMethod = "S256";
 const IS_DEV = process.env.NODE_ENV !== "production";
 const IS_PROD = process.env.NODE_ENV === "production";
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function parseError(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim().length > 0) {
@@ -211,6 +212,10 @@ function AuthSurface() {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: registerEmail, password: "" },
   });
+  const loginEmailInputRef = useRef<HTMLInputElement | null>(null);
+  const loginPasswordInputRef = useRef<HTMLInputElement | null>(null);
+  const { ref: loginEmailRegisterRef, ...loginEmailField } = loginForm.register("email");
+  const { ref: loginPasswordRegisterRef, ...loginPasswordField } = loginForm.register("password");
 
   const registerForm = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -477,6 +482,29 @@ function AuthSurface() {
     setTwoFactorChallengeId(null);
     setTwoFactorCode("");
 
+    const normalizedEmailCandidate =
+      values.email.trim().length > 0
+        ? values.email.trim().toLowerCase()
+        : (loginEmailInputRef.current?.value ?? "").trim().toLowerCase();
+    const passwordCandidate =
+      values.password.length > 0
+        ? values.password
+        : (loginPasswordInputRef.current?.value ?? "");
+
+    if (!EMAIL_REGEX.test(normalizedEmailCandidate)) {
+      loginForm.setError("email", { type: "manual", message: "Email invalido" });
+      return;
+    }
+    if (passwordCandidate.length < 8) {
+      loginForm.setError("password", {
+        type: "manual",
+        message: "La contrasena debe tener al menos 8 caracteres",
+      });
+      return;
+    }
+
+    loginForm.clearErrors(["email", "password"]);
+
     try {
       if (mobileMode) {
         if (!mobilePkceMode) {
@@ -485,8 +513,8 @@ function AuthSurface() {
           );
         }
         const mobileResponse = await loginForMobile({
-          email: values.email.trim().toLowerCase(),
-          password: values.password,
+          email: normalizedEmailCandidate,
+          password: passwordCandidate,
         });
 
         if (!mobileResponse.success && mobileResponse.requiresTwoFactor) {
@@ -508,8 +536,8 @@ function AuthSurface() {
       }
 
       const response = await login({
-        email: values.email.trim().toLowerCase(),
-        password: values.password,
+        email: normalizedEmailCandidate,
+        password: passwordCandidate,
       });
 
       if (response.success) {
@@ -527,7 +555,19 @@ function AuthSurface() {
         return;
       }
     } catch (error) {
-      setServerError(parseError(error, "No se pudo iniciar sesion."));
+      const message = parseError(error, "No se pudo iniciar sesion.");
+      const normalizedMessage = message.toLowerCase();
+      if (
+        normalizedMessage.includes("email must be an email") ||
+        normalizedMessage.includes("password must be longer than or equal to 8 characters") ||
+        normalizedMessage.includes("password must be a string")
+      ) {
+        setServerError(
+          "No pudimos leer tus credenciales correctamente. Escribe email y contrasena manualmente y vuelve a intentar.",
+        );
+        return;
+      }
+      setServerError(message);
     }
   }
 
@@ -687,7 +727,11 @@ function AuthSurface() {
                     autoComplete="email"
                     placeholder="tu@email.com"
                     autoCapitalize="none"
-                    {...loginForm.register("email")}
+                    {...loginEmailField}
+                    ref={(element) => {
+                      loginEmailInputRef.current = element;
+                      loginEmailRegisterRef(element);
+                    }}
                   />
                   {loginForm.formState.errors.email && (
                     <p className="text-xs text-destructive">{loginForm.formState.errors.email.message}</p>
@@ -701,7 +745,11 @@ function AuthSurface() {
                     type="password"
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    {...loginForm.register("password")}
+                    {...loginPasswordField}
+                    ref={(element) => {
+                      loginPasswordInputRef.current = element;
+                      loginPasswordRegisterRef(element);
+                    }}
                   />
                   {loginForm.formState.errors.password && (
                     <p className="text-xs text-destructive">{loginForm.formState.errors.password.message}</p>

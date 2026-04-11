@@ -20,6 +20,7 @@ import type { TokenStorage } from "./storage";
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 type HttpError = Error & { status?: number };
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -111,6 +112,14 @@ async function parseErrorMessage(res: Response): Promise<string> {
   ) {
     return "Registro protegido por verificación de seguridad. Crea tu cuenta en vybxlive.com y luego inicia sesión aquí.";
   }
+  if (
+    message &&
+    /email must be an email|password must be longer than or equal to 8 characters|password must be a string/i.test(
+      message,
+    )
+  ) {
+    return "Revisa tu email y contraseña. La contraseña debe tener al menos 8 caracteres.";
+  }
   return message ?? `Error ${res.status}`;
 }
 
@@ -172,7 +181,24 @@ export function createMobileAuthApi(options: MobileAuthApiOptions): MobileAuthAp
 
   return {
     async login(email, password): Promise<MobileLoginResult> {
-      const res = await post("/auth/login", { email, password });
+      const normalizedEmail =
+        typeof email === "string" ? email.trim().toLowerCase() : "";
+      const normalizedPassword =
+        typeof password === "string" ? password : "";
+      if (!EMAIL_REGEX.test(normalizedEmail)) {
+        throw makeHttpError("Email invalido.", 400);
+      }
+      if (normalizedPassword.length < 8) {
+        throw makeHttpError(
+          "La contraseña debe tener al menos 8 caracteres.",
+          400,
+        );
+      }
+
+      const res = await post("/auth/login", {
+        email: normalizedEmail,
+        password: normalizedPassword,
+      });
       if (!res.ok) await throwHttpError(res);
 
       const data = (await res.json()) as unknown;
