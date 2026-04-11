@@ -19,6 +19,13 @@ type MobileExchangeResponse = {
   message?: string;
 };
 
+type MobileExchangeTokens = { accessToken: string; refreshToken: string };
+type MobileExchangeCacheEntry = {
+  promise?: Promise<MobileExchangeTokens | null>;
+  result?: MobileExchangeTokens | null;
+  expiresAt: number;
+};
+
 export type AccountAuthSessionResult =
   | { type: "success"; accessToken: string; refreshToken: string }
   | { type: "cancel" }
@@ -26,7 +33,9 @@ export type AccountAuthSessionResult =
 
 const AUTH_SESSION_TIMEOUT_MS = 5 * 60_000;
 const PKCE_STATE_TTL_MS = 10 * 60_000;
+const EXCHANGE_SINGLE_FLIGHT_TTL_MS = 30_000;
 const pendingPkceStates = new Map<string, { verifier: string; createdAt: number }>();
+const exchangeSingleFlight = new Map<string, MobileExchangeCacheEntry>();
 
 function resolveAccountAppBaseUrl(): string {
   const configured = process.env.EXPO_PUBLIC_ACCOUNT_APP_URL?.trim();
@@ -155,6 +164,23 @@ export async function exchangeMobileAuthCode(options: {
   state: string;
   codeVerifier: string;
 }): Promise<{ accessToken: string; refreshToken: string } | null> {
+  const now = Date.now();
+  for (const [key, entry] of exchangeSingleFlight.entries()) {
+    if (entry.expiresAt <= now) {
+      exchangeSingleFlight.delete(key);
+    }
+  }
+
+  const dedupeKey = `${options.authCode}::${options.state}::${options.codeVerifier}`;
+  const cached = exchangeSingleFlight.get(dedupeKey);
+  if (cached?.result !== undefined && cached.expiresAt > now) {
+    return cached.result;
+  }
+  if (cached?.promise) {
+    return cached.promise;
+  }
+
+  const exchangePromise = (async (): Promise<MobileExchangeTokens | null> => {
   const accountBaseUrl = resolveAccountAppBaseUrl();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12_000);
@@ -190,6 +216,19 @@ export async function exchangeMobileAuthCode(options: {
   } finally {
     clearTimeout(timer);
   }
+  })();
+
+  exchangeSingleFlight.set(dedupeKey, {
+    promise: exchangePromise,
+    expiresAt: now + EXCHANGE_SINGLE_FLIGHT_TTL_MS,
+  });
+
+  const exchanged = await exchangePromise;
+  exchangeSingleFlight.set(dedupeKey, {
+    result: exchanged,
+    expiresAt: Date.now() + EXCHANGE_SINGLE_FLIGHT_TTL_MS,
+  });
+  return exchanged;
 }
 
 export async function startAccountAuthSession(

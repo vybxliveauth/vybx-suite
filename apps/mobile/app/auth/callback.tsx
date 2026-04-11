@@ -77,7 +77,9 @@ export default function AuthCallbackScreen() {
       if (resolvedCode) {
         const verifier = consumePendingPkceVerifier(resolvedCode.state);
         if (!verifier) {
-          router.replace("/(auth)/login");
+          // Another auth-session handler may have already consumed PKCE and
+          // completed token exchange. Route to profile instead of failing hard.
+          router.replace("/(tabs)/profile");
           return;
         }
         const exchanged = await exchangeMobileAuthCode({
