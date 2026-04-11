@@ -382,6 +382,10 @@ export function AuthModal({
               onBack={() => setStep("email")}
               onForgotPassword={() => setStep("forgot")}
               onCreateAccount={() => setStep("register")}
+              onNeedsVerification={(unverifiedEmail) => {
+                setVerifiedEmail(unverifiedEmail);
+                setStep("verify");
+              }}
               onSuccess={handleLoginSuccess}
               onTwoFactor={handleTwoFactor}
             />

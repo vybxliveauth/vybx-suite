@@ -4,10 +4,12 @@ import {
   EVENT_IMAGE_THUMBNAIL_FALLBACK,
   normalizeEventImageUrl,
 } from "@/lib/images";
-import { createApiClient } from "@vybx/api-client";
+import { createApiClient, resolveApiBaseUrl } from "@vybx/api-client";
 import type { PublicAuthUser, UserRole } from "@vybx/types";
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1";
+const BASE_URL = resolveApiBaseUrl(
+  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3004/api/v1",
+);
 
 // ─── HTTP Client ──────────────────────────────────────────────────────────────
 
@@ -19,6 +21,50 @@ const client = createApiClient({
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return client.request<T>(path, init);
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function getMessageFromPayload(payload: unknown, fallback: string): string {
+  const record = toRecord(payload);
+  if (!record) return fallback;
+  const rawMessage = record.message;
+  if (typeof rawMessage === "string" && rawMessage.trim().length > 0) {
+    return rawMessage;
+  }
+  if (Array.isArray(rawMessage)) {
+    const joined = rawMessage.map((item) => String(item)).join(", ").trim();
+    if (joined.length > 0) return joined;
+  }
+  return fallback;
+}
+
+export class AuthApiError extends Error {
+  status: number;
+  needsVerification: boolean;
+  email?: string;
+  verificationEmailSent?: boolean;
+
+  constructor(
+    message: string,
+    status: number,
+    details?: {
+      needsVerification?: boolean;
+      email?: string;
+      verificationEmailSent?: boolean;
+    },
+  ) {
+    super(message);
+    this.name = "AuthApiError";
+    this.status = status;
+    this.needsVerification = details?.needsVerification === true;
+    this.email = details?.email;
+    this.verificationEmailSent = details?.verificationEmailSent;
+  }
 }
 
 // ─── Backend raw types ────────────────────────────────────────────────────────
@@ -292,6 +338,8 @@ export interface RegisterPayload {
   password: string;
   firstName: string;
   lastName: string;
+  country?: string;
+  city?: string;
   turnstileToken: string;
 }
 
@@ -341,7 +389,32 @@ function isTwoFactorChallenge(
 }
 
 export async function login(payload: LoginPayload): Promise<LoginResponse> {
-  const res = await request<
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const payloadData = (await response.json().catch(() => null)) as unknown;
+
+  if (!response.ok) {
+    const record = toRecord(payloadData);
+    throw new AuthApiError(
+      getMessageFromPayload(payloadData, "Credenciales incorrectas"),
+      response.status,
+      {
+        needsVerification: record?.needsVerification === true,
+        email: typeof record?.email === "string" ? record.email : undefined,
+        verificationEmailSent:
+          typeof record?.verificationEmailSent === "boolean"
+            ? record.verificationEmailSent
+            : undefined,
+      },
+    );
+  }
+
+  const res = payloadData as
     | { user: BackendAuthUser; success?: boolean }
     | {
         success: false;
@@ -349,14 +422,8 @@ export async function login(payload: LoginPayload): Promise<LoginResponse> {
         challengeId: string;
         expiresInSeconds: number;
         message?: string;
-      }
-  >(
-    "/auth/login",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  );
+      };
+
   if (isTwoFactorChallenge(res)) {
     return {
       success: false,

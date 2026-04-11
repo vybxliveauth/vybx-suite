@@ -21,7 +21,13 @@ import {
   CircleHelp,
 } from "lucide-react";
 import Link from "next/link";
-import { api, login, verifyLoginTwoFactor, type AuthUser } from "@/lib/api";
+import {
+  api,
+  AuthApiError,
+  login,
+  verifyLoginTwoFactor,
+  type AuthUser,
+} from "@/lib/api";
 import {
   actionErrorState,
   actionSuccessState,
@@ -388,6 +394,7 @@ export function LoginStep({
   onBack,
   onForgotPassword,
   onCreateAccount,
+  onNeedsVerification,
   onSuccess,
   onTwoFactor,
 }: {
@@ -395,6 +402,7 @@ export function LoginStep({
   onBack: () => void;
   onForgotPassword: () => void;
   onCreateAccount: () => void;
+  onNeedsVerification: (email: string) => void;
   onSuccess: (user: AuthUser) => void;
   onTwoFactor: (challengeId: string, expiresIn: number, message: string) => void;
 }) {
@@ -415,6 +423,10 @@ export function LoginStep({
         onSuccess(result.user);
         return actionSuccessState("Sesión iniciada.");
       } catch (e) {
+        if (e instanceof AuthApiError && e.needsVerification) {
+          onNeedsVerification(e.email ?? email);
+          return uiActionInitialState;
+        }
         tracker.track(AnalyticsEvents.AUTH_LOGIN_FAILED);
         return actionErrorState(e, "Credenciales incorrectas");
       }
