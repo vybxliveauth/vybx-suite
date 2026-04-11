@@ -49,3 +49,20 @@
 - Con ese secret:
   - Cada push a `main` que toque `apps/mobile` publica OTA update en rama `production`.
   - Puedes lanzar builds iOS/Android manuales desde `Actions > Expo Mobile Build`.
+
+## Hardening pre-release (mobile)
+
+Comando unico para validar lo critico antes de release:
+
+- `pnpm hardening:mobile-release`
+
+Incluye:
+
+- Typecheck de `@vybx/mobile`.
+- Probe de auth mobile (headers/body/DTO regression).
+- Probe de eventos mobile (contrato + paginacion + detalle + categorias).
+- Probe base de dominios/health en produccion.
+
+Opcional para validar login exitoso real:
+
+- `MOBILE_PROBE_EMAIL='tu-email' MOBILE_PROBE_PASSWORD='tu-password' pnpm hardening:mobile-release`
