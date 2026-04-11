@@ -10,6 +10,28 @@ const MOBILE_AUTH_CODE_KEY_PREFIX = "mobile-auth:code:";
 
 let redisClient: Redis | null | undefined;
 
+function encodeRedisPayload(payload: string): string {
+  return Buffer.from(payload, "utf8").toString("base64url");
+}
+
+function decodeRedisPayload(raw: unknown): string | null {
+  if (typeof raw === "string") {
+    try {
+      return Buffer.from(raw, "base64url").toString("utf8");
+    } catch {
+      return raw;
+    }
+  }
+  if (raw && typeof raw === "object") {
+    try {
+      return JSON.stringify(raw);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
     return redisClient;
@@ -71,7 +93,7 @@ async function storeInRedisCode(input: {
 
   const result = await redis.set(
     `${MOBILE_AUTH_CODE_KEY_PREFIX}${input.codeId}`,
-    input.payload,
+    encodeRedisPayload(input.payload),
     { nx: true, ex: ttlSeconds },
   );
 
@@ -81,7 +103,10 @@ async function storeInRedisCode(input: {
 async function consumeInRedisCode(codeId: string): Promise<string | null> {
   const redis = getRedisClient();
   if (!redis) return null;
-  return redis.getdel<string>(`${MOBILE_AUTH_CODE_KEY_PREFIX}${codeId}`);
+  const value = await redis.getdel<unknown>(
+    `${MOBILE_AUTH_CODE_KEY_PREFIX}${codeId}`,
+  );
+  return decodeRedisPayload(value);
 }
 
 export async function isMobileAuthCodeStoreReady(): Promise<boolean> {
