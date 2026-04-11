@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -197,6 +197,7 @@ function AuthSurface() {
   const [exchangingMobileSession, setExchangingMobileSession] = useState(false);
   const [mobileSessionExchangeTried, setMobileSessionExchangeTried] = useState(false);
   const [mobileReturnUrl, setMobileReturnUrl] = useState<string | null>(null);
+  const mobilePkceErrorRedirected = useRef(false);
 
   const [twoFactorChallengeId, setTwoFactorChallengeId] = useState<string | null>(null);
   const [twoFactorCode, setTwoFactorCode] = useState("");
@@ -304,8 +305,18 @@ function AuthSurface() {
       return;
     }
     if (mobileRequested && mobileCallback && !mobilePkceMode) {
+      if (!mobilePkceErrorRedirected.current) {
+        mobilePkceErrorRedirected.current = true;
+        const callbackUrl = buildMobileCallbackUrl(mobileCallback, {
+          status: "error",
+          message:
+            "Flujo móvil desactualizado. Actualiza la app y vuelve a intentar iniciar sesión.",
+          state: mobileState || undefined,
+        });
+        redirectToMobileApp(callbackUrl);
+      }
       setServerError(
-        "No pudimos validar el inicio seguro móvil (PKCE). Abre de nuevo el flujo desde la app.",
+        "No pudimos validar el inicio seguro móvil (PKCE). Actualiza la app y vuelve a iniciar el flujo.",
       );
       return;
     }
@@ -315,13 +326,13 @@ function AuthSurface() {
         previous ===
           "No pudimos validar el callback de la app móvil. Abre de nuevo el flujo desde la app." ||
         previous ===
-          "No pudimos validar el inicio seguro móvil (PKCE). Abre de nuevo el flujo desde la app."
+          "No pudimos validar el inicio seguro móvil (PKCE). Actualiza la app y vuelve a iniciar el flujo."
       ) {
         return null;
       }
       return previous;
     });
-  }, [mobileCallback, mobilePkceMode, mobileRequested]);
+  }, [mobileCallback, mobilePkceMode, mobileRequested, mobileState, redirectToMobileApp]);
 
   useEffect(() => {
     if (mobileMode) return;
