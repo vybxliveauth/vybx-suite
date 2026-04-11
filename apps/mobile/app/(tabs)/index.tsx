@@ -16,10 +16,13 @@ import { AppScreenHeader } from "../../src/components/AppScreenHeader";
 import { DiscoveryHero } from "../../src/components/DiscoveryHero";
 import { EventCard } from "../../src/components/EventCard";
 import { EventCardSkeleton } from "../../src/components/EventCardSkeleton";
+import { NearbyCarousel } from "../../src/components/NearbyCarousel";
 import { PersonalizationSheet } from "../../src/components/PersonalizationSheet";
+import { useAuth } from "../../src/context/auth-context";
 import { useAudiencePreferences } from "../../src/context/audience-preferences-context";
 import { useFavorites } from "../../src/context/favorites-context";
 import { useCategories } from "../../src/hooks/useCategories";
+import { useDetectedCity } from "../../src/hooks/useDetectedCity";
 import { useEvents } from "../../src/hooks/useEvents";
 import { useAppTheme } from "../../src/context/theme-context";
 import { type AppColors } from "../../src/theme/tokens";
@@ -37,8 +40,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { user } = useAuth();
   const { data, isLoading, isError, error, refetch, isFetching } = useEvents();
   const { data: categories } = useCategories();
+  const { city: detectedCity, isLoading: isLocating, requestCityDetection } = useDetectedCity();
   const { isFavorite, toggleFavorite } = useFavorites();
   const {
     preferences,
@@ -52,6 +57,7 @@ export default function HomeScreen() {
   const [didAutoloadPreferences, setDidAutoloadPreferences] = useState(false);
 
   const events = data?.data ?? [];
+  const locationCity = detectedCity || user?.city || preferences.city || null;
   const normalizedQuery = query.trim().toLowerCase();
   const categoryLabelById = useMemo(
     () => new Map((categories ?? []).map((category) => [category.id, category.name])),
@@ -135,6 +141,21 @@ export default function HomeScreen() {
     [categoryLabelById, isFavorite, scoredEvents],
   );
 
+  const nearbyEvents = useMemo(() => {
+    if (!locationCity) return [];
+    return scoredEvents
+      .filter((event) => event.id !== heroEvent?.id)
+      .filter((event) => locationMatchesCity(event.location, locationCity))
+      .slice(0, 8);
+  }, [heroEvent?.id, locationCity, scoredEvents]);
+
+  const nearbyEventIds = useMemo(() => new Set(nearbyEvents.map((event) => event.id)), [nearbyEvents]);
+
+  const feedEvents = useMemo(
+    () => filteredEvents.filter((event) => !nearbyEventIds.has(event.id)),
+    [filteredEvents, nearbyEventIds],
+  );
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -183,7 +204,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
-        data={filteredEvents}
+        data={feedEvents}
         keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <EventCard
@@ -287,6 +308,16 @@ export default function HomeScreen() {
                 router.push(`/event/${heroEvent.id}` as Href);
               }}
               onPressSecondary={() => setShowPreferencesSheet(true)}
+            />
+
+            <NearbyCarousel
+              city={locationCity}
+              events={nearbyEvents}
+              isLocating={isLocating}
+              onRequestLocation={() => {
+                void requestCityDetection();
+              }}
+              onPressEvent={(eventId) => router.push(`/event/${eventId}` as Href)}
             />
           </View>
         }

@@ -8,6 +8,7 @@ configure(() => {
   require("../src/components/stories/DiscoveryHero.stories");
   require("../src/components/stories/EventCard.stories");
   require("../src/components/stories/EventCardSkeleton.stories");
+  require("../src/components/stories/NearbyCarousel.stories");
   require("../src/components/stories/ThemeTokens.stories");
 }, module);
 

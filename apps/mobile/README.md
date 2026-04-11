@@ -80,6 +80,17 @@ Notas:
   - ajustar el hero editorial del home
 - Editar en cualquier momento desde `Mi Cuenta > Recomendaciones`.
 
+## Inicio (search-first)
+
+- El tab `Buscar` se oculta del navbar para simplificar navegación.
+- La búsqueda y filtros viven en `Inicio`:
+  - barra de búsqueda principal
+  - chips de categorías
+  - sugerencias rápidas
+- Sección `Cerca de ti` en carrusel (1 evento por vista), usando:
+  - ubicación del dispositivo (si el usuario da permiso)
+  - fallback a ciudad guardada en preferencias/perfil
+
 ## Hardening pre-release (mobile)
 
 Comando unico para validar lo critico antes de release:
