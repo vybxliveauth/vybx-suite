@@ -238,6 +238,8 @@ function AuthSurface() {
         throw new Error("No pudimos validar PKCE para continuar con la app.");
       }
 
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 12_000);
       const response = await fetch("/api/mobile-auth/create-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -249,7 +251,16 @@ function AuthSurface() {
           code_challenge: mobileCodeChallenge,
           code_challenge_method: mobileCodeChallengeMethod,
         }),
+        signal: controller.signal,
+      }).catch((error: unknown) => {
+        if ((error as { name?: string })?.name === "AbortError") {
+          throw new Error(
+            "El puente seguro hacia la app tardó demasiado. Intenta nuevamente.",
+          );
+        }
+        throw error;
       });
+      window.clearTimeout(timeoutId);
 
       if (!response.ok) {
         let message = "No pudimos preparar el acceso seguro móvil.";
@@ -285,6 +296,46 @@ function AuthSurface() {
       redirectToMobileApp(callbackUrl);
     },
     [createMobileAuthCode, mobileCallback, mobileMode, mobileState, redirectToMobileApp],
+  );
+
+  const bridgeWebSessionToMobile = useCallback(
+    async (userEmail: string) => {
+      setExchangingMobileSession(true);
+      setMobileReturnUrl(null);
+      setServerError(null);
+      setServerNotice("Sesion web detectada. Conectando con la app...");
+
+      try {
+        const tokens = await Promise.race([
+          exchangeSessionForMobileAuth(),
+          new Promise<null>((resolve) => {
+            window.setTimeout(() => resolve(null), 7000);
+          }),
+        ]);
+
+        if (!tokens) {
+          if (userEmail) {
+            loginForm.setValue("email", userEmail);
+          }
+          setServerNotice(
+            "Sesion detectada, pero no pudimos transferirla automaticamente. Ingresa tu contrasena para continuar en la app.",
+          );
+          return;
+        }
+
+        await completeMobileAuth(tokens);
+      } catch {
+        if (userEmail) {
+          loginForm.setValue("email", userEmail);
+        }
+        setServerNotice(
+          "Sesion detectada, pero no pudimos transferirla automaticamente. Ingresa tu contrasena para continuar en la app.",
+        );
+      } finally {
+        setExchangingMobileSession(false);
+      }
+    },
+    [completeMobileAuth, loginForm],
   );
 
   useEffect(() => {
@@ -345,61 +396,23 @@ function AuthSurface() {
     if (!authChecked || user === null) return;
     if (mobileSessionExchangeTried) return;
 
-    let mounted = true;
     setMobileSessionExchangeTried(true);
-    setExchangingMobileSession(true);
-    setMobileReturnUrl(null);
-    setServerError(null);
-    setServerNotice("Sesion web detectada. Conectando con la app...");
-
     const userEmail = user.email ?? "";
-
-    void (async () => {
-      const tokens = await Promise.race([
-        exchangeSessionForMobileAuth(),
-        new Promise<null>((resolve) => {
-          window.setTimeout(() => resolve(null), 7000);
-        }),
-      ]);
-      if (!mounted) return;
-      if (!tokens) {
-        // Pre-fill the email so the user only needs to enter their password.
-        if (userEmail) {
-          loginForm.setValue("email", userEmail);
-        }
-        setServerNotice(
-          "Sesion detectada, pero no pudimos transferirla automaticamente. Ingresa tu contrasena para continuar en la app.",
-        );
-        return;
-      }
-      await completeMobileAuth(tokens);
-    })()
-      .catch(() => {
-        if (!mounted) return;
-        if (userEmail) {
-          loginForm.setValue("email", userEmail);
-        }
-        setServerNotice(
-          "Sesion detectada, pero no pudimos transferirla automaticamente. Ingresa tu contrasena para continuar en la app.",
-        );
-      })
-      .finally(() => {
-        if (mounted) setExchangingMobileSession(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
+    void bridgeWebSessionToMobile(userEmail);
   }, [
     authChecked,
+    bridgeWebSessionToMobile,
     mobileCallback,
-    completeMobileAuth,
-    loginForm,
     mobileMode,
     mobilePkceMode,
     mobileSessionExchangeTried,
     user,
   ]);
+
+  async function handleContinueToApp() {
+    if (!user) return;
+    await bridgeWebSessionToMobile(user.email ?? "");
+  }
 
   useEffect(() => {
     const emailFromQuery = searchParams.get("email")?.trim() ?? "";
@@ -717,6 +730,17 @@ function AuthSurface() {
                       onClick={() => window.location.assign(mobileReturnUrl)}
                     >
                       Volver a la app
+                    </Button>
+                  )}
+                  {mobileMode && authChecked && user && !mobileReturnUrl && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full"
+                      onClick={() => void handleContinueToApp()}
+                      disabled={exchangingMobileSession}
+                    >
+                      Continuar en la app
                     </Button>
                   )}
                   <Button
