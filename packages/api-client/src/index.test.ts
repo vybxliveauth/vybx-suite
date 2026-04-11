@@ -185,6 +185,34 @@ describe("createApiClient", () => {
     expect(init.cache).toBe("default");
   });
 
+  it("does not duplicate content-type when headers already include it", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
+
+    const client = makeClient();
+    await client.request("/auth/login", {
+      method: "POST",
+      headers: new Headers({
+        "Content-Type": "application/json",
+        "X-Client": "mobile",
+      }),
+      body: JSON.stringify({ email: "a@b.com", password: "12345678" }),
+    });
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const headers = init.headers as Record<string, string>;
+    const contentTypeKeys = Object.keys(headers).filter(
+      (key) => key.toLowerCase() === "content-type",
+    );
+    expect(contentTypeKeys).toHaveLength(1);
+    const contentTypeKey = contentTypeKeys[0];
+    if (!contentTypeKey) {
+      throw new Error("Missing content-type header key");
+    }
+    expect(headers[contentTypeKey]).toBe("application/json");
+  });
+
   it("throws with error message on non-ok response", async () => {
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ message: "Forbidden" }), { status: 403 }),

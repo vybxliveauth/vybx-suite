@@ -65,6 +65,31 @@ function toHeadersRecord(input?: HeadersInit): Record<string, string> {
   return { ...input };
 }
 
+function findHeaderKey(
+  headers: Record<string, string>,
+  name: string,
+): string | undefined {
+  const target = name.toLowerCase();
+  return Object.keys(headers).find((key) => key.toLowerCase() === target);
+}
+
+function hasHeader(headers: Record<string, string>, name: string): boolean {
+  return findHeaderKey(headers, name) !== undefined;
+}
+
+function setHeader(
+  headers: Record<string, string>,
+  name: string,
+  value: string,
+): void {
+  const existingKey = findHeaderKey(headers, name);
+  if (existingKey) {
+    headers[existingKey] = value;
+    return;
+  }
+  headers[name] = value;
+}
+
 function normalizeJsonLike(payload: unknown): payload is { message?: unknown } {
   return Boolean(payload) && typeof payload === "object" && !Array.isArray(payload);
 }
@@ -158,13 +183,13 @@ export function createApiClient(options: ApiClientOptions) {
       contentTypeMode === "always" ||
       (contentTypeMode === "mutating" && isMutatingMethod(method))
     ) {
-      if (!headers["Content-Type"]) {
-        headers["Content-Type"] = "application/json";
+      if (!hasHeader(headers, "Content-Type")) {
+        setHeader(headers, "Content-Type", "application/json");
       }
     }
     if (isMutatingMethod(method)) {
       const csrfToken = getCsrfToken();
-      if (csrfToken) headers["x-csrf-token"] = csrfToken;
+      if (csrfToken) setHeader(headers, "x-csrf-token", csrfToken);
     }
   };
 
