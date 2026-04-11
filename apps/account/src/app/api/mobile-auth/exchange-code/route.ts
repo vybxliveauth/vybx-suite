@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
-import { exchangeMobileAuthCode } from "@/lib/mobile-auth-code";
+import {
+  exchangeMobileAuthCode,
+  isValidCodeVerifier,
+  isValidMobileAuthState,
+} from "@/lib/mobile-auth-code";
+import { applyMobileAuthRateLimit } from "@/lib/mobile-auth-rate-limit";
 
 export const runtime = "nodejs";
+
+function responseHeaders(rateLimit: Awaited<ReturnType<typeof applyMobileAuthRateLimit>>): Headers {
+  return new Headers({
+    "Cache-Control": "no-store, no-cache, must-revalidate",
+    Pragma: "no-cache",
+    "X-RateLimit-Limit": String(rateLimit.limit),
+    "X-RateLimit-Remaining": String(rateLimit.remaining),
+    "X-RateLimit-Reset": String(rateLimit.retryAfterSeconds),
+    "X-RateLimit-Source": rateLimit.source,
+  });
+}
 
 type ExchangeCodeBody = {
   auth_code?: unknown;
@@ -10,11 +26,21 @@ type ExchangeCodeBody = {
 };
 
 export async function POST(req: Request) {
+  const rateLimit = await applyMobileAuthRateLimit("exchange-code", req);
+  const headers = responseHeaders(rateLimit);
+  if (!rateLimit.allowed) {
+    headers.set("Retry-After", String(rateLimit.retryAfterSeconds));
+    return NextResponse.json(
+      { message: "Demasiados intentos. Intenta nuevamente en unos segundos." },
+      { status: 429, headers },
+    );
+  }
+
   let body: ExchangeCodeBody;
   try {
     body = (await req.json()) as ExchangeCodeBody;
   } catch {
-    return NextResponse.json({ message: "Payload inválido." }, { status: 400 });
+    return NextResponse.json({ message: "Payload inválido." }, { status: 400, headers });
   }
 
   const authCode =
@@ -23,10 +49,10 @@ export async function POST(req: Request) {
     typeof body.code_verifier === "string" ? body.code_verifier.trim() : "";
   const state = typeof body.state === "string" ? body.state.trim() : "";
 
-  if (!authCode || !codeVerifier || !state) {
+  if (!authCode || !isValidCodeVerifier(codeVerifier) || !isValidMobileAuthState(state)) {
     return NextResponse.json(
       { message: "Faltan parámetros obligatorios para intercambio móvil." },
-      { status: 400 },
+      { status: 400, headers },
     );
   }
 
@@ -39,7 +65,7 @@ export async function POST(req: Request) {
   if (!exchanged) {
     return NextResponse.json(
       { message: "No se pudo validar el código de acceso móvil." },
-      { status: 401 },
+      { status: 401, headers },
     );
   }
 
@@ -49,9 +75,6 @@ export async function POST(req: Request) {
       refresh_token: exchanged.refreshToken,
       token_type: "Bearer",
     },
-    {
-      status: 200,
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-    },
+    { status: 200, headers },
   );
 }

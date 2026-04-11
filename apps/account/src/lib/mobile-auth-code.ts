@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "crypto";
+import { createHash, randomBytes, timingSafeEqual } from "crypto";
 import {
   consumeMobileAuthCodePayload,
   storeMobileAuthCodePayload,
@@ -29,8 +29,25 @@ export function isValidCodeChallenge(value: string | null | undefined): value is
   return /^[A-Za-z0-9._~-]{43,128}$/.test(value);
 }
 
+export function isValidCodeVerifier(value: string | null | undefined): value is string {
+  if (!value) return false;
+  return /^[A-Za-z0-9._~-]{43,128}$/.test(value);
+}
+
+export function isValidMobileAuthState(value: string | null | undefined): value is string {
+  if (!value) return false;
+  return /^[A-Za-z0-9._~-]{8,200}$/.test(value);
+}
+
 export function buildCodeChallengeS256(verifier: string): string {
   return createHash("sha256").update(verifier).digest("base64url");
+}
+
+function timingSafeEqualText(left: string, right: string): boolean {
+  const leftBytes = Buffer.from(left, "utf8");
+  const rightBytes = Buffer.from(right, "utf8");
+  if (leftBytes.length !== rightBytes.length) return false;
+  return timingSafeEqual(leftBytes, rightBytes);
 }
 
 export function createMobileAuthCode(input: {
@@ -73,6 +90,8 @@ export async function exchangeMobileAuthCode(input: {
   state: string;
 }): Promise<{ accessToken: string; refreshToken: string } | null> {
   if (!/^[A-Za-z0-9_-]{32,256}$/.test(input.authCode)) return null;
+  if (!isValidCodeVerifier(input.codeVerifier)) return null;
+  if (!isValidMobileAuthState(input.state)) return null;
   const codeId = buildOpaqueCodeId(input.authCode);
   const consumedPayload = await consumeMobileAuthCodePayload(codeId);
   if (!consumedPayload) return null;
@@ -86,17 +105,17 @@ export async function exchangeMobileAuthCode(input: {
 
   if (!payload || payload.v !== 1) return null;
   if (typeof payload.exp !== "number") return null;
-  if (typeof payload.state !== "string" || payload.state.length < 4) return null;
+  if (!isValidMobileAuthState(payload.state)) return null;
   if (!isValidCodeChallenge(payload.codeChallenge)) return null;
   if (typeof payload.accessToken !== "string" || payload.accessToken.length < 8) return null;
   if (typeof payload.refreshToken !== "string" || payload.refreshToken.length < 8) return null;
 
   const nowSeconds = Math.floor(Date.now() / 1000);
   if (payload.exp <= nowSeconds) return null;
-  if (payload.state !== input.state) return null;
+  if (!timingSafeEqualText(payload.state, input.state)) return null;
 
   const computedChallenge = buildCodeChallengeS256(input.codeVerifier);
-  if (computedChallenge !== payload.codeChallenge) return null;
+  if (!timingSafeEqualText(computedChallenge, payload.codeChallenge)) return null;
 
   return {
     accessToken: payload.accessToken,

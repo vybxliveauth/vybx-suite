@@ -11,6 +11,10 @@ Superficie dedicada de autenticacion para usuarios finales (`USER`).
 - `UPSTASH_REDIS_REST_URL`: URL REST de Upstash Redis (replay protection global).
 - `UPSTASH_REDIS_REST_TOKEN`: token REST de Upstash Redis.
 - `MOBILE_AUTH_ALLOW_IN_MEMORY_REPLAY_FALLBACK`: fallback opcional (solo recomendado fuera de produccion).
+- `MOBILE_AUTH_CREATE_RATE_LIMIT_MAX`: limite de `create-code` por ventana.
+- `MOBILE_AUTH_CREATE_RATE_LIMIT_WINDOW_SECONDS`: ventana en segundos para `create-code`.
+- `MOBILE_AUTH_EXCHANGE_RATE_LIMIT_MAX`: limite de `exchange-code` por ventana.
+- `MOBILE_AUTH_EXCHANGE_RATE_LIMIT_WINDOW_SECONDS`: ventana en segundos para `exchange-code`.
 
 ### Nota Fase 0 (auth movil PKCE)
 
@@ -22,6 +26,12 @@ Superficie dedicada de autenticacion para usuarios finales (`USER`).
 
 - `auth_code` ahora es un nonce opaco (no contiene tokens ni payload legible).
 - El payload sensible del handoff se guarda server-side y se consume una sola vez (`GETDEL` en Redis o fallback en memoria fuera de prod).
+
+### Nota Fase 2 (hardening operativo)
+
+- `POST /api/mobile-auth/create-code` y `POST /api/mobile-auth/exchange-code` ahora tienen rate limit (Redis o fallback en memoria fuera de prod).
+- Ambos endpoints devuelven headers `X-RateLimit-*` y `Retry-After` cuando aplica.
+- Validaciones reforzadas: `state` y `code_verifier` con formato estricto, y comparaciones en tiempo constante para `state`/PKCE challenge.
 
 ## Rutas
 
