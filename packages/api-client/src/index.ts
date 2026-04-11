@@ -12,6 +12,7 @@ type ApiClientOptions = {
   makeSessionExpiredError?: () => Error;
   fetchFn?: typeof fetch;
   extractErrorMessage?: (res: Response) => Promise<string>;
+  defaultCache?: RequestCache;
 };
 
 function normalizePathname(pathname: string) {
@@ -146,6 +147,7 @@ export function createApiClient(options: ApiClientOptions) {
     options.makeSessionExpiredError ?? (() => new Error("Session expired"));
   const fetchFn = options.fetchFn ?? fetch;
   const parseError = options.extractErrorMessage ?? extractErrorMessage;
+  const defaultCache = options.defaultCache ?? "no-store";
 
   const withAuthHeaders = (
     method: string,
@@ -190,7 +192,7 @@ export function createApiClient(options: ApiClientOptions) {
         ...init,
         headers,
         credentials,
-        cache: init.cache ?? "no-store",
+        cache: init.cache ?? defaultCache,
         signal: controller.signal,
       });
     } catch (error) {

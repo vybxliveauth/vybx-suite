@@ -25,6 +25,9 @@ export const apiClient = createApiClient({
   retryOnUnauthorized: false,    // retry handled inside mobileFetch
   normalizeResponse: normalizePaginatedPayload,
   fetchFn: mobileFetch,
+  // RN's whatwg-fetch polyfill appends &_=<ts> when cache is "no-store",
+  // which the backend rejects via forbidNonWhitelisted on DTO validation.
+  defaultCache: "default",
   onSessionExpired: () => {
     void defaultTokenStorage.clearTokens();
   },

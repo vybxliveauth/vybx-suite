@@ -161,6 +161,30 @@ describe("createApiClient", () => {
     expect(init.body).toBe(JSON.stringify({ title: "Test" }));
   });
 
+  it("uses no-store cache by default", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
+
+    const client = makeClient();
+    await client.get("/events");
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.cache).toBe("no-store");
+  });
+
+  it("allows overriding default cache mode", async () => {
+    mockFetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
+
+    const client = makeClient({ defaultCache: "default" });
+    await client.get("/events");
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(init.cache).toBe("default");
+  });
+
   it("throws with error message on non-ok response", async () => {
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ message: "Forbidden" }), { status: 403 }),
