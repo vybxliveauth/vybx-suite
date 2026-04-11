@@ -6,8 +6,11 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
+import { useEffect } from "react";
+import { AppState } from "react-native";
 import { AuthProvider } from "../src/context/auth-context";
 import { FavoritesProvider } from "../src/context/favorites-context";
+import { tracker } from "../src/lib/analytics";
 import { queryClient } from "../src/lib/query-client";
 import { colors } from "../src/theme/tokens";
 
@@ -49,6 +52,17 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState !== "active") {
+        void tracker.flush();
+      }
+    });
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { reportMobileError } from "../lib/observability";
 
 export interface PublicEvent {
   id: string;
@@ -90,26 +91,39 @@ export function useEvents(page = 1, pageSize = 20) {
   return useQuery({
     queryKey: ["events", page, pageSize],
     queryFn: async () => {
-      const response = await api.get<{
-        data?: BackendEvent[];
-        items?: BackendEvent[];
-        total?: number;
-        page?: number;
-        pageSize?: number;
-        pagination?: BackendPagination;
-      }>(`/events?page=${page}&limit=${pageSize}`);
+      try {
+        const response = await api.get<{
+          data?: BackendEvent[];
+          items?: BackendEvent[];
+          total?: number;
+          page?: number;
+          pageSize?: number;
+          pagination?: BackendPagination;
+        }>(`/events?page=${page}&limit=${pageSize}`);
 
-      const rawEvents = response.data ?? response.items ?? [];
-      const resolvedPage = response.page ?? response.pagination?.page ?? page;
-      const resolvedPageSize = response.pageSize ?? response.pagination?.limit ?? pageSize;
-      const resolvedTotal = response.total ?? response.pagination?.total ?? rawEvents.length;
+        const rawEvents = response.data ?? response.items ?? [];
+        const resolvedPage = response.page ?? response.pagination?.page ?? page;
+        const resolvedPageSize = response.pageSize ?? response.pagination?.limit ?? pageSize;
+        const resolvedTotal = response.total ?? response.pagination?.total ?? rawEvents.length;
 
-      return {
-        data: rawEvents.map(normalizePublicEvent),
-        total: resolvedTotal,
-        page: resolvedPage,
-        pageSize: resolvedPageSize,
-      } satisfies EventsResponse;
+        return {
+          data: rawEvents.map(normalizePublicEvent),
+          total: resolvedTotal,
+          page: resolvedPage,
+          pageSize: resolvedPageSize,
+        } satisfies EventsResponse;
+      } catch (error) {
+        reportMobileError(
+          "mobile_events_load_failed",
+          {
+            endpoint: "/events",
+            page,
+            page_size: pageSize,
+          },
+          error,
+        );
+        throw error;
+      }
     },
     staleTime: 1000 * 60 * 2, // 2 min
   });
@@ -119,8 +133,17 @@ export function useEvent(id: string) {
   return useQuery({
     queryKey: ["event", id],
     queryFn: async () => {
-      const response = await api.get<BackendEvent>(`/events/${id}`);
-      return normalizePublicEvent(response);
+      try {
+        const response = await api.get<BackendEvent>(`/events/${id}`);
+        return normalizePublicEvent(response);
+      } catch (error) {
+        reportMobileError(
+          "mobile_event_detail_load_failed",
+          { endpoint: "/events/:id", event_id: id },
+          error,
+        );
+        throw error;
+      }
     },
     enabled: Boolean(id),
   });

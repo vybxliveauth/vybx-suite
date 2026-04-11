@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { reportMobileError } from "../lib/observability";
 
 export interface MyTicket {
   id: string;
@@ -32,7 +33,18 @@ interface MyTicketsResponse {
 export function useMyTickets(enabled = true) {
   return useQuery({
     queryKey: ["my-tickets"],
-    queryFn: () => api.get<MyTicketsResponse>("/tickets/my-tickets"),
+    queryFn: async () => {
+      try {
+        return await api.get<MyTicketsResponse>("/tickets/my-tickets");
+      } catch (error) {
+        reportMobileError(
+          "mobile_tickets_load_failed",
+          { endpoint: "/tickets/my-tickets" },
+          error,
+        );
+        throw error;
+      }
+    },
     staleTime: 1000 * 30, // 30s — tickets state changes often
     enabled,
   });
