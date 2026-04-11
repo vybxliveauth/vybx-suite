@@ -91,6 +91,106 @@ type BackendMobileSessionExchangeResponse = {
   refresh_token?: string;
   user?: BackendAuthUser;
 };
+type BackendPasskeyAuthenticateOptions = {
+  challenge: string;
+  timeout?: number;
+  rpId?: string;
+  allowCredentials?: Array<{
+    id: string;
+    type?: PublicKeyCredentialType;
+    transports?: AuthenticatorTransport[];
+  }>;
+  userVerification?: UserVerificationRequirement;
+};
+type BackendPasskeyAuthenticateVerifyPayload = {
+  id: string;
+  rawId: string;
+  type: "public-key";
+  response: {
+    authenticatorData: string;
+    clientDataJSON: string;
+    signature: string;
+    userHandle?: string;
+  };
+};
+
+function decodeBase64Url(input: string): ArrayBuffer {
+  const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
+  const padded =
+    base64.length % 4 === 0 ? base64 : `${base64}${"=".repeat(4 - (base64.length % 4))}`;
+
+  if (typeof window !== "undefined" && typeof window.atob === "function") {
+    const binary = window.atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  throw new Error("Tu navegador no soporta decodificacion base64 requerida para passkey.");
+}
+
+function encodeBase64Url(input: ArrayBuffer | null): string {
+  if (!input) return "";
+
+  const bytes = new Uint8Array(input);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 1) {
+    binary += String.fromCharCode(bytes[i] ?? 0);
+  }
+
+  if (typeof window === "undefined" || typeof window.btoa !== "function") {
+    throw new Error("Tu navegador no soporta codificacion base64 requerida para passkey.");
+  }
+  const base64 = window.btoa(binary);
+
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function toPublicKeyRequestOptions(
+  input: BackendPasskeyAuthenticateOptions,
+): PublicKeyCredentialRequestOptions {
+  const options: PublicKeyCredentialRequestOptions = {
+    challenge: decodeBase64Url(input.challenge),
+    userVerification: input.userVerification,
+  };
+
+  if (typeof input.timeout === "number") {
+    options.timeout = input.timeout;
+  }
+  if (typeof input.rpId === "string" && input.rpId.trim().length > 0) {
+    options.rpId = input.rpId;
+  }
+  if (Array.isArray(input.allowCredentials) && input.allowCredentials.length > 0) {
+    options.allowCredentials = input.allowCredentials.map((credential) => ({
+      id: decodeBase64Url(credential.id),
+      type: credential.type ?? "public-key",
+      transports: credential.transports,
+    }));
+  }
+
+  return options;
+}
+
+function toPasskeyVerifyPayload(
+  credential: PublicKeyCredential,
+): BackendPasskeyAuthenticateVerifyPayload {
+  const response = credential.response as AuthenticatorAssertionResponse;
+  return {
+    id: credential.id,
+    rawId: encodeBase64Url(credential.rawId),
+    type: "public-key",
+    response: {
+      authenticatorData: encodeBase64Url(response.authenticatorData),
+      clientDataJSON: encodeBase64Url(response.clientDataJSON),
+      signature: encodeBase64Url(response.signature),
+      ...(response.userHandle
+        ? { userHandle: encodeBase64Url(response.userHandle) }
+        : {}),
+    },
+  };
+}
 
 function isTwoFactorChallenge(
   value:
@@ -191,6 +291,44 @@ export async function verifyLoginTwoFactor(payload: {
       body: JSON.stringify(payload),
     },
   );
+  return adaptAuthUser(response.user);
+}
+
+export async function loginWithPasskey(): Promise<AuthUser> {
+  if (
+    typeof window === "undefined" ||
+    typeof navigator === "undefined" ||
+    typeof window.PublicKeyCredential === "undefined"
+  ) {
+    throw new Error("Tu navegador no soporta Passkey/WebAuthn.");
+  }
+
+  const options = await request<BackendPasskeyAuthenticateOptions>(
+    "/auth/passkey/authenticate/options",
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+
+  const assertion = (await navigator.credentials.get({
+    publicKey: toPublicKeyRequestOptions(options),
+  })) as PublicKeyCredential | null;
+
+  if (!assertion) {
+    throw new Error("No se pudo completar la autenticacion con passkey.");
+  }
+
+  const response = await request<{ user: BackendAuthUser; success?: boolean }>(
+    "/auth/passkey/authenticate/verify",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        credential: toPasskeyVerifyPayload(assertion),
+      }),
+    },
+  );
+
   return adaptAuthUser(response.user);
 }
 

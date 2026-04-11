@@ -11,7 +11,7 @@ import { defaultTokenStorage } from "@vybx/auth-mobile";
 import { authApi } from "./auth-api";
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3004/api/v1";
+  process.env.EXPO_PUBLIC_API_URL ?? "https://api.vybxlive.com/api/v1";
 
 const mobileFetch = createMobileFetch({
   storage: defaultTokenStorage,

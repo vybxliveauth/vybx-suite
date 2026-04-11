@@ -21,7 +21,7 @@ import { colors } from "../../src/theme/tokens";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { data, isLoading, isError, refetch, isFetching } = useEvents();
+  const { data, isLoading, isError, error, refetch, isFetching } = useEvents();
   const { data: categories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [activeFilter, setActiveFilter] = useState("all");
@@ -75,10 +75,12 @@ export default function HomeScreen() {
   }
 
   if (isError) {
+    const detail = error instanceof Error ? error.message : null;
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.center}>
           <Text style={styles.errorText}>No se pudieron cargar los eventos.</Text>
+          {detail ? <Text style={styles.errorDetail}>{detail}</Text> : null}
           <Text style={styles.retryText} onPress={() => void refetch()}>
             Reintentar
           </Text>
@@ -204,6 +206,12 @@ const styles = StyleSheet.create({
   separator: { height: 14 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
   errorText: { color: "#f87171", fontSize: 15, textAlign: "center", marginBottom: 12 },
+  errorDetail: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    textAlign: "center",
+    marginBottom: 10,
+  },
   retryText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
   emptyText: { color: colors.textMuted, fontSize: 15, textAlign: "center" },
 });

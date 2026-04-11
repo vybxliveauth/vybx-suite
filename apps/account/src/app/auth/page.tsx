@@ -22,6 +22,7 @@ import {
   exchangeSessionForMobileAuth,
   login,
   loginForMobile,
+  loginWithPasskey,
   register,
   verifyLoginTwoFactor,
   verifyLoginTwoFactorForMobile,
@@ -204,6 +205,7 @@ function AuthSurface() {
   const [verifyingTwoFactor, setVerifyingTwoFactor] = useState(false);
 
   const [registerEmail, setRegisterEmail] = useState(searchParams.get("email")?.trim() ?? "");
+  const [isPasskeySubmitting, setIsPasskeySubmitting] = useState(false);
 
   const loginForm = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -529,6 +531,30 @@ function AuthSurface() {
     }
   }
 
+  async function handlePasskeySignIn() {
+    setServerError(null);
+    setServerNotice(null);
+    setTwoFactorChallengeId(null);
+    setTwoFactorCode("");
+    setIsPasskeySubmitting(true);
+
+    try {
+      const passkeyUser = await loginWithPasskey();
+
+      if (mobileMode) {
+        await bridgeWebSessionToMobile(passkeyUser.email ?? "");
+        return;
+      }
+
+      setUser(passkeyUser);
+      window.location.assign(returnToWeb);
+    } catch (error) {
+      setServerError(parseError(error, "No se pudo iniciar sesion con passkey."));
+    } finally {
+      setIsPasskeySubmitting(false);
+    }
+  }
+
   async function handleVerifyTwoFactor() {
     if (!twoFactorChallengeId) return;
 
@@ -715,12 +741,30 @@ function AuthSurface() {
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={loginForm.formState.isSubmitting || exchangingMobileSession}
+                    disabled={
+                      loginForm.formState.isSubmitting ||
+                      exchangingMobileSession ||
+                      isPasskeySubmitting
+                    }
                   >
                     {(loginForm.formState.isSubmitting || exchangingMobileSession) && (
                       <Loader2 className="size-4 animate-spin" />
                     )}
                     {twoFactorChallengeId ? "Reintentar" : "Entrar"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full"
+                    disabled={
+                      loginForm.formState.isSubmitting ||
+                      exchangingMobileSession ||
+                      isPasskeySubmitting
+                    }
+                    onClick={() => void handlePasskeySignIn()}
+                  >
+                    {isPasskeySubmitting && <Loader2 className="size-4 animate-spin" />}
+                    Entrar con passkey
                   </Button>
                   {mobileReturnUrl && (
                     <Button

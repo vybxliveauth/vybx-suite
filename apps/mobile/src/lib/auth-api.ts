@@ -17,7 +17,7 @@ export type {
 } from "@vybx/auth-mobile";
 
 const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3004/api/v1";
+  process.env.EXPO_PUBLIC_API_URL ?? "https://api.vybxlive.com/api/v1";
 
 export const authApi = createMobileAuthApi({
   baseUrl: BASE_URL,

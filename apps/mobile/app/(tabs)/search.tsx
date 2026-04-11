@@ -20,7 +20,7 @@ import { useFavorites } from "../../src/context/favorites-context";
 import { colors } from "../../src/theme/tokens";
 
 export default function SearchScreen() {
-  const { data, isLoading, isFetching, refetch } = useEvents();
+  const { data, isLoading, isError, error, isFetching, refetch } = useEvents();
   const { data: categories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [query, setQuery] = useState("");
@@ -74,6 +74,21 @@ export default function SearchScreen() {
             </View>
           }
         />
+      </SafeAreaView>
+    );
+  }
+
+  if (isError) {
+    const detail = error instanceof Error ? error.message : null;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No pudimos cargar eventos</Text>
+          {detail ? <Text style={styles.emptySubtitle}>{detail}</Text> : null}
+          <Pressable style={styles.retryButton} onPress={() => void refetch()}>
+            <Text style={styles.retryButtonText}>Reintentar</Text>
+          </Pressable>
+        </View>
       </SafeAreaView>
     );
   }
@@ -214,4 +229,18 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: "700" },
   emptySubtitle: { color: colors.textSecondary, fontSize: 14, textAlign: "center" },
+  retryButton: {
+    marginTop: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  retryButtonText: {
+    color: colors.brand,
+    fontSize: 13,
+    fontWeight: "700",
+  },
 });
