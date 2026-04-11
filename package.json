@@ -15,6 +15,7 @@
     "typecheck": "turbo typecheck",
     "probe:prod": "bash scripts/probe-production.sh",
     "probe:mobile-auth": "bash scripts/probe-mobile-auth.sh",
+    "probe:mobile-events": "bash scripts/probe-mobile-events.sh",
     "hardening:preprod": "bash scripts/preprod-hardening.sh",
     "prepare": "husky"
   },
