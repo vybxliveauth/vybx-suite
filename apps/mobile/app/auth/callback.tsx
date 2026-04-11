@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import * as Linking from "expo-linking";
-import { colors } from "../../src/theme/tokens";
 import { useAuth } from "../../src/context/auth-context";
+import { useAppTheme } from "../../src/context/theme-context";
 import {
   consumePendingPkceVerifier,
   exchangeMobileAuthCode,
@@ -20,6 +20,7 @@ import {
 export default function AuthCallbackScreen() {
   const router = useRouter();
   const { completeBrowserAuth } = useAuth();
+  const { colors } = useAppTheme();
   const params = useLocalSearchParams<{
     auth_code?: string;
     status?: string;
@@ -124,23 +125,22 @@ export default function AuthCallbackScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <ActivityIndicator color={colors.brand} />
-      <Text style={styles.text}>Completando inicio de sesión...</Text>
+      <Text style={[styles.text, { color: colors.textSecondary }]}>
+        Completando inicio de sesión...
+      </Text>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.bg,
     gap: 12,
   },
   text: {
-    color: colors.textSecondary,
     fontSize: 14,
   },
 });

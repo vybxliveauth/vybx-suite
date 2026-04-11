@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -16,10 +16,15 @@ import { EventCard } from "../../src/components/EventCard";
 import { EventCardSkeleton } from "../../src/components/EventCardSkeleton";
 import { useCategories } from "../../src/hooks/useCategories";
 import { useEvents } from "../../src/hooks/useEvents";
+import { useAudiencePreferences } from "../../src/context/audience-preferences-context";
 import { useFavorites } from "../../src/context/favorites-context";
-import { colors } from "../../src/theme/tokens";
+import { useAppTheme } from "../../src/context/theme-context";
+import { type AppColors } from "../../src/theme/tokens";
 
 export default function SearchScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { preferences } = useAudiencePreferences();
   const { data, isLoading, isError, error, isFetching, refetch } = useEvents();
   const { data: categories } = useCategories();
   const { isFavorite, toggleFavorite } = useFavorites();
@@ -33,6 +38,15 @@ export default function SearchScreen() {
     () => (categories ?? []).slice(0, 8),
     [categories],
   );
+
+  useEffect(() => {
+    if (activeCategoryId) return;
+    const firstPreferred = preferences.vibeCategoryIds[0];
+    if (!firstPreferred) return;
+    const existsInTags = quickTags.some((category) => category.id === firstPreferred);
+    if (!existsInTags) return;
+    setActiveCategoryId(firstPreferred);
+  }, [activeCategoryId, preferences.vibeCategoryIds, quickTags]);
 
   const filtered = useMemo(() => {
     let result = events;
@@ -61,7 +75,11 @@ export default function SearchScreen() {
             <View style={styles.header}>
               <AppScreenHeader
                 title="Buscar"
-                subtitle="Encuentra eventos por nombre o ciudad"
+                subtitle={
+                  preferences.city
+                    ? `Encuentra eventos por nombre o ciudad (base: ${preferences.city})`
+                    : "Encuentra eventos por nombre o ciudad"
+                }
               />
               <View style={styles.searchWrap}>
                 <Ionicons name="search-outline" size={18} color={colors.textSecondary} />
@@ -119,7 +137,11 @@ export default function SearchScreen() {
           <View style={styles.header}>
             <AppScreenHeader
               title="Buscar"
-              subtitle="Encuentra eventos por nombre o ciudad"
+              subtitle={
+                preferences.city
+                  ? `Encuentra eventos por nombre o ciudad (base: ${preferences.city})`
+                  : "Encuentra eventos por nombre o ciudad"
+              }
             />
 
             <View style={styles.searchWrap}>
@@ -184,63 +206,65 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  list: { padding: 16, paddingBottom: 36 },
-  separator: { height: 14 },
-  header: { paddingBottom: 14, gap: 10 },
-  searchWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  searchInput: { flex: 1, color: colors.textPrimary, fontSize: 15 },
-  searchPlaceholder: { flex: 1, color: colors.textMuted, fontSize: 15 },
-  loaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  loaderText: { color: colors.textSecondary, fontSize: 13 },
-  tagsRow: { gap: 8, paddingTop: 4 },
-  tag: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  tagActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  tagPressed: { opacity: 0.82 },
-  tagText: { color: colors.textSoft, fontSize: 13, fontWeight: "600" },
-  tagTextActive: { color: colors.white },
-  emptyState: {
-    marginTop: 40,
-    padding: 22,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    gap: 6,
-  },
-  emptyTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: "700" },
-  emptySubtitle: { color: colors.textSecondary, fontSize: 14, textAlign: "center" },
-  retryButton: {
-    marginTop: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-  },
-  retryButtonText: {
-    color: colors.brand,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    list: { padding: 16, paddingBottom: 36 },
+    separator: { height: 14 },
+    header: { paddingBottom: 14, gap: 10 },
+    searchWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    searchInput: { flex: 1, color: colors.textPrimary, fontSize: 15 },
+    searchPlaceholder: { flex: 1, color: colors.textMuted, fontSize: 15 },
+    loaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    loaderText: { color: colors.textSecondary, fontSize: 13 },
+    tagsRow: { gap: 8, paddingTop: 4 },
+    tag: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceMuted,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    tagActive: { backgroundColor: colors.brand, borderColor: colors.brand },
+    tagPressed: { opacity: 0.82 },
+    tagText: { color: colors.textSoft, fontSize: 13, fontWeight: "600" },
+    tagTextActive: { color: colors.white },
+    emptyState: {
+      marginTop: 40,
+      padding: 22,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      gap: 6,
+    },
+    emptyTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: "700" },
+    emptySubtitle: { color: colors.textSecondary, fontSize: 14, textAlign: "center" },
+    retryButton: {
+      marginTop: 8,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceMuted,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+    },
+    retryButtonText: {
+      color: colors.brand,
+      fontSize: 13,
+      fontWeight: "700",
+    },
+  });
+}

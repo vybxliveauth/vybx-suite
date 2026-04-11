@@ -1,10 +1,18 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useRouter, type Href } from "expo-router";
 import { Alert, Image, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { PersonalizationSheet } from "../../src/components/PersonalizationSheet";
+import { useAudiencePreferences } from "../../src/context/audience-preferences-context";
 import { useAuth } from "../../src/context/auth-context";
 import { mobileResendVerification } from "../../src/lib/auth-api";
 import { startAccountAuthSession } from "../../src/lib/account-auth-session";
 import { AppScreenHeader } from "../../src/components/AppScreenHeader";
-import { colors } from "../../src/theme/tokens";
+import { useCategories } from "../../src/hooks/useCategories";
+import {
+  useAppTheme,
+  type ThemeMode,
+} from "../../src/context/theme-context";
+import { type AppColors } from "../../src/theme/tokens";
 
 const ROLE_LABEL: Record<string, string> = {
   USER: "Usuario",
@@ -14,10 +22,16 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, logout, completeBrowserAuth } = useAuth();
+  const { data: categories } = useCategories();
+  const { preferences, completeOnboarding, resetPreferences } = useAudiencePreferences();
+  const { colors, mode, setMode } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [resendingVerification, setResendingVerification] = useState(false);
   const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
   const [startingSession, setStartingSession] = useState(false);
+  const [showPreferencesSheet, setShowPreferencesSheet] = useState(false);
 
   async function handleLogout() {
     Alert.alert("Cerrar sesión", "¿Seguro que quieres salir?", [
@@ -102,8 +116,24 @@ export default function ProfileScreen() {
                 {startingSession ? "Abriendo navegador..." : "Iniciar sesión"}
               </Text>
             </Pressable>
+            <Pressable
+              style={styles.ghostButton}
+              onPress={() => setShowPreferencesSheet(true)}
+            >
+              <Text style={styles.ghostButtonText}>Personalizar inicio</Text>
+            </Pressable>
           </View>
         </ScrollView>
+        <PersonalizationSheet
+          visible={showPreferencesSheet}
+          categories={categories ?? []}
+          initialCity={preferences.city}
+          initialVibeCategoryIds={preferences.vibeCategoryIds}
+          onClose={() => setShowPreferencesSheet(false)}
+          onSave={async ({ city, vibeCategoryIds }) => {
+            await completeOnboarding({ city, vibeCategoryIds });
+          }}
+        />
       </SafeAreaView>
     );
   }
@@ -145,13 +175,52 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Información de cuenta</Text>
 
-          <InfoRow label="Email" value={user.email} />
-          {user.city && <InfoRow label="Ciudad" value={user.city} />}
-          {user.country && <InfoRow label="País" value={user.country} />}
+          <InfoRow label="Email" value={user.email} styles={styles} />
+          {user.city && <InfoRow label="Ciudad" value={user.city} styles={styles} />}
+          {user.country && <InfoRow label="País" value={user.country} styles={styles} />}
           <InfoRow
             label="Email verificado"
             value={user.emailVerified ? "Sí" : "Pendiente"}
+            styles={styles}
           />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Apariencia</Text>
+          <ThemeModeSelector mode={mode} onChange={setMode} />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recomendaciones</Text>
+          <View style={styles.prefCard}>
+            <Text style={styles.prefTitle}>
+              Ciudad: {preferences.city || "Sin definir"}
+            </Text>
+            <Text style={styles.prefSubtitle}>
+              Vibes:{" "}
+              {preferences.vibeCategoryIds.length > 0
+                ? preferences.vibeCategoryIds
+                    .map((id) => categories?.find((category) => category.id === id)?.name || id)
+                    .join(", ")
+                : "sin preferencias todavía"}
+            </Text>
+            <View style={styles.prefActions}>
+              <Pressable
+                style={styles.prefButtonPrimary}
+                onPress={() => setShowPreferencesSheet(true)}
+              >
+                <Text style={styles.prefButtonPrimaryText}>Editar gustos</Text>
+              </Pressable>
+              <Pressable
+                style={styles.prefButtonGhost}
+                onPress={() => {
+                  void resetPreferences();
+                }}
+              >
+                <Text style={styles.prefButtonGhostText}>Reset</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -193,15 +262,41 @@ export default function ProfileScreen() {
           >
             <Text style={styles.logoutText}>Cerrar sesión</Text>
           </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.labBtn, pressed && styles.pressed]}
+            onPress={() => router.push("/storybook" as Href)}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir Storybook"
+          >
+            <Text style={styles.labText}>Abrir UI Lab (Storybook)</Text>
+          </Pressable>
         </View>
 
         <Text style={styles.version}>VybeTickets Mobile • v1.0.0</Text>
       </ScrollView>
+      <PersonalizationSheet
+        visible={showPreferencesSheet}
+        categories={categories ?? []}
+        initialCity={preferences.city}
+        initialVibeCategoryIds={preferences.vibeCategoryIds}
+        onClose={() => setShowPreferencesSheet(false)}
+        onSave={async ({ city, vibeCategoryIds }) => {
+          await completeOnboarding({ city, vibeCategoryIds });
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow({
+  label,
+  value,
+  styles,
+}: {
+  label: string;
+  value: string;
+  styles: ReturnType<typeof createStyles>;
+}) {
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -210,94 +305,263 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, gap: 28, paddingBottom: 48 },
-  guestContent: { flexGrow: 1, justifyContent: "center", padding: 24, gap: 18 },
-  header: {},
-  guestCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 22,
-    gap: 14,
-    alignItems: "center",
-  },
-  guestEmoji: { fontSize: 36 },
-  guestTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: "700", textAlign: "center" },
-  guestSubtitle: { color: colors.textSecondary, fontSize: 14, lineHeight: 22, textAlign: "center" },
-  primaryButton: {
-    backgroundColor: colors.brand,
-    borderRadius: 10,
-    paddingVertical: 12,
-    width: "100%",
-    alignItems: "center",
-  },
-  primaryButtonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
+function ThemeModeSelector({
+  mode,
+  onChange,
+}: {
+  mode: ThemeMode;
+  onChange: (nextMode: ThemeMode) => Promise<void>;
+}) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const options: Array<{ mode: ThemeMode; label: string }> = [
+    { mode: "light", label: "Claro" },
+    { mode: "dark", label: "Oscuro" },
+    { mode: "system", label: "Sistema" },
+  ];
 
-  avatarSection: { alignItems: "center", gap: 10 },
-  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: "#2a2a2a" },
-  avatarFallback: { justifyContent: "center", alignItems: "center", backgroundColor: colors.brand },
-  initials: { fontSize: 32, fontWeight: "800", color: "#fff" },
-  name: { fontSize: 22, fontWeight: "700", color: colors.textPrimary },
-  roleBadge: {
-    backgroundColor: "#10233f",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: colors.brand,
-  },
-  roleText: { color: "#93c5fd", fontSize: 12, fontWeight: "700" },
+  return (
+    <View style={styles.themeSwitchRow}>
+      {options.map((option) => {
+        const active = option.mode === mode;
+        return (
+          <Pressable
+            key={option.mode}
+            style={({ pressed }) => [
+              styles.themeChip,
+              active && styles.themeChipActive,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              void onChange(option.mode);
+            }}
+          >
+            <Text style={[styles.themeChipText, active && styles.themeChipTextActive]}>
+              {option.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
-  section: { gap: 12 },
-  sectionTitle: { fontSize: 13, color: colors.textMuted, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  buttonDisabled: { opacity: 0.65 },
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    content: { padding: 24, gap: 28, paddingBottom: 48 },
+    guestContent: { flexGrow: 1, justifyContent: "center", padding: 24, gap: 18 },
+    header: {},
+    guestCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 22,
+      gap: 14,
+      alignItems: "center",
+    },
+    guestEmoji: { fontSize: 36 },
+    guestTitle: {
+      color: colors.textPrimary,
+      fontSize: 22,
+      fontWeight: "700",
+      textAlign: "center",
+    },
+    guestSubtitle: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      lineHeight: 22,
+      textAlign: "center",
+    },
+    primaryButton: {
+      backgroundColor: colors.brand,
+      borderRadius: 10,
+      paddingVertical: 12,
+      width: "100%",
+      alignItems: "center",
+    },
+    primaryButtonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
+    ghostButton: {
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceMuted,
+      paddingVertical: 11,
+      width: "100%",
+      alignItems: "center",
+    },
+    ghostButtonText: {
+      color: colors.textPrimary,
+      fontWeight: "700",
+      fontSize: 14,
+    },
 
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  rowLabel: { fontSize: 14, color: colors.textSecondary },
-  rowValue: { fontSize: 14, color: colors.textPrimary, fontWeight: "500", maxWidth: "60%", textAlign: "right" },
+    avatarSection: { alignItems: "center", gap: 10 },
+    avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: colors.surfaceStrong },
+    avatarFallback: {
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: colors.brand,
+    },
+    initials: { fontSize: 32, fontWeight: "800", color: colors.white },
+    name: { fontSize: 22, fontWeight: "700", color: colors.textPrimary },
+    roleBadge: {
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 4,
+      borderWidth: 1,
+      borderColor: colors.brand,
+    },
+    roleText: { color: colors.brand, fontSize: 12, fontWeight: "700" },
 
-  verifyCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 14,
-    gap: 10,
-  },
-  verifyTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
-  verifySubtitle: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
-  verifyBtn: {
-    backgroundColor: colors.brand,
-    borderRadius: 9,
-    paddingVertical: 11,
-    alignItems: "center",
-  },
-  verifyBtnText: { color: colors.white, fontWeight: "700", fontSize: 13 },
-  verifyNotice: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+    section: { gap: 12 },
+    sectionTitle: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    buttonDisabled: { opacity: 0.65 },
 
-  logoutBtn: {
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.danger,
-  },
-  pressed: { opacity: 0.7 },
-  logoutText: { color: colors.danger, fontWeight: "700", fontSize: 15 },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    rowLabel: { fontSize: 14, color: colors.textSecondary },
+    rowValue: {
+      fontSize: 14,
+      color: colors.textPrimary,
+      fontWeight: "500",
+      maxWidth: "60%",
+      textAlign: "right",
+    },
 
-  version: { textAlign: "center", color: colors.textMuted, fontSize: 12 },
-});
+    themeSwitchRow: {
+      flexDirection: "row",
+      gap: 8,
+    },
+    themeChip: {
+      flex: 1,
+      alignItems: "center",
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 10,
+      backgroundColor: colors.surface,
+    },
+    themeChipActive: {
+      borderColor: colors.brand,
+      backgroundColor: colors.surfaceMuted,
+    },
+    themeChipText: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      fontWeight: "700",
+    },
+    themeChipTextActive: {
+      color: colors.brand,
+    },
+
+    prefCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      gap: 8,
+    },
+    prefTitle: {
+      color: colors.textPrimary,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    prefSubtitle: {
+      color: colors.textSecondary,
+      fontSize: 13,
+      lineHeight: 20,
+    },
+    prefActions: {
+      flexDirection: "row",
+      gap: 8,
+      marginTop: 4,
+    },
+    prefButtonPrimary: {
+      flex: 1,
+      backgroundColor: colors.brand,
+      borderRadius: 9,
+      paddingVertical: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    prefButtonPrimaryText: {
+      color: colors.white,
+      fontWeight: "700",
+      fontSize: 13,
+    },
+    prefButtonGhost: {
+      width: 72,
+      borderRadius: 9,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceMuted,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    prefButtonGhostText: {
+      color: colors.textPrimary,
+      fontWeight: "700",
+      fontSize: 13,
+    },
+
+    verifyCard: {
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 14,
+      gap: 10,
+    },
+    verifyTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
+    verifySubtitle: { color: colors.textSecondary, fontSize: 13, lineHeight: 20 },
+    verifyBtn: {
+      backgroundColor: colors.brand,
+      borderRadius: 9,
+      paddingVertical: 11,
+      alignItems: "center",
+    },
+    verifyBtnText: { color: colors.white, fontWeight: "700", fontSize: 13 },
+    verifyNotice: { color: colors.textSecondary, fontSize: 12, lineHeight: 18 },
+
+    logoutBtn: {
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.danger,
+    },
+    labBtn: {
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    pressed: { opacity: 0.7 },
+    logoutText: { color: colors.danger, fontWeight: "700", fontSize: 15 },
+    labText: { color: colors.textPrimary, fontWeight: "700", fontSize: 15 },
+
+    version: { textAlign: "center", color: colors.textMuted, fontSize: 12 },
+  });
+}

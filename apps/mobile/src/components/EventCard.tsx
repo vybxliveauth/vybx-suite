@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -10,7 +10,13 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import type { PublicEvent } from "../hooks/useEvents";
-import { colors, radius, spacing } from "../theme/tokens";
+import { useAppTheme } from "../context/theme-context";
+import {
+  radius,
+  spacing,
+  type AppColors,
+  type ThemeVariant,
+} from "../theme/tokens";
 
 interface Props {
   event: PublicEvent;
@@ -44,6 +50,11 @@ export function EventCard({
   animationDelay = 0,
 }: Props) {
   const router = useRouter();
+  const { colors, resolvedTheme } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, resolvedTheme),
+    [colors, resolvedTheme],
+  );
   const scale = useSharedValue(1);
   const favoriteScale = useSharedValue(1);
 
@@ -137,64 +148,79 @@ export function EventCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pressed: { opacity: 0.92 },
-  image: { width: "100%", height: 220 },
-  imagePlaceholder: {
-    backgroundColor: colors.surfaceStrong,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  imagePlaceholderText: { fontSize: 48 },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0,0,0,0.18)",
-  },
-  favoriteBtn: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(14,18,23,0.72)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  body: { padding: spacing.md + 2, gap: spacing.sm - 1 },
-  metaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  featuredBadge: {
-    backgroundColor: colors.brand,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  featuredText: { color: colors.white, fontSize: 11, fontWeight: "700" },
-  date: {
-    fontSize: 11,
-    color: "#b6c2cf",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.2,
-  },
-  title: { fontSize: 18, fontWeight: "700", color: colors.textPrimary, lineHeight: 24 },
-  location: { fontSize: 13, color: "#a2adb9" },
-  price: { fontSize: 14, color: "#e2e8f0", fontWeight: "700", marginTop: 2 },
-});
+function createStyles(colors: AppColors, resolvedTheme: ThemeVariant) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.xxl,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    pressed: { opacity: 0.92 },
+    image: { width: "100%", height: 220 },
+    imagePlaceholder: {
+      backgroundColor: colors.surfaceStrong,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    imagePlaceholderText: { fontSize: 48 },
+    overlay: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor:
+        resolvedTheme === "dark" ? "rgba(0,0,0,0.18)" : "rgba(15,23,42,0.08)",
+    },
+    favoriteBtn: {
+      position: "absolute",
+      top: 8,
+      right: 8,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor:
+        resolvedTheme === "dark" ? "rgba(14,18,23,0.72)" : "rgba(255,255,255,0.84)",
+      borderWidth: 1,
+      borderColor:
+        resolvedTheme === "dark" ? "rgba(255,255,255,0.18)" : "rgba(15,23,42,0.12)",
+    },
+    body: { padding: spacing.md + 2, gap: spacing.sm - 1 },
+    metaRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    featuredBadge: {
+      backgroundColor: colors.brand,
+      borderRadius: 6,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    featuredText: { color: colors.white, fontSize: 11, fontWeight: "700" },
+    date: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontWeight: "600",
+      textTransform: "uppercase",
+      letterSpacing: 0.2,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      lineHeight: 24,
+    },
+    location: { fontSize: 13, color: colors.textSoft },
+    price: {
+      fontSize: 14,
+      color: resolvedTheme === "dark" ? "#e2e8f0" : "#0f172a",
+      fontWeight: "700",
+      marginTop: 2,
+    },
+  });
+}

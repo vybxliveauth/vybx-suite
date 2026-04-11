@@ -13,11 +13,14 @@ import { AppScreenHeader } from "../../src/components/AppScreenHeader";
 import { EventCard } from "../../src/components/EventCard";
 import { EventCardSkeleton } from "../../src/components/EventCardSkeleton";
 import { useFavorites } from "../../src/context/favorites-context";
+import { useAppTheme } from "../../src/context/theme-context";
 import { api } from "../../src/lib/api";
 import { normalizePublicEvent, type PublicEvent } from "../../src/hooks/useEvents";
-import { colors } from "../../src/theme/tokens";
+import { type AppColors } from "../../src/theme/tokens";
 
 export default function FavoritesScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { favoriteIds, hydrated, isFavorite, toggleFavorite } = useFavorites();
 
   const favoriteIdList = useMemo(() => Array.from(favoriteIds), [favoriteIds]);
@@ -129,39 +132,41 @@ export default function FavoritesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  list: { padding: 16, paddingBottom: 36 },
-  separator: { height: 14 },
-  loaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 14,
-  },
-  loaderText: { color: colors.textSecondary, fontSize: 13 },
-  emptyState: {
-    marginTop: 44,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    padding: 22,
-    alignItems: "center",
-    gap: 8,
-  },
-  emptyEmoji: { fontSize: 30 },
-  emptyTitle: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  emptySubtitle: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center",
-  },
-  errorText: {
-    marginTop: 6,
-    color: "#f59e0b",
-    fontSize: 12,
-    textAlign: "center",
-  },
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    list: { padding: 16, paddingBottom: 36 },
+    separator: { height: 14 },
+    loaderRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 14,
+    },
+    loaderText: { color: colors.textSecondary, fontSize: 13 },
+    emptyState: {
+      marginTop: 44,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      padding: 22,
+      alignItems: "center",
+      gap: 8,
+    },
+    emptyEmoji: { fontSize: 30 },
+    emptyTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "700" },
+    emptySubtitle: {
+      color: colors.textSecondary,
+      fontSize: 14,
+      lineHeight: 22,
+      textAlign: "center",
+    },
+    errorText: {
+      marginTop: 6,
+      color: colors.warning,
+      fontSize: 12,
+      textAlign: "center",
+    },
+  });
+}

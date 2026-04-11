@@ -1,4 +1,4 @@
-export const colors = {
+export const darkColors = {
   bg: "#080b10",
   bgElevated: "#0b0f14",
   surface: "#11161d",
@@ -12,9 +12,46 @@ export const colors = {
   brand: "#0a84ff",
   white: "#ffffff",
   danger: "#ef4444",
+  warning: "#f59e0b",
   success: "#16a34a",
   heart: "#ff375f",
 } as const;
+
+export const lightColors = {
+  bg: "#f3f6fb",
+  bgElevated: "#ffffff",
+  surface: "#ffffff",
+  surfaceMuted: "#edf3fb",
+  surfaceStrong: "#e2ebf7",
+  border: "#d8e1ef",
+  textPrimary: "#0f172a",
+  textSecondary: "#334155",
+  textMuted: "#64748b",
+  textSoft: "#475569",
+  brand: "#007aff",
+  white: "#ffffff",
+  danger: "#dc2626",
+  warning: "#d97706",
+  success: "#16a34a",
+  heart: "#ff375f",
+} as const;
+
+export type AppColors = {
+  [K in keyof typeof darkColors]: string;
+};
+export type ThemeVariant = "light" | "dark";
+
+export const themeColors: Record<ThemeVariant, AppColors> = {
+  light: lightColors,
+  dark: darkColors,
+};
+
+export function getThemeColors(theme: ThemeVariant): AppColors {
+  return themeColors[theme];
+}
+
+// Backward compatible default (dark-first). New code should use useAppTheme().
+export const colors: AppColors = darkColors;
 
 export const spacing = {
   xs: 4,
@@ -52,4 +89,3 @@ export const typography = {
     fontWeight: "500" as const,
   },
 } as const;
-

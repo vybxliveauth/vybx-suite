@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -12,11 +12,14 @@ import {
 } from "react-native";
 import { startAccountAuthSession } from "../../src/lib/account-auth-session";
 import { useAuth } from "../../src/context/auth-context";
-import { colors } from "../../src/theme/tokens";
+import { useAppTheme } from "../../src/context/theme-context";
+import { type AppColors } from "../../src/theme/tokens";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { completeBrowserAuth } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
 
   async function handleWebLogin() {
@@ -80,41 +83,43 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
-  container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 48,
-    gap: 28,
-  },
-  header: { alignItems: "center", gap: 8 },
-  logo: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-  },
-  tagline: { fontSize: 14, color: colors.textMuted },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 24,
-    gap: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  title: { fontSize: 22, fontWeight: "700", color: colors.textPrimary },
-  subtitle: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
-  button: {
-    backgroundColor: colors.brand,
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    marginTop: 4,
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
-  footerText: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.bg },
+    container: {
+      flexGrow: 1,
+      justifyContent: "center",
+      paddingHorizontal: 24,
+      paddingVertical: 48,
+      gap: 28,
+    },
+    header: { alignItems: "center", gap: 8 },
+    logo: {
+      fontSize: 32,
+      fontWeight: "800",
+      color: colors.textPrimary,
+      letterSpacing: -0.5,
+    },
+    tagline: { fontSize: 14, color: colors.textMuted },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 16,
+      padding: 24,
+      gap: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    title: { fontSize: 22, fontWeight: "700", color: colors.textPrimary },
+    subtitle: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
+    button: {
+      backgroundColor: colors.brand,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: "center",
+      marginTop: 4,
+    },
+    buttonDisabled: { opacity: 0.6 },
+    buttonText: { color: colors.white, fontWeight: "700", fontSize: 15 },
+    footerText: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
+  });
+}

@@ -35,6 +35,12 @@
 - La app abre `account` en una sesión segura del sistema (tipo Ticketmaster).
 - Tras iniciar sesión o registrarte, vuelve a la app automáticamente con tokens mobile.
 
+## Tema light/dark/system
+
+- La app soporta `Claro`, `Oscuro` y `Sistema`.
+- El selector está en `Mi Cuenta > Apariencia`.
+- La preferencia queda guardada en el dispositivo.
+
 ## Expo + GitHub (automatizado)
 
 - Proyecto EAS enlazado: `@vybx/vybx-mobile`
@@ -49,6 +55,30 @@
 - Con ese secret:
   - Cada push a `main` que toque `apps/mobile` publica OTA update en rama `production`.
   - Puedes lanzar builds iOS/Android manuales desde `Actions > Expo Mobile Build`.
+
+## Storybook (UI Lab)
+
+Para documentar y revisar componentes en mobile:
+
+1. Arranca Storybook:
+   - `pnpm --filter @vybx/mobile start:storybook`
+2. En la app, abre `Mi Cuenta` y toca `Abrir UI Lab (Storybook)`.
+
+Notas:
+
+- Storybook está protegido por `EXPO_PUBLIC_STORYBOOK=1`.
+- Sin esa variable, la ruta `/storybook` muestra una pantalla informativa.
+
+## Personalización (UX mobile-first)
+
+- Onboarding ligero en `Inicio` con:
+  - ciudad principal
+  - categorías/vibes favoritas
+- Se guarda localmente en `SecureStore` y se usa para:
+  - priorizar recomendaciones en `Inicio`
+  - preseleccionar filtros en `Buscar`
+  - ajustar el hero editorial del home
+- Editar en cualquier momento desde `Mi Cuenta > Recomendaciones`.
 
 ## Hardening pre-release (mobile)
 

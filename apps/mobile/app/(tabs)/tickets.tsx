@@ -10,12 +10,13 @@ import {
   Text,
   View,
 } from "react-native";
-import { colors } from "../../src/theme/tokens";
+import { type AppColors, type ThemeVariant } from "../../src/theme/tokens";
 import { useMyTickets, type MyTicket } from "../../src/hooks/useMyTickets";
 import { useAuth } from "../../src/context/auth-context";
 import { Link } from "expo-router";
 import { AppScreenHeader } from "../../src/components/AppScreenHeader";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useAppTheme } from "../../src/context/theme-context";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("es-ES", {
@@ -26,7 +27,13 @@ function formatDate(dateStr: string) {
   });
 }
 
-function TicketCard({ ticket }: { ticket: MyTicket }) {
+function TicketCard({
+  ticket,
+  styles,
+}: {
+  ticket: MyTicket;
+  styles: ReturnType<typeof createStyles>;
+}) {
   const event = ticket.ticketType.event;
   const isUsed = ticket.isUsed;
 
@@ -71,6 +78,11 @@ function TicketCard({ ticket }: { ticket: MyTicket }) {
 }
 
 function TicketCardSkeleton() {
+  const { colors, resolvedTheme } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, resolvedTheme),
+    [colors, resolvedTheme],
+  );
   const pulse = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {
@@ -105,6 +117,11 @@ function TicketCardSkeleton() {
 }
 
 export default function TicketsScreen() {
+  const { colors, resolvedTheme } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, resolvedTheme),
+    [colors, resolvedTheme],
+  );
   const { user } = useAuth();
   const isAuthenticated = Boolean(user);
   const { data, isLoading, isError, refetch, isFetching } =
@@ -187,7 +204,7 @@ export default function TicketsScreen() {
       <FlatList
         data={tickets}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <TicketCard ticket={item} />}
+        renderItem={({ item }) => <TicketCard ticket={item} styles={styles} />}
         contentContainerStyle={styles.list}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         refreshControl={
@@ -219,82 +236,111 @@ export default function TicketsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  list: { padding: 16, paddingBottom: 36 },
-  header: { paddingBottom: 16 },
-  separator: { height: 12 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
-  loaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  loaderText: { color: colors.textSecondary, fontSize: 13 },
-  errorText: { color: colors.danger, fontSize: 15, textAlign: "center", marginBottom: 12 },
-  retryText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
-  emptyEmoji: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { color: colors.textPrimary, fontSize: 18, fontWeight: "700", marginBottom: 8 },
-  emptySubtitle: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
-  ctaButton: {
-    marginTop: 14,
-    backgroundColor: colors.brand,
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  },
-  ctaButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  card: {
-    backgroundColor: "#11161d",
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#1f2937",
-  },
-  cardUsed: { opacity: 0.55 },
-  eventImage: { width: "100%", height: 120 },
-  cardBody: { padding: 14, gap: 6 },
-  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
-  eventTitle: { flex: 1, fontSize: 16, fontWeight: "700", color: "#fff", lineHeight: 22 },
-  badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeActive: { backgroundColor: "#16a34a" },
-  badgeUsed: { backgroundColor: "#374151" },
-  badgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  ticketType: { fontSize: 13, color: colors.brand, fontWeight: "600" },
-  date: { fontSize: 13, color: colors.textSecondary },
-  location: { fontSize: 13, color: colors.textMuted },
-  qrSection: {
-    marginTop: 8,
-    backgroundColor: colors.bg,
-    borderRadius: 8,
-    padding: 10,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  qrLabel: { fontSize: 11, color: colors.textMuted, fontWeight: "600", textTransform: "uppercase" },
-  qrCode: { fontSize: 12, color: colors.brand, fontFamily: "monospace" },
-  ticketSkeletonCard: {
-    backgroundColor: "#11161d",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#1f2937",
-    overflow: "hidden",
-  },
-  ticketSkeletonImage: { height: 120, backgroundColor: "#1b2330" },
-  ticketSkeletonBody: { padding: 14, gap: 10 },
-  ticketSkeletonTitle: {
-    height: 18,
-    borderRadius: 8,
-    backgroundColor: "#2a3443",
-    width: "80%",
-  },
-  ticketSkeletonSubtitle: {
-    height: 14,
-    borderRadius: 999,
-    backgroundColor: "#2a3443",
-    width: "58%",
-  },
-  ticketSkeletonSubtitleShort: {
-    height: 14,
-    borderRadius: 999,
-    backgroundColor: "#2a3443",
-    width: "42%",
-  },
-});
+function createStyles(colors: AppColors, resolvedTheme: ThemeVariant) {
+  const skeletonColor = resolvedTheme === "dark" ? "#2a3443" : "#d3dced";
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    list: { padding: 16, paddingBottom: 36 },
+    header: { paddingBottom: 16 },
+    separator: { height: 12 },
+    center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
+    loaderRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+    loaderText: { color: colors.textSecondary, fontSize: 13 },
+    errorText: {
+      color: colors.danger,
+      fontSize: 15,
+      textAlign: "center",
+      marginBottom: 12,
+    },
+    retryText: { color: colors.brand, fontSize: 14, fontWeight: "700" },
+    emptyEmoji: { fontSize: 48, marginBottom: 12 },
+    emptyTitle: {
+      color: colors.textPrimary,
+      fontSize: 18,
+      fontWeight: "700",
+      marginBottom: 8,
+    },
+    emptySubtitle: { color: colors.textMuted, fontSize: 14, textAlign: "center" },
+    ctaButton: {
+      marginTop: 14,
+      backgroundColor: colors.brand,
+      borderRadius: 10,
+      paddingHorizontal: 18,
+      paddingVertical: 10,
+    },
+    ctaButtonText: { color: colors.white, fontSize: 14, fontWeight: "700" },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    cardUsed: { opacity: 0.55 },
+    eventImage: { width: "100%", height: 120 },
+    cardBody: { padding: 14, gap: 6 },
+    cardHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: 8,
+    },
+    eventTitle: {
+      flex: 1,
+      fontSize: 16,
+      fontWeight: "700",
+      color: colors.textPrimary,
+      lineHeight: 22,
+    },
+    badge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+    badgeActive: { backgroundColor: colors.success },
+    badgeUsed: { backgroundColor: colors.textMuted },
+    badgeText: { color: colors.white, fontSize: 11, fontWeight: "700" },
+    ticketType: { fontSize: 13, color: colors.brand, fontWeight: "600" },
+    date: { fontSize: 13, color: colors.textSecondary },
+    location: { fontSize: 13, color: colors.textMuted },
+    qrSection: {
+      marginTop: 8,
+      backgroundColor: colors.bg,
+      borderRadius: 8,
+      padding: 10,
+      gap: 4,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    qrLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      fontWeight: "600",
+      textTransform: "uppercase",
+    },
+    qrCode: { fontSize: 12, color: colors.brand, fontFamily: "monospace" },
+    ticketSkeletonCard: {
+      backgroundColor: colors.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: "hidden",
+    },
+    ticketSkeletonImage: { height: 120, backgroundColor: colors.surfaceStrong },
+    ticketSkeletonBody: { padding: 14, gap: 10 },
+    ticketSkeletonTitle: {
+      height: 18,
+      borderRadius: 8,
+      backgroundColor: skeletonColor,
+      width: "80%",
+    },
+    ticketSkeletonSubtitle: {
+      height: 14,
+      borderRadius: 999,
+      backgroundColor: skeletonColor,
+      width: "58%",
+    },
+    ticketSkeletonSubtitleShort: {
+      height: 14,
+      borderRadius: 999,
+      backgroundColor: skeletonColor,
+      width: "42%",
+    },
+  });
+}

@@ -1,8 +1,19 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
-import { colors, radius, spacing } from "../theme/tokens";
+import { useAppTheme } from "../context/theme-context";
+import {
+  radius,
+  spacing,
+  type AppColors,
+  type ThemeVariant,
+} from "../theme/tokens";
 
 export function EventCardSkeleton() {
+  const { colors, resolvedTheme } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, resolvedTheme),
+    [colors, resolvedTheme],
+  );
   const pulse = useRef(new Animated.Value(0.45)).current;
 
   useEffect(() => {
@@ -41,26 +52,29 @@ export function EventCardSkeleton() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xxl,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  image: { width: "100%", height: 220, backgroundColor: colors.surfaceStrong },
-  body: { padding: spacing.md + 2, gap: spacing.sm + 1 },
-  metaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  line: { borderRadius: radius.pill, backgroundColor: "#2a3443" },
-  badge: { width: 44, height: 18 },
-  date: { width: 110, height: 12 },
-  title: { width: "92%", height: 18, borderRadius: 8 },
-  titleShort: { width: "66%", height: 18, borderRadius: 8 },
-  location: { width: "58%", height: 13 },
-  price: { width: 96, height: 14 },
-});
+function createStyles(colors: AppColors, resolvedTheme: ThemeVariant) {
+  const lineColor = resolvedTheme === "dark" ? "#2a3443" : "#d3dced";
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radius.xxl,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    image: { width: "100%", height: 220, backgroundColor: colors.surfaceStrong },
+    body: { padding: spacing.md + 2, gap: spacing.sm + 1 },
+    metaRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    line: { borderRadius: radius.pill, backgroundColor: lineColor },
+    badge: { width: 44, height: 18 },
+    date: { width: 110, height: 12 },
+    title: { width: "92%", height: 18, borderRadius: 8 },
+    titleShort: { width: "66%", height: 18, borderRadius: 8 },
+    location: { width: "58%", height: 13 },
+    price: { width: 96, height: 14 },
+  });
+}

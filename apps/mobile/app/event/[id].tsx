@@ -15,7 +15,8 @@ import {
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { api } from "../../src/lib/api";
 import { useEvent } from "../../src/hooks/useEvents";
-import { colors } from "../../src/theme/tokens";
+import { useAppTheme } from "../../src/context/theme-context";
+import { type AppColors } from "../../src/theme/tokens";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("es-ES", {
@@ -29,6 +30,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function EventDetailScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -254,98 +257,111 @@ export default function EventDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingBottom: 48 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
-  errorText: { color: colors.danger, fontSize: 15, marginBottom: 12 },
-  backLink: { color: colors.brand, fontSize: 14, fontWeight: "600" },
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    content: { paddingBottom: 48 },
+    center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
+    errorText: { color: colors.danger, fontSize: 15, marginBottom: 12 },
+    backLink: { color: colors.brand, fontSize: 14, fontWeight: "600" },
 
-  hero: { width: "100%", height: 260 },
-  heroPlaceholder: {
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  heroPlaceholderText: { fontSize: 64 },
+    hero: { width: "100%", height: 260 },
+    heroPlaceholder: {
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    heroPlaceholderText: { fontSize: 64 },
 
-  body: { padding: 20, gap: 24 },
+    body: { padding: 20, gap: 24 },
 
-  header: { gap: 8 },
-  featuredBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: colors.brand,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  featuredText: { color: colors.white, fontSize: 11, fontWeight: "700" },
-  title: { fontSize: 26, fontWeight: "800", color: colors.white, lineHeight: 32 },
-  date: { fontSize: 14, color: colors.brand, fontWeight: "600" },
-  location: { fontSize: 14, color: colors.textSecondary },
+    header: { gap: 8 },
+    featuredBadge: {
+      alignSelf: "flex-start",
+      backgroundColor: colors.brand,
+      borderRadius: 6,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    featuredText: { color: colors.white, fontSize: 11, fontWeight: "700" },
+    title: { fontSize: 26, fontWeight: "800", color: colors.textPrimary, lineHeight: 32 },
+    date: { fontSize: 14, color: colors.brand, fontWeight: "600" },
+    location: { fontSize: 14, color: colors.textSecondary },
 
-  section: { gap: 12 },
-  sectionTitle: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  description: { fontSize: 15, color: colors.textSoft, lineHeight: 24 },
+    section: { gap: 12 },
+    sectionTitle: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    description: { fontSize: 15, color: colors.textSoft, lineHeight: 24 },
 
-  tierCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tierCardSoldOut: { opacity: 0.45 },
-  tierCardSelected: {
-    borderColor: colors.brand,
-    backgroundColor: colors.surfaceStrong,
-  },
-  tierInfo: { gap: 2 },
-  tierName: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
-  tierAvail: { fontSize: 12, color: colors.textMuted },
-  tierPrice: { fontSize: 16, fontWeight: "700", color: colors.brand },
-  quantityCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  quantityBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: colors.surfaceStrong,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  quantityBtnDisabled: {
-    opacity: 0.45,
-  },
-  quantityBtnText: { color: colors.white, fontSize: 22, fontWeight: "700", lineHeight: 24 },
-  quantityValue: { color: colors.white, fontSize: 20, fontWeight: "800", minWidth: 28, textAlign: "center" },
-  quantityHint: { color: colors.textMuted, fontSize: 12 },
-  totalPrice: { color: colors.textSoft, fontSize: 14, fontWeight: "600" },
+    tierCard: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    tierCardSoldOut: { opacity: 0.45 },
+    tierCardSelected: {
+      borderColor: colors.brand,
+      backgroundColor: colors.surfaceStrong,
+    },
+    tierInfo: { gap: 2 },
+    tierName: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+    tierAvail: { fontSize: 12, color: colors.textMuted },
+    tierPrice: { fontSize: 16, fontWeight: "700", color: colors.brand },
+    quantityCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 16,
+      backgroundColor: colors.surface,
+      borderRadius: 10,
+      paddingVertical: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    quantityBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      backgroundColor: colors.surfaceStrong,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    quantityBtnDisabled: {
+      opacity: 0.45,
+    },
+    quantityBtnText: {
+      color: colors.textPrimary,
+      fontSize: 22,
+      fontWeight: "700",
+      lineHeight: 24,
+    },
+    quantityValue: {
+      color: colors.textPrimary,
+      fontSize: 20,
+      fontWeight: "800",
+      minWidth: 28,
+      textAlign: "center",
+    },
+    quantityHint: { color: colors.textMuted, fontSize: 12 },
+    totalPrice: { color: colors.textSoft, fontSize: 14, fontWeight: "600" },
 
-  ctaBtn: {
-    backgroundColor: colors.brand,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  ctaBtnDisabled: { backgroundColor: "#2a2a2a" },
-  ctaText: { color: colors.white, fontWeight: "700", fontSize: 16 },
-});
+    ctaBtn: {
+      backgroundColor: colors.brand,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: "center",
+    },
+    ctaBtnDisabled: { backgroundColor: colors.surfaceStrong },
+    ctaText: { color: colors.white, fontWeight: "700", fontSize: 16 },
+  });
+}

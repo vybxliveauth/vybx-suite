@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { colors, spacing, typography } from "../theme/tokens";
+import { useAppTheme } from "../context/theme-context";
+import { spacing, typography, type AppColors } from "../theme/tokens";
 
 type AppScreenHeaderProps = {
   title: string;
@@ -14,6 +16,9 @@ export function AppScreenHeader({
   subtitle,
   rightSlot,
 }: AppScreenHeaderProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Animated.View entering={FadeInDown.duration(260)} style={styles.container}>
       <View style={styles.copyBlock}>
@@ -25,21 +30,23 @@ export function AppScreenHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingBottom: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  copyBlock: { flex: 1, gap: spacing.xs },
-  title: {
-    color: colors.textPrimary,
-    ...typography.display,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    ...typography.subtitle,
-  },
-});
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
+    container: {
+      paddingBottom: spacing.lg,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 12,
+    },
+    copyBlock: { flex: 1, gap: spacing.xs },
+    title: {
+      color: colors.textPrimary,
+      ...typography.display,
+    },
+    subtitle: {
+      color: colors.textSecondary,
+      ...typography.subtitle,
+    },
+  });
+}

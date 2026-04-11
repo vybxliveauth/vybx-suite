@@ -8,6 +8,7 @@
     "start:lan": "expo start --lan",
     "start:tunnel": "expo start --tunnel",
     "start:clear": "expo start --lan -c",
+    "start:storybook": "EXPO_PUBLIC_STORYBOOK=1 expo start --lan -c",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "build": "echo 'Use EAS Build for production. Run: eas build'",
@@ -27,7 +28,7 @@
     "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
-    "expo-crypto": "~14.1.5",
+    "expo-crypto": "~15.0.8",
     "expo-font": "~14.0.11",
     "expo-haptics": "~15.0.8",
     "expo-image": "~3.0.11",
@@ -53,6 +54,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@storybook/addon-ondevice-actions": "^8.6.4",
+    "@storybook/addon-ondevice-controls": "^8.6.4",
+    "@storybook/react-native": "^8.6.4",
     "@types/react": "~19.1.17",
     "@vybx/tsconfig": "workspace:*",
     "typescript": "~5.9.3"

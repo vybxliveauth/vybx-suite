@@ -8,19 +8,24 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
 import { AppState } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
 import { AuthProvider } from "../src/context/auth-context";
+import { AudiencePreferencesProvider } from "../src/context/audience-preferences-context";
 import { FavoritesProvider } from "../src/context/favorites-context";
+import { ThemeProvider, useAppTheme } from "../src/context/theme-context";
 import { tracker } from "../src/lib/analytics";
 import { queryClient } from "../src/lib/query-client";
-import { colors } from "../src/theme/tokens";
 
 function RootNavigator() {
+  const { colors } = useAppTheme();
+
   return (
     <Stack
       initialRouteName="(tabs)"
       screenOptions={{
         headerStyle: { backgroundColor: colors.bg },
-        headerTintColor: colors.white,
+        headerTintColor: colors.textPrimary,
         headerTitleStyle: { fontWeight: "700" },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.bg },
@@ -45,13 +50,25 @@ function RootNavigator() {
       {/* OAuth-style callback from browser auth session */}
       <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
 
+      {/* Storybook / UI Lab */}
+      <Stack.Screen
+        name="storybook"
+        options={{
+          title: "UI Lab",
+          headerBackTitle: "Atrás",
+          animation: "slide_from_right",
+        }}
+      />
+
       {/* 404 */}
       <Stack.Screen name="+not-found" />
     </Stack>
   );
 }
 
-export default function RootLayout() {
+function RootLayoutShell() {
+  const { colors, resolvedTheme } = useAppTheme();
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextState) => {
       if (nextState !== "active") {
@@ -63,13 +80,30 @@ export default function RootLayout() {
     };
   }, []);
 
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(colors.bg);
+  }, [colors.bg]);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <FavoritesProvider>
-          <RootNavigator />
-        </FavoritesProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <>
+      <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AudiencePreferencesProvider>
+            <FavoritesProvider>
+              <RootNavigator />
+            </FavoritesProvider>
+          </AudiencePreferencesProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootLayoutShell />
+    </ThemeProvider>
   );
 }
