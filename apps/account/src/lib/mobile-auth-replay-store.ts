@@ -1,18 +1,14 @@
 import { Redis } from "@upstash/redis";
+import {
+  hasMobileAuthRedisConfig,
+  isMobileAuthDistributedStoreRequired,
+  shouldAllowMobileAuthInMemoryFallback,
+} from "@/lib/mobile-auth-config";
 
 const MEMORY_AUTH_CODES = new Map<string, { payload: string; exp: number }>();
 const MOBILE_AUTH_CODE_KEY_PREFIX = "mobile-auth:code:";
 
 let redisClient: Redis | null | undefined;
-
-function shouldAllowInMemoryFallback(): boolean {
-  const configured = process.env.MOBILE_AUTH_ALLOW_IN_MEMORY_REPLAY_FALLBACK?.trim();
-  if (configured) {
-    return /^(1|true|yes|on)$/i.test(configured);
-  }
-
-  return process.env.NODE_ENV !== "production";
-}
 
 function getRedisClient(): Redis | null {
   if (redisClient !== undefined) {
@@ -29,13 +25,6 @@ function getRedisClient(): Redis | null {
 
   redisClient = new Redis({ url, token });
   return redisClient;
-}
-
-function hasRedisConfig(): boolean {
-  return (
-    !!process.env.UPSTASH_REDIS_REST_URL?.trim() &&
-    !!process.env.UPSTASH_REDIS_REST_TOKEN?.trim()
-  );
 }
 
 function cleanupInMemoryStore(nowSeconds: number): void {
@@ -96,7 +85,7 @@ async function consumeInRedisCode(codeId: string): Promise<string | null> {
 }
 
 export async function isMobileAuthCodeStoreReady(): Promise<boolean> {
-  if (hasRedisConfig()) {
+  if (hasMobileAuthRedisConfig()) {
     const redis = getRedisClient();
     if (!redis) return false;
 
@@ -112,7 +101,11 @@ export async function isMobileAuthCodeStoreReady(): Promise<boolean> {
     }
   }
 
-  return shouldAllowInMemoryFallback();
+  if (isMobileAuthDistributedStoreRequired()) {
+    return false;
+  }
+
+  return shouldAllowMobileAuthInMemoryFallback();
 }
 
 export async function storeMobileAuthCodePayload(input: {
@@ -120,17 +113,30 @@ export async function storeMobileAuthCodePayload(input: {
   payload: string;
   exp: number;
 }): Promise<boolean> {
-  if (hasRedisConfig()) {
+  if (hasMobileAuthRedisConfig()) {
     try {
       const stored = await storeInRedisCode(input);
       if (stored) return true;
-      if (!shouldAllowInMemoryFallback()) return false;
+      if (
+        isMobileAuthDistributedStoreRequired() ||
+        !shouldAllowMobileAuthInMemoryFallback()
+      ) {
+        return false;
+      }
       return storeInMemoryCode(input.codeId, input.payload, input.exp);
     } catch (error) {
       console.error("mobile-auth: code store failure", error);
-      if (!shouldAllowInMemoryFallback()) return false;
+      if (
+        isMobileAuthDistributedStoreRequired() ||
+        !shouldAllowMobileAuthInMemoryFallback()
+      ) {
+        return false;
+      }
     }
-  } else if (!shouldAllowInMemoryFallback()) {
+  } else if (
+    isMobileAuthDistributedStoreRequired() ||
+    !shouldAllowMobileAuthInMemoryFallback()
+  ) {
     return false;
   }
 
@@ -138,19 +144,32 @@ export async function storeMobileAuthCodePayload(input: {
 }
 
 export async function consumeMobileAuthCodePayload(codeId: string): Promise<string | null> {
-  if (hasRedisConfig()) {
+  if (hasMobileAuthRedisConfig()) {
     try {
       const consumed = await consumeInRedisCode(codeId);
       if (typeof consumed === "string" && consumed.length > 0) {
         return consumed;
       }
-      if (!shouldAllowInMemoryFallback()) return null;
+      if (
+        isMobileAuthDistributedStoreRequired() ||
+        !shouldAllowMobileAuthInMemoryFallback()
+      ) {
+        return null;
+      }
       return consumeInMemoryCode(codeId);
     } catch (error) {
       console.error("mobile-auth: code consume failure", error);
-      if (!shouldAllowInMemoryFallback()) return null;
+      if (
+        isMobileAuthDistributedStoreRequired() ||
+        !shouldAllowMobileAuthInMemoryFallback()
+      ) {
+        return null;
+      }
     }
-  } else if (!shouldAllowInMemoryFallback()) {
+  } else if (
+    isMobileAuthDistributedStoreRequired() ||
+    !shouldAllowMobileAuthInMemoryFallback()
+  ) {
     return null;
   }
 

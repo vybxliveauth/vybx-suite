@@ -4,12 +4,16 @@ import {
   isValidCodeVerifier,
   isValidMobileAuthState,
 } from "@/lib/mobile-auth-code";
-import { applyMobileAuthRateLimit } from "@/lib/mobile-auth-rate-limit";
+import { warnIfMobileAuthSecurityModeIsDegraded } from "@/lib/mobile-auth-config";
+import {
+  applyMobileAuthRateLimit,
+  isRateLimitDegradedInProduction,
+} from "@/lib/mobile-auth-rate-limit";
 
 export const runtime = "nodejs";
 
 function responseHeaders(rateLimit: Awaited<ReturnType<typeof applyMobileAuthRateLimit>>): Headers {
-  return new Headers({
+  const headers = new Headers({
     "Cache-Control": "no-store, no-cache, must-revalidate",
     Pragma: "no-cache",
     "X-RateLimit-Limit": String(rateLimit.limit),
@@ -17,6 +21,10 @@ function responseHeaders(rateLimit: Awaited<ReturnType<typeof applyMobileAuthRat
     "X-RateLimit-Reset": String(rateLimit.retryAfterSeconds),
     "X-RateLimit-Source": rateLimit.source,
   });
+  if (isRateLimitDegradedInProduction(rateLimit)) {
+    headers.set("X-Mobile-Auth-Security-Mode", "degraded-memory-fallback");
+  }
+  return headers;
 }
 
 type ExchangeCodeBody = {
@@ -26,8 +34,16 @@ type ExchangeCodeBody = {
 };
 
 export async function POST(req: Request) {
+  warnIfMobileAuthSecurityModeIsDegraded();
   const rateLimit = await applyMobileAuthRateLimit("exchange-code", req);
   const headers = responseHeaders(rateLimit);
+  if (rateLimit.unavailable) {
+    headers.set("Retry-After", String(rateLimit.retryAfterSeconds));
+    return NextResponse.json(
+      { message: "El control de seguridad móvil no está disponible temporalmente." },
+      { status: 503, headers },
+    );
+  }
   if (!rateLimit.allowed) {
     headers.set("Retry-After", String(rateLimit.retryAfterSeconds));
     return NextResponse.json(

@@ -11,6 +11,7 @@ Superficie dedicada de autenticacion para usuarios finales (`USER`).
 - `UPSTASH_REDIS_REST_URL`: URL REST de Upstash Redis (replay protection global).
 - `UPSTASH_REDIS_REST_TOKEN`: token REST de Upstash Redis.
 - `MOBILE_AUTH_ALLOW_IN_MEMORY_REPLAY_FALLBACK`: fallback opcional (solo recomendado fuera de produccion).
+- `MOBILE_AUTH_REQUIRE_DISTRIBUTED_STORE`: obliga uso de Redis distribuido (si no esta disponible, bloquea endpoints sensibles con `503`).
 - `MOBILE_AUTH_CREATE_RATE_LIMIT_MAX`: limite de `create-code` por ventana.
 - `MOBILE_AUTH_CREATE_RATE_LIMIT_WINDOW_SECONDS`: ventana en segundos para `create-code`.
 - `MOBILE_AUTH_EXCHANGE_RATE_LIMIT_MAX`: limite de `exchange-code` por ventana.
@@ -32,6 +33,12 @@ Superficie dedicada de autenticacion para usuarios finales (`USER`).
 - `POST /api/mobile-auth/create-code` y `POST /api/mobile-auth/exchange-code` ahora tienen rate limit (Redis o fallback en memoria fuera de prod).
 - Ambos endpoints devuelven headers `X-RateLimit-*` y `Retry-After` cuando aplica.
 - Validaciones reforzadas: `state` y `code_verifier` con formato estricto, y comparaciones en tiempo constante para `state`/PKCE challenge.
+
+### Nota Fase 3 (modo estricto distribuido)
+
+- Se agrego `MOBILE_AUTH_REQUIRE_DISTRIBUTED_STORE` para ejecutar el flujo mobile-auth en modo estricto distribuido.
+- Si este modo esta activo y Redis no esta disponible, los endpoints sensibles responden `503` (fail-safe).
+- En produccion, si se usa fallback en memoria, se expone `X-Mobile-Auth-Security-Mode: degraded-memory-fallback` para detectar configuraciones degradadas.
 
 ## Rutas
 

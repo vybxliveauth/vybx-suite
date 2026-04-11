@@ -1,5 +1,10 @@
 import { createHash } from "crypto";
 import { Redis } from "@upstash/redis";
+import {
+  isMobileAuthDistributedStoreRequired,
+  isMobileAuthProduction,
+  shouldAllowMobileAuthInMemoryFallback,
+} from "@/lib/mobile-auth-config";
 
 const MOBILE_AUTH_RATE_LIMIT_KEY_PREFIX = "mobile-auth:rate-limit:";
 const MEMORY_COUNTERS = new Map<string, { count: number; resetAtMs: number }>();
@@ -13,7 +18,8 @@ export type MobileAuthRateLimitDecision = {
   limit: number;
   remaining: number;
   retryAfterSeconds: number;
-  source: "redis" | "memory" | "disabled";
+  source: "redis" | "memory" | "disabled" | "unavailable";
+  unavailable: boolean;
 };
 
 function parsePositiveInt(raw: string | undefined, fallback: number): number {
@@ -21,12 +27,6 @@ function parsePositiveInt(raw: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return parsed;
-}
-
-function shouldAllowInMemoryFallback(): boolean {
-  const configured = process.env.MOBILE_AUTH_ALLOW_IN_MEMORY_REPLAY_FALLBACK?.trim();
-  if (configured) return /^(1|true|yes|on)$/i.test(configured);
-  return process.env.NODE_ENV !== "production";
 }
 
 function getRedisClient(): Redis | null {
@@ -114,6 +114,7 @@ function consumeInMemoryWindow(
       remaining: Math.max(0, max - 1),
       retryAfterSeconds: windowSeconds,
       source: "memory",
+      unavailable: false,
     };
   }
 
@@ -129,6 +130,7 @@ function consumeInMemoryWindow(
     remaining: Math.max(0, max - current.count),
     retryAfterSeconds,
     source: "memory",
+    unavailable: false,
   };
 }
 
@@ -145,6 +147,7 @@ async function consumeRedisWindow(
       remaining: max,
       retryAfterSeconds: windowSeconds,
       source: "disabled",
+      unavailable: false,
     };
   }
 
@@ -161,6 +164,7 @@ async function consumeRedisWindow(
     remaining: Math.max(0, max - count),
     retryAfterSeconds,
     source: "redis",
+    unavailable: false,
   };
 }
 
@@ -170,6 +174,8 @@ export async function applyMobileAuthRateLimit(
 ): Promise<MobileAuthRateLimitDecision> {
   const config = getActionConfig(action);
   const key = buildRateLimitKey(action, req);
+  const requireDistributedStore = isMobileAuthDistributedStoreRequired();
+  const allowFallback = shouldAllowMobileAuthInMemoryFallback();
 
   try {
     const redis = getRedisClient();
@@ -177,26 +183,53 @@ export async function applyMobileAuthRateLimit(
       return await consumeRedisWindow(key, config.max, config.windowSeconds);
     }
   } catch {
-    if (!shouldAllowInMemoryFallback()) {
+    if (requireDistributedStore) {
+      return {
+        allowed: false,
+        limit: config.max,
+        remaining: 0,
+        retryAfterSeconds: config.windowSeconds,
+        source: "unavailable",
+        unavailable: true,
+      };
+    }
+    if (!allowFallback) {
       return {
         allowed: true,
         limit: config.max,
         remaining: config.max,
         retryAfterSeconds: config.windowSeconds,
         source: "disabled",
+        unavailable: false,
       };
     }
   }
 
-  if (!shouldAllowInMemoryFallback()) {
+  if (requireDistributedStore) {
+    return {
+      allowed: false,
+      limit: config.max,
+      remaining: 0,
+      retryAfterSeconds: config.windowSeconds,
+      source: "unavailable",
+      unavailable: true,
+    };
+  }
+
+  if (!allowFallback) {
     return {
       allowed: true,
       limit: config.max,
       remaining: config.max,
       retryAfterSeconds: config.windowSeconds,
       source: "disabled",
+      unavailable: false,
     };
   }
 
   return consumeInMemoryWindow(key, config.max, config.windowSeconds);
+}
+
+export function isRateLimitDegradedInProduction(decision: MobileAuthRateLimitDecision): boolean {
+  return isMobileAuthProduction() && decision.source === "memory";
 }

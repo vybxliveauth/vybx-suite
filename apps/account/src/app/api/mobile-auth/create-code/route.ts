@@ -5,8 +5,12 @@ import {
   isSupportedCodeChallengeMethod,
   isValidCodeChallenge,
 } from "@/lib/mobile-auth-code";
+import { warnIfMobileAuthSecurityModeIsDegraded } from "@/lib/mobile-auth-config";
 import { isMobileAuthCodeStoreReady } from "@/lib/mobile-auth-replay-store";
-import { applyMobileAuthRateLimit } from "@/lib/mobile-auth-rate-limit";
+import {
+  applyMobileAuthRateLimit,
+  isRateLimitDegradedInProduction,
+} from "@/lib/mobile-auth-rate-limit";
 
 export const runtime = "nodejs";
 const MAX_TOKEN_LENGTH = 4096;
@@ -20,6 +24,9 @@ function responseHeaders(rateLimit: Awaited<ReturnType<typeof applyMobileAuthRat
     "X-RateLimit-Reset": String(rateLimit.retryAfterSeconds),
     "X-RateLimit-Source": rateLimit.source,
   });
+  if (isRateLimitDegradedInProduction(rateLimit)) {
+    headers.set("X-Mobile-Auth-Security-Mode", "degraded-memory-fallback");
+  }
   return headers;
 }
 
@@ -32,8 +39,16 @@ type CreateCodeBody = {
 };
 
 export async function POST(req: Request) {
+  warnIfMobileAuthSecurityModeIsDegraded();
   const rateLimit = await applyMobileAuthRateLimit("create-code", req);
   const headers = responseHeaders(rateLimit);
+  if (rateLimit.unavailable) {
+    headers.set("Retry-After", String(rateLimit.retryAfterSeconds));
+    return NextResponse.json(
+      { message: "El control de seguridad móvil no está disponible temporalmente." },
+      { status: 503, headers },
+    );
+  }
   if (!rateLimit.allowed) {
     headers.set("Retry-After", String(rateLimit.retryAfterSeconds));
     return NextResponse.json(
